@@ -1,5 +1,6 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-export const WS_URL = API_URL.replace(/^http/, 'ws');
+const isLocalHost = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+export const API_URL = import.meta.env.VITE_API_URL || (isLocalHost ? 'http://localhost:8000' : window.location.origin);
+export const WS_URL = API_URL ? API_URL.replace(/^http/, 'ws') : '';
 
 console.log('[API_URL]', API_URL);
 console.log('[WS_URL]', WS_URL);

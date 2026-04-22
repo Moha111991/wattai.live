@@ -15,7 +15,7 @@ import os
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from fastapi.websockets import WebSocket
@@ -117,8 +117,17 @@ app.add_middleware(
 )
 
 frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/dist"))
 if os.path.isdir(os.path.abspath(frontend_public)):
     app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+def _frontend_index_path() -> str:
+    return os.path.join(frontend_dist, "index.html")
+
+
+def _frontend_dist_ready() -> bool:
+    return os.path.isfile(_frontend_index_path())
 
 _ALLOWED_IPS = os.getenv("ALLOWED_IPS", "").strip()
 ALLOWED_IPS = set([ip.strip() for ip in _ALLOWED_IPS.split(",") if ip.strip()]) if _ALLOWED_IPS else None
@@ -446,6 +455,8 @@ def _normalize_id(value: Any) -> str:
 
 @app.get("/")
 async def root():
+    if _frontend_dist_ready():
+        return FileResponse(_frontend_index_path())
     return {"message": "LoopIQ backend is running."}
 
 
@@ -622,6 +633,23 @@ try:
     LOG.info("Included admin_keys_router")
 except Exception as e:
     LOG.exception("Could not include admin_keys_router: %s", e)
+
+
+@app.get("/{full_path:path}")
+async def spa_fallback(full_path: str):
+    if not _frontend_dist_ready():
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Keep unknown API-ish paths from silently resolving to index.html
+    if full_path.startswith(("api/", "docs", "redoc", "openapi", "ws")):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    normalized_dist = os.path.abspath(frontend_dist)
+    candidate = os.path.abspath(os.path.join(normalized_dist, full_path))
+    if full_path and candidate.startswith(normalized_dist) and os.path.isfile(candidate):
+        return FileResponse(candidate)
+
+    return FileResponse(_frontend_index_path())
 
 
 if __name__ == "__main__":

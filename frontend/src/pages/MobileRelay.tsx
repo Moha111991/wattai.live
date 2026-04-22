@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const WS_URL = `${import.meta.env.VITE_API_URL.replace('https://', 'wss://')}/ws`;
+const isLocalHost = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_URL = import.meta.env.VITE_API_URL || (isLocalHost ? "http://localhost:8000" : window.location.origin);
+const WS_URL = API_URL ? `${API_URL.replace(/^http/, 'ws')}/ws` : null;
 
 export default function MobileRelay() {
   const [paired, setPaired] = useState(false);
@@ -23,6 +24,10 @@ export default function MobileRelay() {
   // WebSocket Connection
   useEffect(() => {
     if (!paired) return;
+    if (!WS_URL) {
+      log("❌ VITE_API_URL fehlt (kein Backend für WebSocket konfiguriert)");
+      return;
+    }
     
     const socket = new WebSocket(WS_URL);
     

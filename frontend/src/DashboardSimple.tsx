@@ -16,8 +16,9 @@ import EVProfileManager from "./components/EVProfileManager";
 import EVProfileForm from "./components/EVProfileForm";
 
 // Statt location.host:
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const WS_URL = `${import.meta.env.VITE_API_URL.replace('https://', 'wss://')}/ws`;
+const isLocalHost = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_URL = import.meta.env.VITE_API_URL || (isLocalHost ? "http://localhost:8000" : window.location.origin);
+const WS_URL = API_URL ? `${API_URL.replace(/^http/, 'ws')}/ws` : null;
 
 interface RealtimeData {
   ev_soc: number;
@@ -121,6 +122,12 @@ export default function DashboardSimple() {
 
   // WebSocket Connection
   useEffect(() => {
+    if (!WS_URL) {
+      setConnected(false);
+      setError("VITE_API_URL fehlt (kein Backend konfiguriert)");
+      return;
+    }
+
     const connect = () => {
       try {
         const ws = new WebSocket(WS_URL);

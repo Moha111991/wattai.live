@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 import BatteryWidget from './BatteryWidget';
 
-const WS_URL = `${import.meta.env.VITE_API_URL.replace('https://', 'wss://')}/ws`;
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const isLocalHost = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_URL = import.meta.env.VITE_API_URL || (isLocalHost ? 'http://localhost:8000' : window.location.origin);
+const WS_URL = API_URL ? `${API_URL.replace(/^http/, 'ws')}/ws` : null;
 
 type State = {
   battery_soc?: number;
@@ -60,6 +61,7 @@ const HouseholdDashboard = () => {
   const smartHomePowerW = smartHomeSummary?.total_power_w ?? smartHomeDevices.reduce((sum, d) => sum + d.powerW, 0);
 
   useEffect(() => {
+    if (!WS_URL) return;
     const ws = new WebSocket(WS_URL);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);

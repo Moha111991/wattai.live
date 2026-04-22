@@ -3,11 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://mohammadhameed.github.io/EnergyFlowHub",
+  "homepage": "https://moha111991.github.io/LoopIQ",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:gh": "vite build --base=/EnergyFlowHub/",
+  "build:gh": "vite build --base=/LoopIQ/",
     "preview": "vite preview",
     "predeploy": "npm run build:gh",
     "deploy": "gh-pages -d dist"
