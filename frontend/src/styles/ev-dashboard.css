@@ -1,0 +1,41 @@
+.ev-dashboard {
+  background: #f7f9fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 2rem;
+  margin: 1rem 0;
+  min-width: 280px;
+}
+.ev-dashboard h2 {
+  color: #1976d2;
+  margin-bottom: 1rem;
+}
+.ev-dashboard p {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+.ev-status {
+  font-weight: bold;
+  color: #388e3c;
+}
+.ev-status.not-charging {
+  color: #d32f2f;
+}
+.ev-dashboard .ev-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+.ev-dashboard button {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.ev-dashboard button:hover {
+  background: #1565c0;
+}

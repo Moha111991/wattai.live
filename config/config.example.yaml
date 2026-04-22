@@ -1,0 +1,27 @@
+ev_profiles: {}
+active_ev_id: null
+adapters:
+  battery_lg:
+    enabled: true
+    ip: 73.133.234.2
+    poll_interval: 10
+  inverter_fronius:
+    enabled: true
+    ip: 192.168.1.101
+    poll_interval: 10
+  inverter_huawei:
+    enabled: true
+    ip: 192.168.1.101
+    poll_interval: 10
+  meter_discovergy:
+    enabled: true
+    ip: 322.123.12.12
+    poll_interval: 10
+  wallbox_goe:
+    enabled: true
+    ip: 192.168.1.100
+    poll_interval: 5
+settings:
+  timezone: "Europe/Berlin"
+  currency: "EUR"
+  demo_mode: false

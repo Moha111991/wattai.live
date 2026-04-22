@@ -1,0 +1,147 @@
+<svg width="1920" height="600" viewBox="0 0 1920 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">LoopIQ – KI Smart Energy mit PV und Elektroauto</title>
+  <desc id="desc">Stilisierte Illustration eines Hauses mit Solaranlage, Elektroauto an einer Ladestation und abstrakten KI- und Energielinien.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="60%" stop-color="#0b1120"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="pv" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="ev" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <linearGradient id="grid" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Himmel / Hintergrund -->
+  <rect x="0" y="0" width="1920" height="600" fill="url(#sky)"/>
+
+  <!-- Sonnen- / KI-Orb oben links -->
+  <circle cx="220" cy="120" r="70" fill="url(#sun)" opacity="0.9"/>
+  <circle cx="220" cy="120" r="105" fill="none" stroke="#fbbf24" stroke-width="2" opacity="0.35"/>
+  <circle cx="220" cy="120" r="145" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.18"/>
+
+  <!-- KI-Knoten / Netzwerk-Linien -->
+  <g stroke="#22c55e" stroke-width="1.5" opacity="0.55">
+    <circle cx="520" cy="90" r="5" fill="#22c55e"/>
+    <circle cx="680" cy="60" r="5" fill="#22c55e"/>
+    <circle cx="840" cy="110" r="5" fill="#22c55e"/>
+    <circle cx="1020" cy="70" r="5" fill="#22c55e"/>
+    <circle cx="1180" cy="120" r="5" fill="#22c55e"/>
+    <circle cx="1360" cy="80" r="5" fill="#22c55e"/>
+
+    <polyline fill="none" points="520,90 680,60 840,110 1020,70 1180,120 1360,80"/>
+  </g>
+
+  <!-- Boden / Horizont -->
+  <rect x="0" y="360" width="1920" height="240" fill="#020617"/>
+  <rect x="0" y="360" width="1920" height="4" fill="#0f172a" opacity="0.8"/>
+
+  <!-- Hauskörper -->
+  <g transform="translate(260,210)">
+    <!-- Hausbasis -->
+    <rect x="0" y="80" width="380" height="170" rx="12" ry="12" fill="#020617" stroke="#1f2937" stroke-width="2"/>
+    <!-- Dach -->
+    <polygon points="-10,80 190,-10 400,80" fill="#020617" stroke="#1f2937" stroke-width="2"/>
+
+    <!-- PV-Module auf dem Dach -->
+    <g transform="translate(80,0) rotate(-18)">
+      <rect x="0" y="0" width="220" height="90" rx="6" fill="#020617" stroke="#1f2937" stroke-width="2"/>
+      <rect x="10" y="10" width="60" height="30" rx="3" fill="url(#pv)" opacity="0.95"/>
+      <rect x="80" y="10" width="60" height="30" rx="3" fill="url(#pv)" opacity="0.95"/>
+      <rect x="150" y="10" width="60" height="30" rx="3" fill="url(#pv)" opacity="0.95"/>
+      <rect x="10" y="50" width="60" height="30" rx="3" fill="url(#pv)" opacity="0.9"/>
+      <rect x="80" y="50" width="60" height="30" rx="3" fill="url(#pv)" opacity="0.9"/>
+      <rect x="150" y="50" width="60" height="30" rx="3" fill="url(#pv)" opacity="0.9"/>
+    </g>
+
+    <!-- Fenster / Hausdetails -->
+    <rect x="40" y="110" width="80" height="60" rx="6" fill="#020617" stroke="#111827"/>
+    <rect x="50" y="120" width="60" height="40" rx="4" fill="#0f172a" stroke="#1f2937"/>
+    <rect x="260" y="110" width="90" height="140" rx="8" fill="#020617" stroke="#111827"/>
+    <rect x="272" y="122" width="66" height="116" rx="6" fill="#0f172a" stroke="#1f2937"/>
+
+    <!-- Haus-Batterie Icon -->
+    <g transform="translate(150,170)">
+      <rect x="0" y="0" width="60" height="34" rx="6" fill="#020617" stroke="#22c55e" stroke-width="1.5"/>
+      <rect x="62" y="8" width="6" height="18" rx="2" fill="#22c55e"/>
+      <rect x="6" y="6" width="22" height="8" rx="2" fill="#22c55e"/>
+      <rect x="32" y="20" width="22" height="8" rx="2" fill="#22c55e" opacity="0.8"/>
+    </g>
+  </g>
+
+  <!-- Elektroauto und Ladestation -->
+  <g transform="translate(950,300)">
+    <!-- Fahrbahn-Schatten -->
+    <ellipse cx="260" cy="120" rx="260" ry="40" fill="#020617" opacity="0.9"/>
+
+    <!-- Wallbox -->
+    <g transform="translate(40,0)">
+      <rect x="0" y="-40" width="70" height="130" rx="18" fill="#020617" stroke="#1f2937" stroke-width="2"/>
+      <circle cx="35" cy="0" r="14" fill="#0f172a" stroke="#22c55e" stroke-width="2"/>
+      <circle cx="35" cy="0" r="6" fill="#22c55e"/>
+      <rect x="22" y="30" width="26" height="10" rx="4" fill="#22c55e" opacity="0.9"/>
+
+      <!-- Kabel zum Auto -->
+      <path d="M70,10 C120,20 170,40 210,34" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+    </g>
+
+    <!-- EV-Karosserie -->
+    <g filter="url(#glow)" transform="translate(150,10)">
+      <rect x="40" y="40" width="260" height="70" rx="28" fill="url(#ev)"/>
+      <path d="M80,40 C120,0 240,0 280,40" fill="url(#ev)"/>
+
+      <!-- Fenster -->
+      <path d="M120,40 C145,14 215,14 240,40 L240,40 L120,40 Z" fill="#0f172a" opacity="0.95"/>
+
+      <!-- Räder -->
+      <g fill="#020617" stroke="#0b1120" stroke-width="3">
+        <circle cx="110" cy="112" r="26"/>
+        <circle cx="260" cy="112" r="26"/>
+      </g>
+      <g fill="#0f172a" stroke="#22d3ee" stroke-width="2">
+        <circle cx="110" cy="112" r="12"/>
+        <circle cx="260" cy="112" r="12"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Energiefluss-Linien zwischen PV, Haus, EV und Netz -->
+  <g stroke-width="3" fill="none">
+    <!-- PV -> Haus -->
+    <path d="M520,190 C620,230 700,260 830,260" stroke="url(#pv)" stroke-linecap="round" opacity="0.9"/>
+    <!-- Haus -> EV -->
+    <path d="M720,310 C860,320 960,320 1060,320" stroke="url(#ev)" stroke-linecap="round" opacity="0.9"/>
+    <!-- Netz -> Haus (rechts) -->
+    <path d="M1520,200 C1440,230 1340,260 1240,280" stroke="url(#grid)" stroke-dasharray="10 8" stroke-linecap="round" opacity="0.7"/>
+  </g>
+
+  <!-- Text-Overlay / Branding -->
+  <g transform="translate(220,440)" fill="#e5e7eb">
+    <text x="0" y="0" font-size="32" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-weight="700">
+	  LoopIQ – KI-basiertes Smart Energy Management
+    </text>
+    <text x="0" y="34" font-size="18" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#9ca3af">
+      Elektroauto · Heimspeicher · Photovoltaik · Netz – intelligent verknüpft
+    </text>
+  </g>
+</svg>

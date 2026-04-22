@@ -1,0 +1,26 @@
+# --- Core ---
+region       = "eu-central-1"
+project_name = "energyflowhub"
+trail_name   = "energyflowhub-trail"
+
+# Optional: set to an existing bucket name, else module creates one
+log_bucket_name = ""
+
+# --- Backend compute trust target ---
+# One of: "ecs", "ec2", "irsa"
+compute_target    = "ecs"
+backend_role_name = "energyflowhub-backend-kms-role"
+
+# --- IRSA-only settings (only required when compute_target = "irsa") ---
+irsa_oidc_provider_arn      = ""
+irsa_oidc_subject_key       = ""
+irsa_service_account_subject = ""
+
+# --- KMS key principals allowed in key policy (optional extra principals) ---
+allowed_principals = [
+  # "arn:aws:iam::123456789012:role/another-consumer-role"
+]
+
+# --- Alerting ---
+sns_topic_name = "energyflowhub-security-alerts"
+oncall_email   = "oncall@example.com"

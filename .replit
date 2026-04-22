@@ -1,0 +1,123 @@
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["abseil-cpp", "cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtest", "gtk3", "oneDNN", "pkg-config", "qhull", "re2", "tcl", "tk"]
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["streamlit", "run", "app.py", "--server.port", "5000"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "streamlit-app"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "fastapi-backend"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "mqtt-bridge"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "device-simulator"
+
+[[workflows.workflow]]
+name = "streamlit-app"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run app.py --server.port 5000"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "fastapi-backend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "uvicorn backend.main:app --host 0.0.0.0 --port 8001"
+waitForPort = 8001
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "mqtt-bridge"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python backend/mqtt_to_ws.py"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "device-simulator"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python simulator/device_simulator.py"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 8001
+externalPort = 8001
+
+[[ports]]
+localPort = 36735
+externalPort = 3001
+
+[[ports]]
+localPort = 37355
+externalPort = 6800
+
+[[ports]]
+localPort = 40697
+externalPort = 3000
+
+[[ports]]
+localPort = 41603
+externalPort = 5000
+
+[[ports]]
+localPort = 42313
+externalPort = 3003
+
+[[ports]]
+localPort = 42375
+externalPort = 6000
+
+[[ports]]
+localPort = 44707
+externalPort = 3002
+
+[[ports]]
+localPort = 45549
+externalPort = 4200
+
+[[ports]]
+localPort = 46707
+externalPort = 5173

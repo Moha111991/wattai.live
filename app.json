@@ -1,0 +1,23 @@
+{
+  "plugins": [
+    "expo-barcode-scanner"
+  ],
+  "extra": {
+    "eas": {
+      "projectId": "2f05a8ae-d894-4c95-b7ef-39b3bbfc0c6d"
+    }
+  },
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.mohammadhameed.energyflowhub",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2f05a8ae-d894-4c95-b7ef-39b3bbfc0c6d"
+      }
+    }
+  }
+}

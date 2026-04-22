@@ -1,0 +1,156 @@
+active_ev_id: hersteller_model-y
+adapters:
+  battery_demo:
+    brand: DemoBrand
+    enabled: true
+    ip: 192.168.1.200
+    manufacturer: DemoBrand
+    model: DemoModel
+    power_kw: 2.5
+    soc: 55
+    type: Battery
+  battery_lg:
+    brand: LG
+    enabled: true
+    ip: 73.133.234.2
+    model: RESU10H
+    poll_interval: 10
+    type: Battery
+  inverter_fronius:
+    brand: Fronius
+    enabled: true
+    ip: 192.168.1.101
+    manufacturer: Fronius
+    model: Symo GEN24
+    power_kw: 3.2
+    soc: 80
+    type: Inverter
+  inverter_huawei:
+    brand: Huawei
+    enabled: true
+    ip: 454.545.5.5
+    model: SUN2000
+    poll_interval: 10
+    type: Inverter
+  smart_meter:
+    brand: Siemens
+    cloud:
+      api_base_url: https://api.siemens.com/v1
+      api_key: YOUR_SIEMENS_API_KEY
+    enabled: true
+    ip: 192.168.1.50
+    manufacturer: Siemens
+    model: SM-2025
+    poll_interval: 10
+    power_kw: 1.5
+    soc: 0
+    type: Smart Meter
+  smartmeter_siemens:
+    brand: Siemens
+    enabled: true
+    ip: 192.168.1.50
+    manufacturer: Siemens
+    model: SM-2025
+    power_kw: 1.5
+    soc: 0
+    type: Smart Meter
+  wallbox_goe:
+    brand: GoE
+    cloud:
+      api_base_url: https://api.wallbox.com/v1
+      api_key: YOUR_WALLBOX_API_KEY
+    enabled: true
+    ip: 192.168.1.120
+    manufacturer: Wallbox
+    model: Pulsar Plus
+    poll_interval: 10
+    power_kw: 11
+    soc: 0
+    type: Wallbox
+  wechselrichter:
+    brand: Fronius
+    cloud:
+      api_base_url: https://api.fronius.com/v1
+      api_key: YOUR_REAL_API_KEY
+    enabled: true
+    ip: 192.168.1.101
+    manufacturer: Fronius
+    model: Symo GEN24
+    poll_interval: 10
+    power_kw: 3.2
+    soc: 80
+    type: Inverter
+ev_profiles:
+  Hyundai_Ioniq 6:
+    active: false
+    capacity_kwh: 77.4
+    connector: type2
+    data_source: wallbox
+    manufacturer: Hyundai
+    max_charge_kw: 233
+    model: Ioniq 6
+    notes: ''
+  Peugeot_e-2008:
+    active: false
+    capacity_kwh: 54
+    connector: type2
+    data_source: wallbox
+    manufacturer: Peugeot
+    max_charge_kw: 100
+    model: e-2008
+    notes: ''
+  Skoda_Enyaq iV 80:
+    active: false
+    capacity_kwh: 77
+    connector: type2
+    data_source: wallbox
+    manufacturer: Skoda
+    max_charge_kw: 135
+    model: Enyaq iV 80
+    notes: ''
+  Tesla_Model 3:
+    active: false
+    capacity_kwh: 55
+    connector: type2
+    data_source: wallbox
+    manufacturer: Tesla
+    max_charge_kw: 170
+    model: Model 3
+    notes: ''
+  VW_ID.3 Pro:
+    active: true
+    capacity_kwh: 58
+    connector: type2
+    data_source: wallbox
+    manufacturer: VW
+    max_charge_kw: 120
+    model: ID.3 Pro
+    notes: ''
+  hersteller_model-y:
+    active: false
+    capacity_kwh: 75.0
+    connector: chademo
+    data_source: wallbox
+    manufacturer: Hersteller
+    max_charge_kw: 210.0
+    model: Model Y
+    notes: ''
+  volkswagen_id.4-pro:
+    active: false
+    capacity_kwh: 77.0
+    connector: ccs
+    data_source: wallbox
+    manufacturer: Volkswagen
+    max_charge_kw: 125.0
+    model: ID.4 Pro
+    notes: ''
+settings:
+  currency: EUR
+  demo_mode: false
+  timezone: Europe/Berlin
+smartmeter:
+  ip: 192.168.1.101
+  meter_id: '1'
+  port: 502
+  protocol: modbus
+  type: easymeter

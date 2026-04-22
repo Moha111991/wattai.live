@@ -1,0 +1,2394 @@
+from fastapi import FastAPI, APIRouter, Response, Depends, Body
+from typing import Optional, Dict, Any
+
+from fastapi.websockets import WebSocket
+import os
+from uuid import uuid4
+
+app = FastAPI()
+
+# Early fleet router to satisfy any legacy @fleet_router usages above the
+# canonical V2H section at the end of this file. The canonical router is
+# redefined later together with the API key security. This avoids NameError
+# at import time while we progressively clean up duplicate definitions.
+fleet_router = APIRouter()
+
+# Early API key security to satisfy any legacy @fleet_router usages that
+# depend on get_api_key before the canonical V2H section defines it again.
+from fastapi.security import APIKeyHeader
+from fastapi import HTTPException, status
+
+API_KEY = "mein_geheimer_schulkey123"
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def get_api_key(api_key: str = Depends(api_key_header)):
+    if api_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiger API-Key",
+        )
+    return api_key
+
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+@app.post("/v2h/disable")
+async def v2h_disable():
+    """Deaktiviert Vehicle-to-Home (V2H).
+
+    Setzt ev_v2h=False und reduziert die V2H-Leistung auf 0 kW im Status.
+    """
+    await state.update({"ev_v2h": False, "ev_power_w": 0.0})
+    current = await state.get()
+    house_power_kw = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    return {
+        "success": True,
+        "active": False,
+        "power_kw": 0.0,
+        "house_power_kw": house_power_kw,
+        "error": None,
+    }
+
+
+
+@app.post("/v2h/enable")
+async def v2h_enable(payload: Dict[str, Any] = Body(None)):
+    """Aktiviert Vehicle-to-Home (V2H).
+
+    Optional kann eine bevorzugte Wallbox-ID übergeben werden, die im Status
+    (`preferred_wallbox_id`) reflektiert wird. Die eigentliche Leistungssteuerung
+    erfolgt später über den V2H-Controller; hier wird zunächst nur der Status
+    im RealtimeState gesetzt, damit das Frontend sauber arbeiten kann.
+    """
+    # V2H-Flag im zentralen Zustand aktivieren; Leistungszuweisung erfolgt separat.
+    await state.update({"ev_v2h": True})
+    current = await state.get()
+
+    house_power_kw: Optional[float] = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    # Preferred Wallbox aus Payload (falls vorhanden) im Config-State hinterlegen,
+    # damit /v2h/status diese ID zurückgeben kann.
+    preferred_id = None
+    if payload and isinstance(payload, dict):
+        preferred_id = payload.get("wallbox_id")
+        if preferred_id:
+            cfg = app_state.get("config", {})
+            cfg["preferred_wallbox_id"] = preferred_id
+            app_state["config"] = cfg
+
+    return {
+        "success": True,
+        "active": True,
+        "power_kw": float(current.get("ev_power_w") or 0.0) / 1000.0,
+        "house_power_kw": house_power_kw,
+        "error": None,
+        "preferred_wallbox_id": preferred_id,
+    }
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+# Safety: ensure critical tiny endpoints are present on the final `app` instance.
+# Some legacy code paths may skip or overwrite earlier registrations; this
+# makes sure `/battery/status` and `/test-alive` exist.
+async def _battery_status_final():
+    return {"status": "ok"}
+
+async def _test_alive_final():
+    return {"status": "alive"}
+
+if not any(r.path == "/battery/status" for r in app.routes):
+    app.add_api_route("/battery/status", _battery_status_final, methods=["GET"])
+
+if not any(r.path == "/test-alive" for r in app.routes):
+    app.add_api_route("/test-alive", _test_alive_final, methods=["GET"])
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+import asyncio
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "LoopIQ backend is running."}
+
+def _register_dynamic_adapter(data: Dict[str, Any]) -> None:
+    """Registriert Adapter, die *nicht* in der YAML‑Config stehen.
+
+    Idee:
+    - Ein externer Adapter‑Prozess (z.B. in ``device_adapters/``) sendet Messwerte
+      an ``POST /api/ingest``.
+    - Anhand der Felder ``device_id`` oder ``device`` wird ein logischer
+      Geräte‑Identifier abgeleitet.
+    - Falls dieses Gerät nicht bereits in ``config.yaml`` unter ``adapters``
+      existiert, wird es in einer In‑Memory‑Liste ``dynamic_adapters``
+      registriert.
+
+    Dadurch tauchen auch Adapter, die nicht vorab in der Konfiguration
+    eingetragen wurden, automatisch im Geräte‑Bereich des Frontends auf.
+    """
+    # Globale App‑Config betrachten
+    config = app_state.get("config", {})
+    configured = (config.get("adapters") or {}).keys()
+
+    # Mögliche Feldnamen aus dem Adapter‑Payload
+    device_id = (
+        data.get("device_id")
+        or data.get("device")
+        or data.get("id")
+    )
+
+    if not device_id:
+        # Ohne Identifier können wir kein Gerät registrieren
+        return
+
+    # Bereits in YAML‑Config oder schon dynamisch bekannt -> nichts tun
+    if device_id in configured or device_id in dynamic_adapters:
+        # Optional: Last‑Seen aktualisieren
+        entry = dynamic_adapters.get(device_id)
+        if entry is not None:
+            entry["last_seen"] = data.get("timestamp")
+        return
+
+    device_type = (
+        (data.get("device_type") or data.get("type") or "generic").lower()
+    )
+    name = data.get("name") or f"{device_type.capitalize()} {device_id}"
+
+    entry = {
+        "id": device_id,
+        "type": device_type,
+        "name": name,
+        "source": "dynamic",
+        "status": "online",
+        "last_seen": data.get("timestamp"),
+    }
+    dynamic_adapters[device_id] = entry
+
+    # Falls der Adapter im Kontext eines konkreten Verbindungsversuchs
+    # gestartet wurde, kann eine optionale request_id mitgeschickt werden.
+    # Damit lässt sich der Verbindungsstatus fachlich verfolgen.
+    req_id = data.get("request_id")
+    if req_id and req_id in pending_connections:
+        pending_connections[req_id]["status"] = "connected"
+        pending_connections[req_id]["device_id"] = device_id
+        pending_connections[req_id]["last_seen"] = data.get("timestamp")
+        # Notify any websocket clients about the connection status change
+        try:
+            # schedule async broadcast so this sync function doesn't block
+            asyncio.create_task(broadcast_connection_event({
+                "type": "connection_update",
+                "request_id": req_id,
+                "status": "connected",
+                "device_id": device_id,
+                "last_seen": data.get("timestamp"),
+            }))
+        except Exception:
+            # best-effort
+            pass
+
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """Ingest‑Endpoint für externe Adapter‑Prozesse.
+
+    Erwarteter Body (Minimalbeispiel):
+
+    {
+      "device_id": "smartmeter_1",   # oder "device": "smartmeter_1"
+      "device_type": "smartmeter",   # optional, sonst "generic"
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+
+    Wichtig: Wenn ``device_id``/``device`` nicht in ``config.yaml`` vorkommt,
+    wird der Adapter automatisch als dynamisches Gerät registriert und
+    erscheint anschließend im Geräte‑Bereich des Frontends.
+    """
+    try:
+        data = await request.json()
+
+        # Dynamische Adapter‑Registrierung (auch wenn Influx aus ist)
+        if isinstance(data, dict):
+            _register_dynamic_adapter(data)
+
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+async def broadcast_connection_event(event: Dict[str, Any]) -> None:
+    """Broadcast a small JSON event to all connected websocket clients.
+
+    Event format is intentionally generic; frontend can filter by `type`.
+    """
+    # clients is a runtime list of WebSocket objects; iterate over a copy
+    try:
+        for ws in list(clients):
+            try:
+                await ws.send_json(event)
+            except Exception:
+                # remove dead sockets
+                try:
+                    await ws.close()
+                except Exception:
+                    pass
+                if ws in clients:
+                    clients.remove(ws)
+    except NameError:
+        # clients may not be defined yet at import time; ignore if so
+        return
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+import httpx
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+# Adapter, die nicht explizit in config.yaml definiert sind, aber
+# Messdaten an /api/ingest senden, werden hier zur Laufzeit gesammelt.
+# Diese Liste wird mit den statischen Adaptern zusammengeführt, wenn
+# das Frontend /devices abfragt.
+dynamic_adapters: Dict[str, Dict[str, Any]] = {}
+
+# Zuordnung für Verbindungsversuche aus dem UI ("Gerät verbinden")
+# auf Basis einer fachlichen Request-ID. Damit kann das Frontend
+# optional einen konkreten Connect-Versuch verfolgen.
+pending_connections: Dict[str, Dict[str, Any]] = {}
+
+
+# --- Devices and EV Profiles Endpoints ---
+from fastapi import Response
+
+@app.get("/devices")
+async def get_devices():
+    """Liefert Geräte aus config.yaml *und* dynamisch entdeckte Adapter.
+
+    - Statische Adapter: ``config.yaml -> adapters``
+    - Dynamische Adapter: werden über ``POST /api/ingest`` registriert,
+      wenn ein unbekannter ``device_id``/``device`` gemeldet wird.
+    """
+    config = app_state["config"]
+    adapters = config.get("adapters", {}) or {}
+
+    # Statische Geräte aus config.yaml
+    devices = [dict(id=k, **v) for k, v in adapters.items()]
+
+    # Dynamisch registrierte Adapter ergänzen (ohne Duplikate)
+    for dev_id, meta in dynamic_adapters.items():
+        if not any(d.get("id") == dev_id for d in devices):
+            devices.append(meta)
+
+    return {"devices": devices}
+
+
+@app.get("/devices/{device_id}/details")
+async def get_device_details(device_id: str):
+  """Liefert Detailstatus für ein Gerät.
+
+  Aktuell ist nur ein sinnvoller Laufzeitstatus für Wallboxen (z.B. go-eCharger)
+  implementiert. Für andere Gerätetypen wird eine einfache Stub-Antwort
+  mit Basisinformationen zurückgegeben.
+  """
+  config = app_state.get("config", {})
+  adapters = config.get("adapters", {}) or {}
+  dev = adapters.get(device_id)
+  if not dev:
+      raise HTTPException(status_code=404, detail="Device not found")
+
+  dev_type = (dev.get("type") or "").lower()
+
+  # Nur für Wallboxen versuchen wir, einen echten Status per HTTP abzufragen.
+  if dev_type != "wallbox":
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "unsupported",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": "Status-Endpunkt ist derzeit nur für Wallboxen implementiert.",
+      }
+
+  host = dev.get("ip") or dev.get("host")
+  if not host:
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "config_error",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": "Keine IP/Host für Wallbox in der Konfiguration hinterlegt.",
+      }
+
+  try:
+      async with httpx.AsyncClient(timeout=5) as client:
+          r = await client.get(f"http://{host}/api/status")
+          r.raise_for_status()
+          data = r.json()
+  except Exception as e:
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "offline",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": f"Fehler bei Statusabfrage der Wallbox: {e}",
+      }
+
+  # go-e spezifische Auswertung
+  car_state = data.get("car", 0)
+  # einfache Heuristik: car_state > 0 bedeutet Fahrzeug erkannt/angeschlossen
+  ev_connected = car_state in (1, 2, 3, 4)
+  charging_state_map = {1: "ready", 2: "charging", 3: "waiting", 4: "done"}
+  charging_state = charging_state_map.get(car_state, "unknown")
+
+  nrg = data.get("nrg", [0] * 16)
+  power_w = nrg[11] if len(nrg) > 11 else 0
+  power_kw = round(float(power_w) / 1000.0, 3)
+
+  soc = data.get("soc")
+
+  # V2H-Bereitschaft: hängt von Konfiguration und angeschlossenem Fahrzeug ab.
+  v2h_ready = bool(dev.get("v2h_capable", False) and ev_connected)
+
+  return {
+      "device_id": device_id,
+      "type": dev.get("type"),
+      "online": True,
+      "status": charging_state,
+      "ev_connected": ev_connected,
+      # Konnektorverriegelung: hier vereinfachend gleichgesetzt mit "Fahrzeug erkannt".
+      "connector_locked": ev_connected,
+      "power_kw": power_kw,
+      "soc": soc,
+      "v2h_ready": v2h_ready,
+      "error": None,
+  }
+
+
+
+@app.post("/devices/{device_id}/connect")
+async def connect_device(device_id: str, payload: Dict[str, Any] = Body(None)):
+    """Startet einen Verbindungsversuch für ein Gerät.
+
+    Das Frontend kann optional eine ``request_id`` mitsenden. Falls keine
+    angegeben wird, generiert das Backend eine neue UUID.
+
+    Die so erzeugte Request-ID kann genutzt werden, um den Status eines
+    bestimmten "Gerät verbinden"-Klicks fachlich nachzuverfolgen.
+    """
+    from datetime import datetime
+
+    body: Dict[str, Any] = payload or {}
+    request_id = body.get("request_id") or str(uuid4())
+
+    pending_connections[request_id] = {
+        "device_id": device_id,
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat(),
+        "params": body,
+    }
+
+    # Broadcast pending state to websocket clients (best-effort)
+    try:
+        asyncio.create_task(broadcast_connection_event({
+            "type": "connection_update",
+            "request_id": request_id,
+            "status": "pending",
+            "device_id": device_id,
+            "created_at": pending_connections[request_id]["created_at"],
+        }))
+    except Exception:
+        pass
+
+    return {"request_id": request_id, "status": "pending"}
+
+
+@app.get("/connections/{request_id}")
+async def get_connection_status(request_id: str):
+    """Gibt den Status eines Verbindungsversuchs anhand der Request-ID zurück."""
+    info = pending_connections.get(request_id)
+    if not info:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    return info
+
+
+@app.get("/smartmeter/energy")
+async def smartmeter_energy():
+    """Aggregierte Energiewerte des Smart Meters.
+
+    Die Daten stammen aus dem zentralen `RealtimeState`, der u.a. über `mqtt_service`
+    aus den Topics `energy/smartmeter/import_kwh` und `energy/smartmeter/export_kwh`
+    gespeist wird. Das Frontend erwartet folgende Struktur:
+
+    {
+      "import_kwh": number | null,
+      "export_kwh": number | null,
+      "power_w": number | null,
+      "voltage_v": number | null,
+      "current_a": number | null,
+      "energy_today_kwh": number | null,
+      "energy_total_kwh": number | null
+    }
+
+    Nicht vorhandene Werte werden als null zurückgegeben, damit das Frontend
+    sie robust mit "-" darstellen kann.
+    """
+    current = await state.get()
+
+    import_kwh = current.get("smartmeter_import_kwh")
+    export_kwh = current.get("smartmeter_export_kwh")
+
+    # Versuche eine sinnvolle Leistungsableitung: bevorzugt Netzübergang,
+    # ansonsten Hauslast, falls vorhanden.
+    power_w: Optional[float] = None
+    grid_import_w = current.get("grid_import_w")
+    grid_export_w = current.get("grid_export_w")
+    house_load_w = current.get("house_load_w")
+
+    if grid_import_w is not None or grid_export_w is not None:
+        power_w = float(grid_import_w or 0.0) - float(grid_export_w or 0.0)
+    elif house_load_w is not None:
+        power_w = float(house_load_w or 0.0)
+
+    return {
+        "import_kwh": import_kwh,
+        "export_kwh": export_kwh,
+        "power_w": power_w,
+        # Diese Felder sind optional und können später durch Erweiterung
+        # des MQTT-Adapters/States mit echten Werten befüllt werden.
+        "voltage_v": None,
+        "current_a": None,
+        "energy_today_kwh": None,
+        "energy_total_kwh": None,
+    }
+
+
+@app.get("/ev/cloud_status")
+async def ev_cloud_status():
+    """Stub-Endpoint für optionale SOC-Daten aus der Fahrzeug-Cloud/BMS.
+
+    Frontend erwartet eine Struktur wie {"available": bool, "soc": number, "provider": str|null}.
+    Aktuell ist keine echte Cloud-Integration implementiert, daher liefern wir einen
+    sauberen Fallback, der lediglich signalisiert, dass keine Cloud-Daten vorliegen.
+    """
+    return {"available": False, "soc": None, "provider": None}
+
+
+@app.get("/v2h/status")
+async def v2h_status(wallbox_id: Optional[str] = Query(None)):
+    """Gibt den aktuellen V2H-Status zurück.
+
+    Diese Struktur ist auf das Frontend `ElektroautoV2H` abgestimmt und enthält
+    neben Aktiv-Status und Leistung auch Metadaten zur (optionalen) Wallbox.
+    """
+    current = await state.get()
+
+    # Basisleistungswerte aus dem Realtime-State ableiten
+    active = bool(current.get("ev_v2h") is True)
+    ev_power_w = float(current.get("ev_power_w") or 0.0)
+    power_kw = ev_power_w / 1000.0
+
+    house_power_kw: Optional[float] = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    # Wallbox-Informationen aus der Konfiguration auslesen
+    config = app_state.get("config", {})
+    adapters = config.get("adapters", {}) or {}
+    wallbox_entries = {
+        k: v
+        for k, v in adapters.items()
+        if (v.get("type") or "").lower().find("wallbox") != -1
+    }
+
+    selected_id: Optional[str] = None
+    if wallbox_id and wallbox_id in wallbox_entries:
+        selected_id = wallbox_id
+    elif wallbox_entries:
+        # Fallback: erste gefundene Wallbox nutzen
+        selected_id = next(iter(wallbox_entries.keys()))
+
+    dev = wallbox_entries.get(selected_id) if selected_id else None
+    wallbox_present = bool(wallbox_entries)
+    wallbox_enabled = bool(dev.get("enabled", True)) if dev else False
+    v2h_capable = bool(dev.get("v2h_capable", False)) if dev else False
+    # Ohne direkten Live-Status aus der Wallbox setzen wir "online" konservativ
+    # gleich "enabled" – das Frontend nutzt dies vor allem für UI-Hinweise.
+    wallbox_online = wallbox_enabled
+
+    return {
+        "active": active,
+        "power_kw": round(power_kw, 3),
+        "house_power_kw": round(house_power_kw, 3) if house_power_kw is not None else None,
+        "error": None,
+        "wallbox_present": wallbox_present,
+        "wallbox_enabled": wallbox_enabled,
+        "wallbox_online": wallbox_online,
+        "preferred_wallbox_id": selected_id,
+        "v2h_capable": v2h_capable,
+    }
+
+
+
+# --- /ev/profiles endpoint supporting GET, POST (save), PUT (activate), DELETE (delete) ---
+from fastapi import Request, Body
+from fastapi.responses import JSONResponse
+import copy
+
+@app.api_route("/ev/profiles", methods=["GET", "POST", "PUT", "DELETE"])
+async def ev_profiles_endpoint(request: Request, body: dict = Body(None)):
+    """
+    GET: Returns all EV profiles from config.yaml.
+    POST: Save (create/update) an EV profile. Expects {"id": ..., "profile": {...}}.
+    PUT: Activate an EV profile. Expects {"id": ...}.
+    DELETE: Delete an EV profile. Expects {"id": ...}.
+    """
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    method = request.method
+
+    if method == "GET":
+        # Return both ev_profiles and active_ev_id for frontend compatibility
+        active_ev_id = config.get("active_ev_id")
+        return {"ev_profiles": ev_profiles, "active_ev_id": active_ev_id}
+
+    if method == "POST":
+        # Save (create/update) an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        profile = data.get("profile")
+        if not ev_id or not profile:
+            return JSONResponse(status_code=400, content={"error": "Missing 'id' or 'profile' in request."})
+        ev_profiles[ev_id] = profile
+        app_state["config"]["ev_profiles"] = ev_profiles
+        # Optionally persist to config.yaml
+        _persist_config(app_state["config"])
+        return {"status": "saved", "ev_profiles": ev_profiles}
+
+
+    if method == "PUT":
+        # Activate an EV profile (set 'active' flag, deactivate others)
+        data = body or await request.json()
+        ev_id = data.get("id")
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        if not ev_id:
+            # If no id is given, deactivate all profiles
+            for k in ev_profiles:
+                ev_profiles[k]["active"] = False
+            app_state["config"]["ev_profiles"] = ev_profiles
+            _persist_config(app_state["config"])
+            return {"status": "deactivated_all", "active_id": None, "ev_profiles": ev_profiles}
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Deactivate all, activate one
+        for k in ev_profiles:
+            ev_profiles[k]["active"] = (k == match_id)
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "activated", "active_id": match_id, "ev_profiles": ev_profiles}
+
+
+    if method == "DELETE":
+        # Delete an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        if not ev_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Robust matching: case-insensitive, ignore spaces, underscores, hyphens
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        del ev_profiles[match_id]
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "deleted", "ev_profiles": ev_profiles}
+
+    return JSONResponse(status_code=405, content={"error": "Method not allowed."})
+
+# Helper to persist config to YAML
+import yaml
+import threading
+def _persist_config(config):
+    try:
+        with threading.Lock():
+            with open(os.path.join(os.path.dirname(__file__), '../config/config.yaml'), 'w') as f:
+                yaml.safe_dump(config, f, allow_unicode=True)
+    except Exception as e:
+        print(f"[ERROR] Failed to persist config: {e}")
+
+# --- STUB ENDPOINTS TO PREVENT FRONTEND 404s ---
+from fastapi.responses import JSONResponse
+
+# /api/alarms stub
+@app.get("/api/alarms")
+async def api_alarms_stub():
+    return JSONResponse(content={"alarms": []})
+
+# /history/pv stub
+@app.get("/history/pv")
+async def history_pv_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/consumption stub
+@app.get("/history/consumption")
+async def history_consumption_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/battery stub
+@app.get("/history/battery")
+async def history_battery_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+from fastapi import WebSocket
+# EV Runtime Vars (für /ws/mobile updates)
+clients: list = []
+
+# Minimal /ws WebSocket endpoint for dashboard/mobile
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    clients.append(websocket)
+    try:
+        await websocket.send_json({"message": "WebSocket connection established"})
+        while True:
+            await websocket.receive_text()
+    except Exception:
+        pass
+    finally:
+        if websocket in clients:
+            clients.remove(websocket)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+# (backup file created by automated dedupe step)
+from fastapi import FastAPI, WebSocket, HTTPException, Header, Depends, Request
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import asyncio
+from typing import List, Dict, Optional
+from pydantic import BaseModel, validator
+import os
+import sys
+from datetime import datetime
+import logging
+
+# Projekt-Pfad zum sys.path hinzufügen
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+# Database models für PV-Echtzeitdaten
+
+try:
+    from backend.ai_controller import get_ai_controller
+    AI_ENABLED = True
+except ImportError:
+    print("⚠️ AI-Controller nicht verfügbar - API läuft ohne AI-Features")
+    AI_ENABLED = False
+    async def get_ai_controller():
+        raise Exception("AI-Controller nicht aktiviert")
+
+try:
+    from backend.edge_ai import get_autonomous_agent, EdgeAIModelTrainer  # EdgeAIModel entfernt
+    EDGE_AI_ENABLED = True
+except ImportError:
+    print("⚠️ Edge AI nicht verfügbar")
+    EDGE_AI_ENABLED = False
+
+try:
+    import backend.iso15118_handler as iso15118_handler
+    from backend.iso15118_handler import (
+        EnergyTransferMode,
+        AuthMode,
+        ISO15118Protocol,
+    )
+    ISO15118_ENABLED = True
+except ImportError:
+    print("⚠️ ISO 15118 Handler nicht verfügbar")
+    ISO15118_ENABLED = False
+    iso15118_handler = None
+
+try:
+    from backend.telemetry import get_telemetry_collector, get_federated_retrainer
+    TELEMETRY_ENABLED = True
+except ImportError:
+    print("⚠️ Telemetrie nicht verfügbar")
+    TELEMETRY_ENABLED = False
+
+try:
+    from backend.safety_layer import get_safety_monitor, SafetyState, ASILLevel
+    SAFETY_ENABLED = True
+except ImportError:
+    print("⚠️ Safety Layer nicht verfügbar")
+    SAFETY_ENABLED = False
+
+from backend.logging_config import configure_logging
+from backend.middleware import MetricsMiddleware
+from backend.routes.monitoring import router as monitoring_router
+from backend.monitoring import metrics as _metrics  # noqa: F401
+from backend.services.pv_service import pv_service
+
+logger = logging.getLogger("efh.main")
+configure_logging()
+app = FastAPI(title="EMS Backend - AI Energy Management System")
+app.add_middleware(MetricsMiddleware)
+app.include_router(monitoring_router)
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ISO 26262: Watchdog Background Task
+@app.on_event("startup")
+async def start_watchdog():
+    """
+    Start watchdog monitoring background task
+    
+    Runs every 5 seconds to check component heartbeats
+    """
+    if not SAFETY_ENABLED:
+        return
+    
+    async def watchdog_loop():
+        while True:
+            try:
+                safety = get_safety_monitor()
+                safety.check_watchdog()
+            except Exception as e:
+                print(f"⚠️ Watchdog error: {e}")
+            await asyncio.sleep(5)
+    
+    asyncio.create_task(watchdog_loop())
+
+@app.on_event("startup")
+async def startup():
+    pv_service.start()
+    logger.info("PV Service gestartet")
+
+@app.on_event("shutdown")
+async def shutdown():
+    await pv_service.stop()
+    logger.info("PV Service gestoppt")
+
+origins = [
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "capacitor://localhost",
+    os.getenv("ALLOWED_ORIGIN", "http://localhost:*"),
+]
+
+if os.getenv("DEV_MODE", "true").lower() == "true":
+    origins.append("*")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+clients: List[WebSocket] = []
+current_soc_values: Dict[str, float] = {"ev": 0.0, "home_battery": 0.0}
+
+API_KEY_ENABLED = os.getenv("API_KEY_ENABLED", "false").lower() == "true"
+API_KEY = os.getenv("EMS_API_KEY", "")
+
+if API_KEY_ENABLED and not API_KEY:
+    raise RuntimeError(
+        "⚠️ SECURITY ERROR: API_KEY_ENABLED=true but EMS_API_KEY is not set! "
+        "Please set EMS_API_KEY environment variable or disable API key authentication."
+    )
+
+async def verify_api_key(x_api_key: str = Header(None)):
+    """Optionale API-Key-Authentifizierung (nur wenn API_KEY_ENABLED=true)"""
+    if not API_KEY_ENABLED:
+        return True
+    
+    if not x_api_key or x_api_key != API_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid or missing API key. Please provide X-API-Key header."
+        )
+    return True
+
+class SOCData(BaseModel):
+    device: str
+    soc: float
+    
+    @validator('device')
+    def validate_device(cls, v):
+        allowed = ['ev', 'home_battery']
+        if v not in allowed:
+            raise ValueError(f'Device must be one of {allowed}')
+        return v
+    
+    @validator('soc')
+    def validate_soc(cls, v):
+        if not 0 <= v <= 100:
+            raise ValueError('SOC must be between 0 and 100')
+        return v
+
+class PVRealtimeData(BaseModel):
+    """PV-Echtzeitdaten von Wechselrichter/Zähler"""
+    power: Optional[float] = None  # Aktuelle Leistung (W)
+    yield_today: Optional[float] = None  # Tagesertrag (kWh)
+    data_type: Optional[str] = "power"  # 'power' oder 'yield'
+    
+    @validator('power')
+    def validate_power(cls, v):
+        if v is not None and v < 0:
+            raise ValueError('PV power must be non-negative')
+        return v
+    
+    @validator('yield_today')
+    def validate_yield(cls, v):
+        if v is not None and v < 0:
+            raise ValueError('Yield must be non-negative')
+        return v
+
+class GridRealtimeData(BaseModel):
+    """Grid Import/Export Echtzeitdaten"""
+    power: float  # Leistung (W), positiv = Import, negativ = Export
+    data_type: str = "import"  # 'import' oder 'export'
+    
+    @validator('power')
+    def validate_power(cls, v):
+        if abs(v) > 100000:  # Max 100 kW
+            raise ValueError('Grid power exceeds reasonable limits (100 kW)')
+        return v
+
+class InverterStatus(BaseModel):
+    """Wechselrichter-Status"""
+    status: str  # 'online', 'offline', 'fault'
+    temperature: Optional[float] = None  # Temperatur (°C)
+    efficiency: Optional[float] = None  # Wirkungsgrad (%)
+    
+    @validator('status')
+    def validate_status(cls, v):
+        allowed = ['online', 'offline', 'fault', 'standby']
+        if v not in allowed:
+            raise ValueError(f'Status must be one of {allowed}')
+        return v
+
+class SystemData(BaseModel):
+    """Aktueller System-Zustand"""
+    pv_power: float = 0.0
+    battery_soc: float = 50.0
+    ev_soc: float = 50.0
+    household_load: float = 1.0
+    grid_price: float = 0.28
+    hour: int = 12
+    temperature: float = 20.0
+    ev_connected: bool = False
+    
+    @validator('battery_soc', 'ev_soc')
+    def validate_soc_values(cls, v):
+        if not 0 <= v <= 100:
+            raise ValueError('SOC must be between 0 and 100')
+        return v
+    
+    @validator('pv_power', 'household_load')
+    def validate_power_values(cls, v):
+        if v < 0:
+            raise ValueError('Power values must be non-negative')
+        return v
+    
+    @validator('hour')
+    def validate_hour(cls, v):
+        if not 0 <= v <= 23:
+            raise ValueError('Hour must be between 0 and 23')
+        return v
+
+class ControlCommand(BaseModel):
+    """Steuerungsbefehl"""
+    device_type: str
+    command: str
+    params: Optional[Dict] = {}
+    
+    @validator('device_type')
+    def validate_device_type(cls, v):
+        # All device types supported by SafetyMonitor
+        allowed = ['ev', 'battery', 'home_battery', 'wallbox', 'heat_pump']
+        if v not in allowed:
+            raise ValueError(f'Device type must be one of {allowed}')
+        return v
+    
+    @validator('command')
+    def validate_command(cls, v):
+        # All commands supported by SafetyMonitor across all device types
+        allowed = [
+            # EV commands
+            'start_charging', 'stop_charging', 'set_charge_limit',
+            'set_charge_power', 'enable_v2g', 'disable_v2g',
+            # Battery/Wallbox commands
+            'discharge_to_grid', 'stop_discharge', 'set_current_limit',
+            # Heat Pump commands
+            'start_heating', 'stop_heating', 'start_cooling', 'stop_cooling',
+        ]
+        if v not in allowed:
+            raise ValueError(f'Command must be one of {allowed}')
+        return v
+
+@app.get("/")
+async def root():
+    return {
+        "status": "running",
+        "service": "EMS Backend - AI Energy Management System",
+        "endpoints": {
+            "GET /soc": "Aktuelle SOC-Werte abrufen",
+            "POST /update_soc": "SOC-Wert aktualisieren",
+            "WS /ws": "WebSocket für Mobile App",
+            "POST /ai/decision": "AI-Entscheidung für aktuelle Situation",
+            "POST /ai/optimize": "24h-Energieplanung optimieren",
+            "GET /ai/status": "AI-Controller Status",
+            "POST /control": "Manueller Steuerungsbefehl",
+            "POST /iso15118/session": "ISO 15118 Session Setup",
+            "POST /iso15118/authorize": "Plug & Charge Authorization",
+            "POST /iso15118/charging-profile": "Smart Charging Profile",
+            "GET /iso15118/sessions": "Aktive Ladesessions"
+        },
+        "iso15118_enabled": ISO15118_ENABLED
+    }
+
+@app.get("/soc")
+@limiter.limit("20/minute")
+async def get_soc(request: Request):
+    return {
+        "ev_soc": 67.5,
+        "home_battery_soc": 82.3,
+        "range_km": 310,
+        "battery_capacity_kwh": 77.0
+    }
+
+@app.get("/realtime")
+@limiter.limit("100/minute")
+async def get_realtime_all(request: Request):
+    """Alle Echtzeit-Daten in einem Call"""
+    pv_data = pv_service.snapshot()
+    return {
+        "ev_soc": 67.5,
+        "home_battery_soc": 82.3,
+        "pv_power_w": pv_data["power_w"],
+        "pv_power_kw": pv_data["power_kw"],
+        "pv_today_kwh": pv_data["today_kwh"],
+        "grid_import_w": 0,
+        "grid_export_w": 1850,
+        "net_flow_w": -1850,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.websocket("/ws")
+async def websocket_endpoint(ws: WebSocket):
+    """WebSocket-Endpoint für Mobile App mit optionaler Authentifizierung"""
+    
+    if API_KEY_ENABLED:
+        api_key = ws.query_params.get("x_api_key")
+        if not api_key or api_key != API_KEY:
+            await ws.close(code=1008, reason="Unauthorized: Invalid or missing API key")
+            return
+    
+    await ws.accept()
+    clients.append(ws)
+    try:
+        await ws.send_json({
+            "device": "ev",
+            "soc": current_soc_values.get("ev", 0.0)
+        })
+        await ws.send_json({
+            "device": "home_battery",
+            "soc": current_soc_values.get("home_battery", 0.0)
+        })
+        
+        while True:
+            await asyncio.sleep(1)
+    except Exception:
+        if ws in clients:
+            clients.remove(ws)
+
+@app.post("/update_soc", dependencies=[Depends(verify_api_key)])
+@limiter.limit("60/minute")
+async def update_soc(request: Request, data: SOCData):
+    """
+    MQTT-Bridge Updated SOC-Werte hier
+    
+    ⚠️ ISO 26262 SAFETY: SOC plausibility checks enabled
+    """
+    # ISO 26262 Safety Check
+    if SAFETY_ENABLED:
+        safety = get_safety_monitor()
+        safety.heartbeat("soc_updater")
+        
+        if not safety.validate_soc(data.soc, data.device):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Safety violation: SOC value {data.soc}% rejected for {data.device}"
+            )
+    
+    current_soc_values[data.device] = data.soc
+    
+    failed_clients = []
+    for client in clients:
+        try:
+            await client.send_json({
+                "soc": payload.soc,
+                "timestamp": datetime.now().isoformat()
+            })
+        except Exception:
+            failed_clients.append(client)
+    
+    for client in failed_clients:
+        if client in clients:
+            clients.remove(client)
+    
+    return {"status": "ok", "device": data.device, "soc": data.soc}
+
+# ========================================================================
+# PV & GRID REALTIME DATA ENDPOINTS
+# ========================================================================
+
+# Global storage für PV/Grid Echtzeitdaten (in-memory für Live-Anzeige)
+current_pv_data: Dict[str, float] = {"power_w": 0.0, "yield_kwh": 0.0}
+current_grid_data: Dict[str, float] = {"import_w": 0.0, "export_w": 0.0}
+inverter_status_data: Dict[str, any] = {"status": "unknown", "temperature": 0.0, "efficiency": 0.0}
+
+@app.post("/pv/realtime", dependencies=[Depends(verify_api_key)])
+@limiter.limit("120/minute")
+async def update_pv_realtime(request: Request, data: PVRealtimeData):
+    """
+    ☀️ PV-Echtzeitdaten empfangen (von MQTT Bridge)
+    
+    Empfängt aktuelle PV-Leistung und Tagesertrag vom Wechselrichter.
+    Wird automatisch über MQTT Topic 'ems/pv/power' oder 'ems/pv/yield' aktualisiert.
+    
+    Architecture:
+    PV-Inverter → Edge Gateway (Modbus/SunSpec) → MQTT → EMS Backend
+    """
+    global current_pv_data
+    
+    if data.power is not None:
+        current_pv_data["power_w"] = data.power
+    if data.yield_today is not None:
+        current_pv_data["yield_kwh"] = data.yield_today
+    
+    # TODO: Save to database for timeseries analysis
+    # Currently using in-memory storage for MVP
+    # Database persistence will be added in future iteration
+    
+    # WebSocket Broadcast an Mobile App
+    failed_clients = []
+    for client in clients:
+        try:
+            await client.send_json({
+                "type": "pv_realtime",
+                "power_w": current_pv_data["power_w"],
+                "yield_kwh": current_pv_data["yield_kwh"],
+                "timestamp": datetime.now().isoformat()
+            })
+        except:
+            failed_clients.append(client)
+    
+    for client in failed_clients:
+        if client in clients:
+            clients.remove(client)
+    
+    return {
+        "status": "ok",
+        "pv_power_w": current_pv_data["power_w"],
+        "pv_yield_kwh": current_pv_data["yield_kwh"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/pv/realtime")
+async def get_pv_realtime():
+    """
+    ☀️ Aktuelle PV-Echtzeitdaten abrufen
+    
+    Gibt die zuletzt empfangenen PV-Werte zurück.
+    """
+    return {
+        "power_w": current_pv_data["power_w"],
+        "power_kw": current_pv_data["power_w"] / 1000.0,
+        "yield_today_kwh": current_pv_data["yield_kwh"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/grid/realtime", dependencies=[Depends(verify_api_key)])
+@limiter.limit("120/minute")
+async def update_grid_realtime(request: Request, data: GridRealtimeData):
+    """
+    ⚡ Grid Import/Export Echtzeitdaten
+    
+    Empfängt aktuellen Netzbezug oder Einspeisung vom Stromzähler.
+    Positiv = Import (Bezug), Negativ = Export (Einspeisung)
+    """
+    global current_grid_data
+    
+    if data.data_type == "import":
+        current_grid_data["import_w"] = abs(data.power)
+    elif data.data_type == "export":
+        current_grid_data["export_w"] = abs(data.power)
+    
+    # TODO: Save to database for timeseries analysis
+    # Currently using in-memory storage for MVP
+    
+    return {
+        "status": "ok",
+        "grid_import_w": current_grid_data["import_w"],
+        "grid_export_w": current_grid_data["export_w"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/grid/realtime")
+async def get_grid_realtime():
+    """⚡ Aktuelle Grid-Daten abrufen"""
+    return {
+        "import_w": current_grid_data["import_w"],
+        "export_w": current_grid_data["export_w"],
+        "net_flow_w": current_grid_data["import_w"] - current_grid_data["export_w"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/inverter/status", dependencies=[Depends(verify_api_key)])
+@limiter.limit("60/minute")
+async def update_inverter_status(request: Request, data: InverterStatus):
+    """🔌 Wechselrichter-Status aktualisieren"""
+    global inverter_status_data
+    
+    inverter_status_data = {
+        "status": data.status,
+        "temperature": data.temperature,
+        "efficiency": data.efficiency,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # TODO: Save to database for diagnostics
+    # Currently using in-memory storage for MVP
+    
+    return {"status": "ok", **inverter_status_data}
+
+@app.get("/inverter/status")
+async def get_inverter_status():
+    """🔌 Wechselrichter-Status abrufen"""
+    return inverter_status_data
+
+@app.post("/ai/decision")
+@limiter.limit("20/minute")
+async def get_ai_decision(request: Request, system_data: SystemData):
+    """
+    🤖 AI-Entscheidung für aktuelle Situation
+    
+    Gibt optimale Steuerungsempfehlung basierend auf:
+    - Aktuellem PV-Ertrag
+    - SOC von EV und Batterie
+    - Grid-Preis
+    - Tageszeit
+    """
+    try:
+        controller = await get_ai_controller()
+        decision = await controller.get_optimal_action(system_data.dict())
+        
+        return {
+            "status": "success",
+            "decision": decision,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/optimize")
+@limiter.limit("5/minute")
+async def optimize_schedule(request: Request, forecast_data: List[SystemData], horizon_hours: int = 24):
+    """
+    📊 24h-Energieplanung optimieren
+    
+    Erstellt optimalen Lade-/Entlade-Plan für die nächsten X Stunden
+    """
+    try:
+        controller = await get_ai_controller()
+        schedule = await controller.optimize_schedule(
+            [data.dict() for data in forecast_data],
+            horizon_hours
+        )
+        
+        return {
+            "status": "success",
+            "schedule": schedule,
+            "horizon_hours": horizon_hours,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ai/status")
+async def get_ai_status():
+    """
+    ℹ️ AI-Controller Status
+    
+    Gibt Informationen über den AI-Controller zurück
+    """
+    try:
+        controller = await get_ai_controller()
+        status = controller.get_status()
+        
+        return {
+            "status": "success",
+            "controller": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/control", dependencies=[Depends(verify_api_key)])
+@limiter.limit("10/minute")
+async def send_control_command(request: Request, command: ControlCommand):
+    """
+    🎮 Manueller Steuerungsbefehl
+    
+    Sendet direkten Befehl an Geräte (EV, Batterie, Wallbox)
+    
+    ⚠️ ISO 26262 SAFETY: Command validation enabled
+    """
+    # ISO 26262 Safety Checks
+    if SAFETY_ENABLED:
+        safety = get_safety_monitor()
+        safety.heartbeat("control_endpoint")
+        
+        # Check 1: Is system in safe state?
+        if safety.safety_state == SafetyState.SAFE_STATE:
+            raise HTTPException(
+                status_code=503,
+                detail="System in Safe State - manual reset required. No commands allowed."
+            )
+        
+        if safety.safety_state == SafetyState.EMERGENCY_STOP:
+            raise HTTPException(
+                status_code=503,
+                detail="EMERGENCY STOP active - system restart required"
+            )
+        
+        # Check 2: Validate command
+        if not safety.validate_command(command.device_type, command.command):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Safety violation: Command '{command.command}' for {command.device_type} rejected"
+            )
+    
+    try:
+        # Hier würden die Device Adapters integriert werden
+        # Beispiel-Implementierung:
+        
+        return {
+            "status": "success",
+            "message": f"Befehl '{command.command}' an {command.device_type} gesendet",
+            "device_type": command.device_type,
+            "command": command.command,
+            "params": command.params,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ISO15118SessionRequest(BaseModel):
+    ev_id: str
+    evse_id: str
+    protocol: str = "ISO_15118_2"
+    energy_mode: str = "AC_three_phase"
+    auth_mode: str = "EIM"
+    
+    @validator('protocol')
+    def validate_protocol(cls, v):
+        valid_protocols = ["DIN_70121", "ISO_15118_2", "ISO_15118_20"]
+        if v not in valid_protocols:
+            raise ValueError(f"Invalid protocol. Must be one of: {valid_protocols}")
+        return v
+    
+    @validator('energy_mode')
+    def validate_energy_mode(cls, v):
+        valid_modes = ["AC_single_phase", "AC_three_phase", "DC_core", "DC_extended", "DC_combo"]
+        if v not in valid_modes:
+            raise ValueError(f"Invalid energy_mode. Must be one of: {valid_modes}")
+        return v
+    
+    @validator('auth_mode')
+    def validate_auth_mode(cls, v):
+        valid_modes = ["EIM", "PnC"]
+        if v not in valid_modes:
+            raise ValueError(f"Invalid auth_mode. Must be one of: {valid_modes}")
+        return v
+
+class ISO15118AuthRequest(BaseModel):
+    session_id: str
+    contract_id: Optional[str] = None
+
+class ISO15118ChargingProfileRequest(BaseModel):
+    session_id: str
+    battery_capacity: float
+    current_soc: float
+    target_soc: float
+    pv_forecast: List[float]
+    grid_prices: List[float]
+    departure_time: Optional[str] = None
+    
+    @validator('battery_capacity')
+    def validate_battery_capacity(cls, v):
+        if not (10.0 <= v <= 300.0):
+            raise ValueError("battery_capacity must be between 10.0 and 300.0 kWh")
+        return v
+    
+    @validator('current_soc', 'target_soc')
+    def validate_soc(cls, v):
+        if not (0.0 <= v <= 100.0):
+            raise ValueError("SOC must be between 0 and 100")
+        return v
+
+class ISO15118PowerDeliveryRequest(BaseModel):
+    session_id: str
+    charge_progress: bool = True
+
+class ISO15118ChargingStatusRequest(BaseModel):
+    session_id: str
+    current_soc: float
+    charging_current: float
+    charging_voltage: float
+    
+    @validator('current_soc')
+    def validate_soc(cls, v):
+        if not (0.0 <= v <= 100.0):
+            raise ValueError("SOC must be between 0 and 100")
+        return v
+    
+    @validator('charging_current')
+    def validate_current(cls, v):
+        if not (0.0 <= v <= 500.0):
+            raise ValueError("charging_current must be between 0 and 500 A")
+        return v
+    
+    @validator('charging_voltage')
+    def validate_voltage(cls, v):
+        if not (0.0 <= v <= 1000.0):
+            raise ValueError("charging_voltage must be between 0 and 1000 V")
+        return v
+
+class ISO15118SessionStopRequest(BaseModel):
+    session_id: str
+
+@app.post("/iso15118/session")
+@limiter.limit("20/minute")
+async def iso15118_session_setup(
+    request: Request,
+    data: ISO15118SessionRequest,
+    _: None = Depends(verify_api_key)
+):
+    """
+    🔌 ISO 15118 Session Setup
+    
+    Etabliert V2G-Session zwischen EV und Ladepunkt
+    """
+    if not ISO15118_ENABLED:
+        raise HTTPException(status_code=503, detail="ISO 15118 not available")
+    
+    try:
+        session = await iso15118_handler.session_setup(
+            ev_id=data.ev_id,
+            evse_id=data.evse_id,
+            protocol=ISO15118Protocol(data.protocol),
+            energy_mode=EnergyTransferMode(data.energy_mode),
+            auth_mode=AuthMode(data.auth_mode)
+        )
+        
+        return {
+            "status": "success",
+            "session": session.dict(),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/iso15118/authorize")
+@limiter.limit("20/minute")
+async def iso15118_authorize(
+    request: Request,
+    data: ISO15118AuthRequest,
+    _: None = Depends(verify_api_key)
+):
+    """
+    🔐 Plug & Charge Authorization
+    
+    Authentifiziert EV für Ladung (EIM oder Plug & Charge)
+    """
+    if not ISO15118_ENABLED:
+        raise HTTPException(status_code=503, detail="ISO 15118 not available")
+    
+    try:
+        authorized = await iso15118_handler.authorize_payment(data.session_id, data.contract_id)
+        
+        return {
+            "status": "success" if authorized else "failed",
+            "session_id": data.session_id,
+            "authorized": authorized,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/iso15118/charging-profile")
+@limiter.limit("10/minute")
+async def iso15118_create_charging_profile(
+    request: Request,
+    data: ISO15118ChargingProfileRequest,
+    _: None = Depends(verify_api_key)
+):
+    """
+    📊 Smart Charging Profile erstellen
+    
+    Optimiert Ladeplan basierend auf PV-Überschuss, Strompreisen und Departure Time
+    """
+    if not ISO15118_ENABLED:
+        raise HTTPException(status_code=503, detail="ISO 15118 not available")
+    
+    try:
+        # Charge Parameter Discovery
+        params = await iso15118_handler.charge_parameter_discovery(
+            session_id=data.session_id,
+            battery_capacity=data.battery_capacity,
+            current_soc=data.current_soc,
+            target_soc=data.target_soc,
+            departure_time=datetime.fromisoformat(data.departure_time) if data.departure_time else None
+        )
+        
+        # Smart Charging Profile
+        profile = await iso15118_handler.create_smart_charging_profile(
+            session_id=data.session_id,
+            pv_forecast=data.pv_forecast,
+            grid_prices=data.grid_prices
+        )
+        
+        return {
+            "status": "success",
+            "parameters": params,
+            "charging_profile": profile.dict(),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/iso15118/sessions")
+async def iso15118_get_sessions(_: None = Depends(verify_api_key)):
+    """
+    📋 Aktive ISO 15118 Sessions abrufen
+    """
+    if not ISO15118_ENABLED:
+        raise HTTPException(status_code=503, detail="ISO 15118 not available")
+    
+    try:
+        sessions = iso15118_handler.get_active_sessions()
+        
+        return {
+            "status": "success",
+            "count": len(sessions),
+            "sessions": [s.dict() for s in sessions],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/iso15118/power-delivery")
+@limiter.limit("30/minute")
+async def iso15118_power_delivery(
+    request: Request,
+    data: ISO15118PowerDeliveryRequest,
+    _: None = Depends(verify_api_key)
+):
+    """
+    ⚡ Power Delivery Start/Stop
+    """
+    if not ISO15118_ENABLED:
+        raise HTTPException(status_code=503, detail="ISO 15118 not available")
+    
+    try:
+        result = await iso15118_handler.power_delivery(data.session_id, data.charge_progress)
+        
+        return {
+            "status": "success",
+            "result": result,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/iso15118/charging-status")
+@limiter.limit("60/minute")
+async def iso15118_charging_status(
+    request: Request,
+    data: ISO15118ChargingStatusRequest,
+    _: None = Depends(verify_api_key)
+):
+    """
+    📊 Charging Status Update
+    """
+    if not ISO15118_ENABLED:
+        raise HTTPException(status_code=503, detail="ISO 15118 not available")
+    
+    try:
+        status = await iso15118_handler.charging_status(
+            data.session_id, data.current_soc, data.charging_current, data.charging_voltage
+        )
+        
+        return {
+            "status": "success",
+            "charging_status": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/iso15118/session-stop")
+@limiter.limit("20/minute")
+async def iso15118_session_stop(
+    request: Request,
+    data: ISO15118SessionStopRequest,
+    _: None = Depends(verify_api_key)
+):
+    """
+    🛑 ISO 15118 Session beenden
+    """
+    if not ISO15118_ENABLED:
+        raise HTTPException(status_code=503, detail="ISO 15118 not available")
+    
+    try:
+        result = await iso15118_handler.session_stop(data.session_id)
+        
+        return {
+            "status": "success",
+            "result": result,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# EDGE-AI ENDPOINTS (KI-Modelle im Fahrzeug)
+# ============================================================================
+
+class EdgeAIDecisionRequest(BaseModel):
+    """Request für Edge-AI Energieentscheidung"""
+    ev_soc: float = 50.0
+    battery_temp: float = 20.0
+    pv_power: float = 0.0
+    grid_price: float = 0.30
+    co2_intensity: float = 300.0
+    
+    @validator('ev_soc')
+    def validate_soc(cls, v):
+        if not 0 <= v <= 100:
+            raise ValueError('SOC must be between 0 and 100')
+        return v
+
+@app.post("/edge_ai/decision")
+@limiter.limit("60/minute")
+async def edge_ai_decision(
+    request: Request,
+    data: EdgeAIDecisionRequest,
+    _: None = Depends(verify_api_key)
+):
+    """
+    🤖 Autonome Energieentscheidung durch Edge-AI
+    
+    Das Fahrzeug trifft selbstständig Entscheidungen über Laden/Entladen
+    basierend auf lokalem neuronalen Netz (TensorFlow Lite).
+    
+    Keine Cloud-Abhängigkeit - alle Berechnungen lokal im Fahrzeug!
+    """
+    if not EDGE_AI_ENABLED:
+        raise HTTPException(status_code=503, detail="Edge-AI not available")
+    
+    try:
+        agent = get_autonomous_agent()
+        
+        system_state = {
+            'ev_soc': data.ev_soc,
+            'battery_temp': data.battery_temp,
+            'pv_power': data.pv_power,
+            'grid_price': data.grid_price,
+            'co2_intensity': data.co2_intensity
+        }
+        
+        decision = agent.make_decision(system_state)
+        
+        return {
+            "status": "success",
+            "decision": decision,
+            "mode": "edge_ai" if agent.model else "rule_based",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/edge_ai/auto_decision")
+@limiter.limit("120/minute")
+async def edge_ai_auto_decision(request: Request, system_state: SystemData):
+    """
+    🤖🔄 AUTOMATISCHE Edge-AI Entscheidung (PV-getriggert)
+    
+    Dieser Endpoint wird automatisch getriggert wenn neue PV-Daten empfangen werden.
+    Die KI bewertet die Situation und gibt Lade-/Entlade-Empfehlungen.
+    
+    **Trigger:** MQTT Bridge ruft dies auf bei `ems/pv/power` Messages
+    
+    **Automatische Steuerung basierend auf:**
+    - ☀️ Echtzeitiger PV-Überschuss
+    - 🔋 Aktueller EV SOC
+    - 💰 Strompreis (falls vorhanden)
+    - 🌡️ CO₂-Intensität
+    
+    **ISO 26262 Safety:** Command validation AKTIV
+    """
+    if not EDGE_AI_ENABLED:
+        # Fallback zu regelbasierter Logik
+        return {
+            "status": "fallback",
+            "decision": {
+                "action": "idle",
+                "power_kw": 0.0,
+                "reasoning": "Edge-AI not available - no automatic action taken",
+                "mode": "fallback"
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    try:
+        # ISO 26262 Safety Check
+        if SAFETY_ENABLED:
+            safety = get_safety_monitor()
+            safety.heartbeat("edge_ai_auto")
+            
+            if safety.safety_state != SafetyState.NORMAL:
+                return {
+                    "status": "safety_blocked",
+                    "decision": {
+                        "action": "idle",
+                        "power_kw": 0.0,
+                        "reasoning": f"System in {safety.safety_state.value} - no automatic actions allowed"
+                    },
+                    "timestamp": datetime.now().isoformat()
+                }
+        
+        # Edge-AI Entscheidung
+        agent = get_autonomous_agent()
+        decision = agent.make_decision({
+            "ev_soc": system_state.ev_soc,
+            "battery_temp": system_state.temperature,
+            "pv_power": system_state.pv_power,
+            "grid_price": system_state.grid_price,
+            "co2_intensity": 300.0  # Default
+        })
+        
+        # Log für Debugging
+        action = decision.get("action", "idle")
+        power = decision.get("power_kw", 0.0)
+        print(f"🤖 AUTO-DECISION: {action} ({power:.1f} kW) | PV: {system_state.pv_power:.1f} kW, SOC: {system_state.ev_soc:.0f}%")
+        
+        return {
+            "status": "success",
+            "decision": decision,
+            "auto_triggered": True,
+            "pv_power_kw": system_state.pv_power,
+            "ev_soc": system_state.ev_soc,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/edge_ai/status")
+@limiter.limit("60/minute")
+async def edge_ai_status(request: Request):
+    """
+    📊 Status des Edge-AI Systems
+    
+    Zeigt ob TensorFlow Lite Modell geladen ist und einsatzbereit.
+    """
+    if not EDGE_AI_ENABLED:
+        raise HTTPException(status_code=503, detail="Edge-AI not available")
+    
+    try:
+        agent = get_autonomous_agent()
+        
+        model_loaded = agent.model is not None
+        model_format = agent.model.model_format if model_loaded else None
+        model_path = agent.model.model_path if model_loaded else None
+        
+        return {
+            "status": "operational" if model_loaded else "fallback",
+            "model_loaded": model_loaded,
+            "model_format": model_format,
+            "model_path": model_path,
+            "mode": "edge_ai" if model_loaded else "rule_based",
+            "capabilities": {
+                "autonomous_charging": True,
+                "pv_optimization": True,
+                "cost_optimization": True,
+                "co2_minimization": True,
+                "v2g_capable": True
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/edge_ai/history")
+@limiter.limit("60/minute")
+async def edge_ai_history(request: Request, limit: int = 10):
+    """
+    📜 Historie der autonomen Entscheidungen
+    
+    Zeigt die letzten Edge-AI Entscheidungen für Analyse und Debugging.
+    """
+    if not EDGE_AI_ENABLED:
+        raise HTTPException(status_code=503, detail="Edge-AI not available")
+    
+    try:
+        agent = get_autonomous_agent()
+        history = agent.get_decision_history(limit=limit)
+        
+        return {
+            "status": "success",
+            "history": history,
+            "count": len(history),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/edge_ai/retrain")
+@limiter.limit("5/hour")
+async def edge_ai_retrain(
+    request: Request,
+    _: None = Depends(verify_api_key)
+):
+    """
+    🔄 Modell neu trainieren (nur für Entwicklung)
+    
+    Trainiert das Edge-AI Modell neu mit synthetischen Daten.
+    In Production würde hier echtes Fahrzeug-Feedback verwendet.
+    
+    ⚠️ ISO 21434 Security: Modell-Updates müssen signiert sein!
+    """
+    if not EDGE_AI_ENABLED:
+        raise HTTPException(status_code=503, detail="Edge-AI not available")
+    
+    try:
+        trainer = EdgeAIModelTrainer()
+        trainer.create_model()
+        history = trainer.train(epochs=30)
+        
+        # Export to TFLite
+        model_path = trainer.export_tflite()
+        
+        return {
+            "status": "success",
+            "message": "Model retrained successfully",
+            "model_path": model_path,
+            "training_accuracy": float(history.history['accuracy'][-1]),
+            "validation_accuracy": float(history.history['val_accuracy'][-1]),
+            "epochs": len(history.history['accuracy']),
+            "timestamp": datetime.now().isoformat(),
+            "security_note": "⚠️ In production, model updates MUST be signed (ISO 21434)"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================================================================
+# TELEMETRIE ENDPOINTS (Federated Learning)
+# ========================================================================
+
+class TelemetryData(BaseModel):
+    """Telemetrie-Daten von Fahrzeug"""
+    ev_soc: float
+    battery_soc: float
+    pv_power: float
+    grid_price: float
+    action_taken: str
+    reward: float
+    cost: float
+    co2: float
+    autarky: float
+
+@app.post("/telemetry/opt-in")
+@limiter.limit("10/minute")
+async def telemetry_opt_in(request: Request):
+    """
+    ✅ Telemetrie aktivieren (Nutzer-Opt-in)
+    
+    Aktiviert anonymisierte Daten-Sammlung für Federated Learning.
+    
+    **Datenschutz-Garantien:**
+    - Keine persönlichen Daten oder Fahrzeug-IDs
+    - Nur aggregierte Statistiken
+    - Session-ID ändert sich bei Neustart
+    - Jederzeit widerrufbar
+    """
+    if not TELEMETRY_ENABLED:
+        raise HTTPException(status_code=503, detail="Telemetry not available")
+    
+    try:
+        collector = get_telemetry_collector()
+        collector.enable()
+        
+        return {
+            "status": "success",
+            "message": "Telemetrie aktiviert - Danke für Ihre Unterstützung!",
+            "privacy_note": "Es werden nur anonymisierte, aggregierte Daten gesammelt",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/telemetry/opt-out")
+@limiter.limit("10/minute")
+async def telemetry_opt_out(request: Request):
+    """
+    🚫 Telemetrie deaktivieren (Nutzer-Opt-out)
+    
+    Deaktiviert Telemetrie und löscht alle gesammelten Daten.
+    """
+    if not TELEMETRY_ENABLED:
+        raise HTTPException(status_code=503, detail="Telemetry not available")
+    
+    try:
+        collector = get_telemetry_collector()
+        collector.disable()
+        
+        return {
+            "status": "success",
+            "message": "Telemetrie deaktiviert - Alle Daten wurden gelöscht",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/telemetry/submit")
+@limiter.limit("60/hour")
+async def submit_telemetry(request: Request, data: TelemetryData):
+    """
+    📊 Telemetrie-Daten einreichen
+    
+    Fahrzeuge senden anonymisierte Entscheidungen zur Verbesserung der AI.
+    
+    **Privacy by Design:**
+    - Automatische Anonymisierung
+    - Kategorisierung statt Absolutwerte
+    - Rate Limiting zum Schutz vor Tracking
+    """
+    if not TELEMETRY_ENABLED:
+        raise HTTPException(status_code=503, detail="Telemetry not available")
+    
+    try:
+        collector = get_telemetry_collector()
+        
+        if not collector.enabled:
+            raise HTTPException(status_code=403, detail="Telemetry not enabled - User must opt-in first")
+        
+        # Record decision
+        collector.record_decision(
+            state={
+                'ev_soc': data.ev_soc,
+                'pv_power': data.pv_power,
+                'grid_price': data.grid_price,
+            },
+            action=data.action_taken,
+            reward=data.reward,
+            performance={
+                'cost': data.cost,
+                'co2': data.co2,
+                'autarky': data.autarky,
+            }
+        )
+        
+        return {
+            "status": "success",
+            "message": "Telemetrie aufgezeichnet",
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/telemetry/status")
+@limiter.limit("60/minute")
+async def telemetry_status(request: Request):
+    """
+    ℹ️ Telemetrie-Status abrufen
+    
+    Zeigt aktuellen Status der Telemetrie-Sammlung.
+    """
+    if not TELEMETRY_ENABLED:
+        raise HTTPException(status_code=503, detail="Telemetry not available")
+    
+    try:
+        collector = get_telemetry_collector()
+        status = collector.get_status()
+        
+        return {
+            "status": "success",
+            "telemetry": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/telemetry/aggregate")
+@limiter.limit("5/hour")
+async def aggregate_telemetry(
+    request: Request,
+    _: None = Depends(verify_api_key)
+):
+    """
+    📦 Aggregierte Telemetrie abrufen (Backend-to-Backend)
+    
+    Erstellt anonymisiertes Daten-Paket zur Übermittlung an
+    zentrales Retraining-System.
+    
+    **Nur für autorisierte Backend-Services!**
+    """
+    if not TELEMETRY_ENABLED:
+        raise HTTPException(status_code=503, detail="Telemetry not available")
+    
+    try:
+        collector = get_telemetry_collector()
+        aggregated = collector.get_aggregated_data()
+        
+        if aggregated is None:
+            return {
+                "status": "no_data",
+                "message": "Nicht genug Daten oder Cooldown aktiv (Privacy Protection)",
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        # An Federated Retrainer übergeben
+        retrainer = get_federated_retrainer()
+        retrainer.add_telemetry_batch(aggregated)
+        
+        return {
+            "status": "success",
+            "message": "Telemetrie aggregiert und an Retraining-System übermittelt",
+            "data": aggregated,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/telemetry/retrain")
+@limiter.limit("1/day")
+async def federated_retrain(
+    request: Request,
+    _: None = Depends(verify_api_key)
+):
+    """
+    🔄 Federated Retraining starten (Admin-Only)
+    
+    Startet periodisches Retraining mit aggregierten Telemetrie-Daten.
+    
+    **Workflow:**
+    1. Sammle Telemetrie von vielen Nutzern (anonymisiert)
+    2. Aggregiere Daten zentral
+    3. Trainiere DQN Agent
+    4. Teste neues Modell
+    5. OTA-Update an alle Fahrzeuge
+    
+    ⚠️ Nur 1x pro Tag erlaubt
+    """
+    if not TELEMETRY_ENABLED:
+        raise HTTPException(status_code=503, detail="Telemetry not available")
+    
+    try:
+        retrainer = get_federated_retrainer()
+        
+        if not retrainer.should_retrain():
+            return {
+                "status": "skipped",
+                "message": "Retraining nicht nötig - zu wenig Daten oder zu früh",
+                "stats": retrainer.get_stats(),
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        results = await retrainer.retrain_agent()
+        
+        return {
+            "status": "success",
+            "message": "Federated Retraining abgeschlossen",
+            "results": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/telemetry/stats")
+@limiter.limit("60/minute")
+async def telemetry_stats(request: Request):
+    """
+    📈 Retraining-Statistiken abrufen
+    
+    Zeigt Status des Federated Learning Systems.
+    """
+    if not TELEMETRY_ENABLED:
+        raise HTTPException(status_code=503, detail="Telemetry not available")
+    
+    try:
+        retrainer = get_federated_retrainer()
+        stats = retrainer.get_stats()
+        
+        collector = get_telemetry_collector()
+        collector_status = collector.get_status()
+        
+        return {
+            "status": "success",
+            "retraining": stats,
+            "collection": collector_status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ISO 26262 SAFETY ENDPOINTS ====================
+
+@app.get("/safety/status")
+@limiter.limit("60/minute")
+async def safety_status(request: Request):
+    """
+    🛡️ ISO 26262 Safety Status
+    
+    Gibt aktuellen Safety-Zustand des Systems zurück.
+    
+    **Includes:**
+    - Safety State (NORMAL, WARNING, DEGRADED, SAFE_STATE, EMERGENCY_STOP)
+    - Watchdog Status
+    - Component Health
+    - Recent Safety Events
+    """
+    if not SAFETY_ENABLED:
+        return {
+            "status": "disabled",
+            "message": "ISO 26262 Safety Layer not enabled",
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    try:
+        safety = get_safety_monitor()
+        status = safety.get_status()
+        
+        return {
+            "status": "success",
+            "safety": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/safety/events")
+@limiter.limit("60/minute")
+async def safety_events(
+    request: Request,
+    limit: int = 100,
+    asil_filter: Optional[str] = None
+):
+    """
+    📋 Safety Events Log
+    
+    Ruft letzte Safety Events ab (ISO 26262 Compliance).
+    
+    **Query Parameters:**
+    - `limit`: Anzahl Events (default: 100)
+    - `asil_filter`: Filter nach ASIL Level (QM, ASIL_A, ASIL_B, ASIL_C, ASIL_D)
+    """
+    if not SAFETY_ENABLED:
+        raise HTTPException(status_code=503, detail="Safety Layer not available")
+    
+    try:
+        safety = get_safety_monitor()
+        
+        # Convert ASIL filter string to enum
+        asil_enum = None
+        if asil_filter:
+            try:
+                asil_enum = ASILLevel[asil_filter]
+            except KeyError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid ASIL level: {asil_filter}. Valid: QM, ASIL_A, ASIL_B, ASIL_C, ASIL_D"
+                )
+        
+        events = safety.get_safety_events(limit=limit, asil_filter=asil_enum)
+        
+        return {
+            "status": "success",
+            "events": events,
+            "total_events": len(events),
+            "asil_filter": asil_filter,
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/safety/diagnostics")
+@limiter.limit("30/minute")
+async def safety_diagnostics(request: Request):
+    """
+    🔍 Safety System Diagnostics
+    
+    Umfassende Diagnostik-Informationen für OEM-Integration.
+    
+    **Includes:**
+    - System Status
+    - Recent Violations
+    - Component Health
+    - Safety Limits
+    - Statistics
+    """
+    if not SAFETY_ENABLED:
+        raise HTTPException(status_code=503, detail="Safety Layer not available")
+    
+    try:
+        safety = get_safety_monitor()
+        diagnostics = safety.get_diagnostics()
+        
+        return {
+            "status": "success",
+            "diagnostics": diagnostics,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/safety/reset")
+@limiter.limit("5/minute")
+async def safety_reset(
+    request: Request,
+    manual_override: bool = False,
+    _: None = Depends(verify_api_key)
+):
+    """
+    🔄 Reset from Safe State
+    
+    Setzt System von SAFE_STATE zurück zu NORMAL.
+    
+    ⚠️ **Requires manual_override=true** for safety!
+    
+    **Cannot reset from EMERGENCY_STOP** (requires system restart).
+    """
+    if not SAFETY_ENABLED:
+        raise HTTPException(status_code=503, detail="Safety Layer not available")
+    
+    try:
+        safety = get_safety_monitor()
+        
+        if not manual_override:
+            raise HTTPException(
+                status_code=400,
+                detail="Manual override required. Set manual_override=true to confirm reset."
+            )
+        
+        success = safety.reset_safe_state(manual_override=True)
+        
+        if not success:
+            return {
+                "status": "failed",
+                "message": "Reset failed - EMERGENCY_STOP requires system restart",
+                "current_state": safety.safety_state.value,
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        return {
+            "status": "success",
+            "message": "System reset to NORMAL state",
+            "current_state": safety.safety_state.value,
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/safety/watchdog")
+@limiter.limit("60/minute")
+async def safety_watchdog(request: Request):
+    """
+    ⏱️ Watchdog & Component Status
+    
+    Zeigt Status aller überwachten Komponenten.
+    
+    **Components:**
+    - soc_updater
+    - control_endpoint
+    - ai_controller
+    - mqtt_bridge
+    """
+    if not SAFETY_ENABLED:
+        raise HTTPException(status_code=503, detail="Safety Layer not available")
+    
+    try:
+        safety = get_safety_monitor()
+        component_status = safety.get_component_status()
+        
+        return {
+            "status": "success",
+            "watchdog_timeout_sec": safety.watchdog_timeout,
+            "components": component_status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+
+
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8001))
+    uvicorn.run(app, host="0.0.0.0", port=port)

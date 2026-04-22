@@ -1,0 +1,1 @@
+"""Generic Device Adapter"""

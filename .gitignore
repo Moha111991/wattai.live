@@ -1,0 +1,44 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+
+# Node/Vite (Frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.production.local
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Optional: lokale Konfigs (Standard config.yaml weiter tracken)
+config/*.local.yaml
+
+# Lokale Artefakte
+.local/
+data/
+attached_assets/
+prometheus-*.darwin-amd64/
+prometheus-*.tar.gz
+
+# Konfig lokal (Beispiel committen)
+config/config.yamlconfig/config.local.backup
+config/config.local.backup
+node_modules
+
+# React Native iOS generated artifacts
+mobile-app/ios/Pods/
+mobile-app/ios/build/

@@ -1,0 +1,4462 @@
+from fastapi import FastAPI, APIRouter, Response, Depends, Body
+from typing import Optional, Dict, Any
+
+from fastapi.websockets import WebSocket
+import os
+from uuid import uuid4
+
+app = FastAPI()
+
+# Early fleet router to satisfy any legacy @fleet_router usages above the
+# canonical V2H section at the end of this file. The canonical router is
+# redefined later together with the API key security. This avoids NameError
+# at import time while we progressively clean up duplicate definitions.
+fleet_router = APIRouter()
+
+# Early API key security to satisfy any legacy @fleet_router usages that
+# depend on get_api_key before the canonical V2H section defines it again.
+from fastapi.security import APIKeyHeader
+from fastapi import HTTPException, status
+
+API_KEY = "mein_geheimer_schulkey123"
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def get_api_key(api_key: str = Depends(api_key_header)):
+    if api_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiger API-Key",
+        )
+    return api_key
+
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+@app.post("/v2h/disable")
+async def v2h_disable():
+    """Deaktiviert Vehicle-to-Home (V2H).
+
+    Setzt ev_v2h=False und reduziert die V2H-Leistung auf 0 kW im Status.
+    """
+    await state.update({"ev_v2h": False, "ev_power_w": 0.0})
+    current = await state.get()
+    house_power_kw = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    return {
+        "success": True,
+        "active": False,
+        "power_kw": 0.0,
+        "house_power_kw": house_power_kw,
+        "error": None,
+    }
+
+
+
+@app.post("/v2h/enable")
+async def v2h_enable(payload: Dict[str, Any] = Body(None)):
+    """Aktiviert Vehicle-to-Home (V2H).
+
+    Optional kann eine bevorzugte Wallbox-ID übergeben werden, die im Status
+    (`preferred_wallbox_id`) reflektiert wird. Die eigentliche Leistungssteuerung
+    erfolgt später über den V2H-Controller; hier wird zunächst nur der Status
+    im RealtimeState gesetzt, damit das Frontend sauber arbeiten kann.
+    """
+    # V2H-Flag im zentralen Zustand aktivieren; Leistungszuweisung erfolgt separat.
+    await state.update({"ev_v2h": True})
+    current = await state.get()
+
+    house_power_kw: Optional[float] = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    # Preferred Wallbox aus Payload (falls vorhanden) im Config-State hinterlegen,
+    # damit /v2h/status diese ID zurückgeben kann.
+    preferred_id = None
+    if payload and isinstance(payload, dict):
+        preferred_id = payload.get("wallbox_id")
+        if preferred_id:
+            cfg = app_state.get("config", {})
+            cfg["preferred_wallbox_id"] = preferred_id
+            app_state["config"] = cfg
+
+    return {
+        "success": True,
+        "active": True,
+        "power_kw": float(current.get("ev_power_w") or 0.0) / 1000.0,
+        "house_power_kw": house_power_kw,
+        "error": None,
+        "preferred_wallbox_id": preferred_id,
+    }
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+# Safety: ensure critical tiny endpoints are present on the final `app` instance.
+# Some legacy code paths may skip or overwrite earlier registrations; this
+# makes sure `/battery/status` and `/test-alive` exist.
+async def _battery_status_final():
+    return {"status": "ok"}
+
+async def _test_alive_final():
+    return {"status": "alive"}
+
+if not any(r.path == "/battery/status" for r in app.routes):
+    app.add_api_route("/battery/status", _battery_status_final, methods=["GET"])
+
+if not any(r.path == "/test-alive" for r in app.routes):
+    app.add_api_route("/test-alive", _test_alive_final, methods=["GET"])
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+import asyncio
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "LoopIQ backend is running."}
+
+def _register_dynamic_adapter(data: Dict[str, Any]) -> None:
+    """Registriert Adapter, die *nicht* in der YAML‑Config stehen.
+
+    Idee:
+    - Ein externer Adapter‑Prozess (z.B. in ``device_adapters/``) sendet Messwerte
+      an ``POST /api/ingest``.
+    - Anhand der Felder ``device_id`` oder ``device`` wird ein logischer
+      Geräte‑Identifier abgeleitet.
+    - Falls dieses Gerät nicht bereits in ``config.yaml`` unter ``adapters``
+      existiert, wird es in einer In‑Memory‑Liste ``dynamic_adapters``
+      registriert.
+
+    Dadurch tauchen auch Adapter, die nicht vorab in der Konfiguration
+    eingetragen wurden, automatisch im Geräte‑Bereich des Frontends auf.
+    """
+    # Globale App‑Config betrachten
+    config = app_state.get("config", {})
+    configured = (config.get("adapters") or {}).keys()
+
+    # Mögliche Feldnamen aus dem Adapter‑Payload
+    device_id = (
+        data.get("device_id")
+        or data.get("device")
+        or data.get("id")
+    )
+
+    if not device_id:
+        # Ohne Identifier können wir kein Gerät registrieren
+        return
+
+    # Bereits in YAML‑Config oder schon dynamisch bekannt -> nichts tun
+    if device_id in configured or device_id in dynamic_adapters:
+        # Optional: Last‑Seen aktualisieren
+        entry = dynamic_adapters.get(device_id)
+        if entry is not None:
+            entry["last_seen"] = data.get("timestamp")
+        return
+
+    device_type = (
+        (data.get("device_type") or data.get("type") or "generic").lower()
+    )
+    name = data.get("name") or f"{device_type.capitalize()} {device_id}"
+
+    entry = {
+        "id": device_id,
+        "type": device_type,
+        "name": name,
+        "source": "dynamic",
+        "status": "online",
+        "last_seen": data.get("timestamp"),
+    }
+    dynamic_adapters[device_id] = entry
+
+    # Falls der Adapter im Kontext eines konkreten Verbindungsversuchs
+    # gestartet wurde, kann eine optionale request_id mitgeschickt werden.
+    # Damit lässt sich der Verbindungsstatus fachlich verfolgen.
+    req_id = data.get("request_id")
+    if req_id and req_id in pending_connections:
+        pending_connections[req_id]["status"] = "connected"
+        pending_connections[req_id]["device_id"] = device_id
+        pending_connections[req_id]["last_seen"] = data.get("timestamp")
+        # Notify any websocket clients about the connection status change
+        try:
+            # schedule async broadcast so this sync function doesn't block
+            asyncio.create_task(broadcast_connection_event({
+                "type": "connection_update",
+                "request_id": req_id,
+                "status": "connected",
+                "device_id": device_id,
+                "last_seen": data.get("timestamp"),
+            }))
+        except Exception:
+            # best-effort
+            pass
+
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """Ingest‑Endpoint für externe Adapter‑Prozesse.
+
+    Erwarteter Body (Minimalbeispiel):
+
+    {
+      "device_id": "smartmeter_1",   # oder "device": "smartmeter_1"
+      "device_type": "smartmeter",   # optional, sonst "generic"
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+
+    Wichtig: Wenn ``device_id``/``device`` nicht in ``config.yaml`` vorkommt,
+    wird der Adapter automatisch als dynamisches Gerät registriert und
+    erscheint anschließend im Geräte‑Bereich des Frontends.
+    """
+    try:
+        data = await request.json()
+
+        # Dynamische Adapter‑Registrierung (auch wenn Influx aus ist)
+        if isinstance(data, dict):
+            _register_dynamic_adapter(data)
+
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+async def broadcast_connection_event(event: Dict[str, Any]) -> None:
+    """Broadcast a small JSON event to all connected websocket clients.
+
+    Event format is intentionally generic; frontend can filter by `type`.
+    """
+    # clients is a runtime list of WebSocket objects; iterate over a copy
+    try:
+        for ws in list(clients):
+            try:
+                await ws.send_json(event)
+            except Exception:
+                # remove dead sockets
+                try:
+                    await ws.close()
+                except Exception:
+                    pass
+                if ws in clients:
+                    clients.remove(ws)
+    except NameError:
+        # clients may not be defined yet at import time; ignore if so
+        return
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+import httpx
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+# Adapter, die nicht explizit in config.yaml definiert sind, aber
+# Messdaten an /api/ingest senden, werden hier zur Laufzeit gesammelt.
+# Diese Liste wird mit den statischen Adaptern zusammengeführt, wenn
+# das Frontend /devices abfragt.
+dynamic_adapters: Dict[str, Dict[str, Any]] = {}
+
+# Zuordnung für Verbindungsversuche aus dem UI ("Gerät verbinden")
+# auf Basis einer fachlichen Request-ID. Damit kann das Frontend
+# optional einen konkreten Connect-Versuch verfolgen.
+pending_connections: Dict[str, Dict[str, Any]] = {}
+
+
+# --- Devices and EV Profiles Endpoints ---
+from fastapi import Response
+
+@app.get("/devices")
+async def get_devices():
+    """Liefert Geräte aus config.yaml *und* dynamisch entdeckte Adapter.
+
+    - Statische Adapter: ``config.yaml -> adapters``
+    - Dynamische Adapter: werden über ``POST /api/ingest`` registriert,
+      wenn ein unbekannter ``device_id``/``device`` gemeldet wird.
+    """
+    config = app_state["config"]
+    adapters = config.get("adapters", {}) or {}
+
+    # Statische Geräte aus config.yaml
+    devices = [dict(id=k, **v) for k, v in adapters.items()]
+
+    # Dynamisch registrierte Adapter ergänzen (ohne Duplikate)
+    for dev_id, meta in dynamic_adapters.items():
+        if not any(d.get("id") == dev_id for d in devices):
+            devices.append(meta)
+
+    return {"devices": devices}
+
+
+@app.post("/debug/mark_connected")
+async def debug_mark_connected(payload: Dict[str, Any] = Body(None)):
+    """Test-only helper to mark a pending connection as connected.
+
+    Useful for E2E debugging when the dynamic adapter flow cannot be exercised
+    end-to-end due to duplicated/legacy code paths. Expects JSON {"request_id": "...", "device_id": "..."}.
+    This endpoint is intentionally lightweight and should be removed or protected in production.
+    """
+    data = payload or {}
+    request_id = data.get("request_id")
+    device_id = data.get("device_id")
+    from datetime import datetime
+
+    if not request_id:
+        raise HTTPException(status_code=400, detail="Missing request_id")
+
+    entry = pending_connections.get(request_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Request ID not found")
+
+    entry["status"] = "connected"
+    if device_id:
+        entry["device_id"] = device_id
+    entry["last_seen"] = datetime.utcnow().isoformat()
+
+    # try to notify websocket clients (best-effort)
+    try:
+        await broadcast_connection_event({
+            "type": "connection_update",
+            "request_id": request_id,
+            "status": "connected",
+            "device_id": entry.get("device_id"),
+        })
+    except Exception:
+        pass
+
+    return entry
+
+
+@app.get("/devices/{device_id}/details")
+async def get_device_details(device_id: str):
+  """Liefert Detailstatus für ein Gerät.
+
+  Aktuell ist nur ein sinnvoller Laufzeitstatus für Wallboxen (z.B. go-eCharger)
+  implementiert. Für andere Gerätetypen wird eine einfache Stub-Antwort
+  mit Basisinformationen zurückgegeben.
+  """
+  config = app_state.get("config", {})
+  adapters = config.get("adapters", {}) or {}
+  dev = adapters.get(device_id)
+  if not dev:
+      raise HTTPException(status_code=404, detail="Device not found")
+
+  dev_type = (dev.get("type") or "").lower()
+
+  # Nur für Wallboxen versuchen wir, einen echten Status per HTTP abzufragen.
+  if dev_type != "wallbox":
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "unsupported",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": "Status-Endpunkt ist derzeit nur für Wallboxen implementiert.",
+      }
+
+  host = dev.get("ip") or dev.get("host")
+  if not host:
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "config_error",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": "Keine IP/Host für Wallbox in der Konfiguration hinterlegt.",
+      }
+
+  try:
+      async with httpx.AsyncClient(timeout=5) as client:
+          r = await client.get(f"http://{host}/api/status")
+          r.raise_for_status()
+          data = r.json()
+  except Exception as e:
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "offline",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": f"Fehler bei Statusabfrage der Wallbox: {e}",
+      }
+
+  # go-e spezifische Auswertung
+  car_state = data.get("car", 0)
+  # einfache Heuristik: car_state > 0 bedeutet Fahrzeug erkannt/angeschlossen
+  ev_connected = car_state in (1, 2, 3, 4)
+  charging_state_map = {1: "ready", 2: "charging", 3: "waiting", 4: "done"}
+  charging_state = charging_state_map.get(car_state, "unknown")
+
+  nrg = data.get("nrg", [0] * 16)
+  power_w = nrg[11] if len(nrg) > 11 else 0
+  power_kw = round(float(power_w) / 1000.0, 3)
+
+  soc = data.get("soc")
+
+  # V2H-Bereitschaft: hängt von Konfiguration und angeschlossenem Fahrzeug ab.
+  v2h_ready = bool(dev.get("v2h_capable", False) and ev_connected)
+
+  return {
+      "device_id": device_id,
+      "type": dev.get("type"),
+      "online": True,
+      "status": charging_state,
+      "ev_connected": ev_connected,
+      # Konnektorverriegelung: hier vereinfachend gleichgesetzt mit "Fahrzeug erkannt".
+      "connector_locked": ev_connected,
+      "power_kw": power_kw,
+      "soc": soc,
+      "v2h_ready": v2h_ready,
+      "error": None,
+  }
+
+
+
+@app.post("/devices/{device_id}/connect")
+async def connect_device(device_id: str, payload: Dict[str, Any] = Body(None)):
+    """Startet einen Verbindungsversuch für ein Gerät.
+
+    Das Frontend kann optional eine ``request_id`` mitsenden. Falls keine
+    angegeben wird, generiert das Backend eine neue UUID.
+
+    Die so erzeugte Request-ID kann genutzt werden, um den Status eines
+    bestimmten "Gerät verbinden"-Klicks fachlich nachzuverfolgen.
+    """
+    from datetime import datetime
+
+    body: Dict[str, Any] = payload or {}
+    request_id = body.get("request_id") or str(uuid4())
+
+    pending_connections[request_id] = {
+        "device_id": device_id,
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat(),
+        "params": body,
+    }
+
+    # Broadcast pending state to websocket clients (best-effort)
+    try:
+        asyncio.create_task(broadcast_connection_event({
+            "type": "connection_update",
+            "request_id": request_id,
+            "status": "pending",
+            "device_id": device_id,
+            "created_at": pending_connections[request_id]["created_at"],
+        }))
+    except Exception:
+        pass
+
+    return {"request_id": request_id, "status": "pending"}
+
+
+@app.get("/connections/{request_id}")
+async def get_connection_status(request_id: str):
+    """Gibt den Status eines Verbindungsversuchs anhand der Request-ID zurück."""
+    info = pending_connections.get(request_id)
+    if not info:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    return info
+
+
+@app.get("/smartmeter/energy")
+async def smartmeter_energy():
+    """Aggregierte Energiewerte des Smart Meters.
+
+    Die Daten stammen aus dem zentralen `RealtimeState`, der u.a. über `mqtt_service`
+    aus den Topics `energy/smartmeter/import_kwh` und `energy/smartmeter/export_kwh`
+    gespeist wird. Das Frontend erwartet folgende Struktur:
+
+    {
+      "import_kwh": number | null,
+      "export_kwh": number | null,
+      "power_w": number | null,
+      "voltage_v": number | null,
+      "current_a": number | null,
+      "energy_today_kwh": number | null,
+      "energy_total_kwh": number | null
+    }
+
+    Nicht vorhandene Werte werden als null zurückgegeben, damit das Frontend
+    sie robust mit "-" darstellen kann.
+    """
+    current = await state.get()
+
+    import_kwh = current.get("smartmeter_import_kwh")
+    export_kwh = current.get("smartmeter_export_kwh")
+
+    # Versuche eine sinnvolle Leistungsableitung: bevorzugt Netzübergang,
+    # ansonsten Hauslast, falls vorhanden.
+    power_w: Optional[float] = None
+    grid_import_w = current.get("grid_import_w")
+    grid_export_w = current.get("grid_export_w")
+    house_load_w = current.get("house_load_w")
+
+    if grid_import_w is not None or grid_export_w is not None:
+        power_w = float(grid_import_w or 0.0) - float(grid_export_w or 0.0)
+    elif house_load_w is not None:
+        power_w = float(house_load_w or 0.0)
+
+    return {
+        "import_kwh": import_kwh,
+        "export_kwh": export_kwh,
+        "power_w": power_w,
+        # Diese Felder sind optional und können später durch Erweiterung
+        # des MQTT-Adapters/States mit echten Werten befüllt werden.
+        "voltage_v": None,
+        "current_a": None,
+        "energy_today_kwh": None,
+        "energy_total_kwh": None,
+    }
+
+
+@app.get("/ev/cloud_status")
+async def ev_cloud_status():
+    """Stub-Endpoint für optionale SOC-Daten aus der Fahrzeug-Cloud/BMS.
+
+    Frontend erwartet eine Struktur wie {"available": bool, "soc": number, "provider": str|null}.
+    Aktuell ist keine echte Cloud-Integration implementiert, daher liefern wir einen
+    sauberen Fallback, der lediglich signalisiert, dass keine Cloud-Daten vorliegen.
+    """
+    return {"available": False, "soc": None, "provider": None}
+
+
+@app.get("/v2h/status")
+async def v2h_status(wallbox_id: Optional[str] = Query(None)):
+    """Gibt den aktuellen V2H-Status zurück.
+
+    Diese Struktur ist auf das Frontend `ElektroautoV2H` abgestimmt und enthält
+    neben Aktiv-Status und Leistung auch Metadaten zur (optionalen) Wallbox.
+    """
+    current = await state.get()
+
+    # Basisleistungswerte aus dem Realtime-State ableiten
+    active = bool(current.get("ev_v2h") is True)
+    ev_power_w = float(current.get("ev_power_w") or 0.0)
+    power_kw = ev_power_w / 1000.0
+
+    house_power_kw: Optional[float] = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    # Wallbox-Informationen aus der Konfiguration auslesen
+    config = app_state.get("config", {})
+    adapters = config.get("adapters", {}) or {}
+    wallbox_entries = {
+        k: v
+        for k, v in adapters.items()
+        if (v.get("type") or "").lower().find("wallbox") != -1
+    }
+
+    selected_id: Optional[str] = None
+    if wallbox_id and wallbox_id in wallbox_entries:
+        selected_id = wallbox_id
+    elif wallbox_entries:
+        # Fallback: erste gefundene Wallbox nutzen
+        selected_id = next(iter(wallbox_entries.keys()))
+
+    dev = wallbox_entries.get(selected_id) if selected_id else None
+    wallbox_present = bool(wallbox_entries)
+    wallbox_enabled = bool(dev.get("enabled", True)) if dev else False
+    v2h_capable = bool(dev.get("v2h_capable", False)) if dev else False
+    # Ohne direkten Live-Status aus der Wallbox setzen wir "online" konservativ
+    # gleich "enabled" – das Frontend nutzt dies vor allem für UI-Hinweise.
+    wallbox_online = wallbox_enabled
+
+    return {
+        "active": active,
+        "power_kw": round(power_kw, 3),
+        "house_power_kw": round(house_power_kw, 3) if house_power_kw is not None else None,
+        "error": None,
+        "wallbox_present": wallbox_present,
+        "wallbox_enabled": wallbox_enabled,
+        "wallbox_online": wallbox_online,
+        "preferred_wallbox_id": selected_id,
+        "v2h_capable": v2h_capable,
+    }
+
+
+
+# --- /ev/profiles endpoint supporting GET, POST (save), PUT (activate), DELETE (delete) ---
+from fastapi import Request, Body
+from fastapi.responses import JSONResponse
+import copy
+
+@app.api_route("/ev/profiles", methods=["GET", "POST", "PUT", "DELETE"])
+async def ev_profiles_endpoint(request: Request, body: dict = Body(None)):
+    """
+    GET: Returns all EV profiles from config.yaml.
+    POST: Save (create/update) an EV profile. Expects {"id": ..., "profile": {...}}.
+    PUT: Activate an EV profile. Expects {"id": ...}.
+    DELETE: Delete an EV profile. Expects {"id": ...}.
+    """
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    method = request.method
+
+    if method == "GET":
+        # Return both ev_profiles and active_ev_id for frontend compatibility
+        active_ev_id = config.get("active_ev_id")
+        return {"ev_profiles": ev_profiles, "active_ev_id": active_ev_id}
+
+    if method == "POST":
+        # Save (create/update) an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        profile = data.get("profile")
+        if not ev_id or not profile:
+            return JSONResponse(status_code=400, content={"error": "Missing 'id' or 'profile' in request."})
+        ev_profiles[ev_id] = profile
+        app_state["config"]["ev_profiles"] = ev_profiles
+        # Optionally persist to config.yaml
+        _persist_config(app_state["config"])
+        return {"status": "saved", "ev_profiles": ev_profiles}
+
+
+    if method == "PUT":
+        # Activate an EV profile (set 'active' flag, deactivate others)
+        data = body or await request.json()
+        ev_id = data.get("id")
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        if not ev_id:
+            # If no id is given, deactivate all profiles
+            for k in ev_profiles:
+                ev_profiles[k]["active"] = False
+            app_state["config"]["ev_profiles"] = ev_profiles
+            _persist_config(app_state["config"])
+            return {"status": "deactivated_all", "active_id": None, "ev_profiles": ev_profiles}
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Deactivate all, activate one
+        for k in ev_profiles:
+            ev_profiles[k]["active"] = (k == match_id)
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "activated", "active_id": match_id, "ev_profiles": ev_profiles}
+
+
+    if method == "DELETE":
+        # Delete an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        if not ev_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Robust matching: case-insensitive, ignore spaces, underscores, hyphens
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        del ev_profiles[match_id]
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "deleted", "ev_profiles": ev_profiles}
+
+    return JSONResponse(status_code=405, content={"error": "Method not allowed."})
+
+# Helper to persist config to YAML
+import yaml
+import threading
+def _persist_config(config):
+    try:
+        with threading.Lock():
+            with open(os.path.join(os.path.dirname(__file__), '../config/config.yaml'), 'w') as f:
+                yaml.safe_dump(config, f, allow_unicode=True)
+    except Exception as e:
+        print(f"[ERROR] Failed to persist config: {e}")
+
+# --- STUB ENDPOINTS TO PREVENT FRONTEND 404s ---
+from fastapi.responses import JSONResponse
+
+# /api/alarms stub
+@app.get("/api/alarms")
+async def api_alarms_stub():
+    return JSONResponse(content={"alarms": []})
+
+# /history/pv stub
+@app.get("/history/pv")
+async def history_pv_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/consumption stub
+@app.get("/history/consumption")
+async def history_consumption_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/battery stub
+@app.get("/history/battery")
+async def history_battery_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+from fastapi import WebSocket
+# EV Runtime Vars (für /ws/mobile updates)
+clients: list = []
+
+# Minimal /ws WebSocket endpoint for dashboard/mobile
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    clients.append(websocket)
+    try:
+        await websocket.send_json({"message": "WebSocket connection established"})
+        while True:
+            await websocket.receive_text()
+    except Exception:
+        pass
+    finally:
+        if websocket in clients:
+            clients.remove(websocket)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+app.include_router(fleet_router)
+
+# Alias-Route for compatibility: /airecommendation -> fleet recommendation
+@app.get("/airecommendation", dependencies=[Depends(get_api_key)])
+async def airecommendation_alias(response: Response):
+    # If the fleet handler exists, call it; otherwise return a simple stub
+    try:
+        from backend.main import fleet_ai_recommendation as _f
+        return await _f()
+    except Exception:
+        return {"fleet_recommendations": [], "gesamtleistung_kw": 0}
+from fastapi import FastAPI, APIRouter, Response, Depends, Body
+from typing import Optional, Dict, Any
+
+from fastapi.websockets import WebSocket
+import os
+from uuid import uuid4
+
+app = FastAPI()
+
+# Early fleet router to satisfy any legacy @fleet_router usages above the
+# canonical V2H section at the end of this file. The canonical router is
+# redefined later together with the API key security. This avoids NameError
+# at import time while we progressively clean up duplicate definitions.
+fleet_router = APIRouter()
+
+# Early API key security to satisfy any legacy @fleet_router usages that
+# depend on get_api_key before the canonical V2H section defines it again.
+from fastapi.security import APIKeyHeader
+from fastapi import HTTPException, status
+
+API_KEY = "mein_geheimer_schulkey123"
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def get_api_key(api_key: str = Depends(api_key_header)):
+    if api_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiger API-Key",
+        )
+    return api_key
+
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+@app.post("/v2h/disable")
+async def v2h_disable():
+    """Deaktiviert Vehicle-to-Home (V2H).
+
+    Setzt ev_v2h=False und reduziert die V2H-Leistung auf 0 kW im Status.
+    """
+    await state.update({"ev_v2h": False, "ev_power_w": 0.0})
+    current = await state.get()
+    house_power_kw = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    return {
+        "success": True,
+        "active": False,
+        "power_kw": 0.0,
+        "house_power_kw": house_power_kw,
+        "error": None,
+    }
+
+
+@app.post("/v2h/enable")
+async def v2h_enable(payload: Dict[str, Any] = Body(None)):
+    """Aktiviert Vehicle-to-Home (V2H).
+
+    Optional kann eine bevorzugte Wallbox-ID übergeben werden, die im Status
+    (`preferred_wallbox_id`) reflektiert wird. Die eigentliche Leistungssteuerung
+    erfolgt später über den V2H-Controller; hier wird zunächst nur der Status
+    im RealtimeState gesetzt, damit das Frontend sauber arbeiten kann.
+    """
+    # V2H-Flag im zentralen Zustand aktivieren; Leistungszuweisung erfolgt separat.
+    await state.update({"ev_v2h": True})
+    current = await state.get()
+
+    house_power_kw: Optional[float] = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    # Preferred Wallbox aus Payload (falls vorhanden) im Config-State hinterlegen,
+    # damit /v2h/status diese ID zurückgeben kann.
+    preferred_id = None
+    if payload and isinstance(payload, dict):
+        preferred_id = payload.get("wallbox_id")
+        if preferred_id:
+            cfg = app_state.get("config", {})
+            cfg["preferred_wallbox_id"] = preferred_id
+            app_state["config"] = cfg
+
+    return {
+        "success": True,
+        "active": True,
+        "power_kw": float(current.get("ev_power_w") or 0.0) / 1000.0,
+        "house_power_kw": house_power_kw,
+        "error": None,
+        "preferred_wallbox_id": preferred_id,
+    }
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+# Safety: ensure critical tiny endpoints are present on the final `app` instance.
+# Some legacy code paths may skip or overwrite earlier registrations; this
+# makes sure `/battery/status` and `/test-alive` exist.
+async def _battery_status_final():
+    return {"status": "ok"}
+
+async def _test_alive_final():
+    return {"status": "alive"}
+
+if not any(r.path == "/battery/status" for r in app.routes):
+    app.add_api_route("/battery/status", _battery_status_final, methods=["GET"])
+
+if not any(r.path == "/test-alive" for r in app.routes):
+    app.add_api_route("/test-alive", _test_alive_final, methods=["GET"])
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+import asyncio
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "LoopIQ backend is running."}
+
+def _register_dynamic_adapter(data: Dict[str, Any]) -> None:
+    """Registriert Adapter, die *nicht* in der YAML‑Config stehen.
+
+    Idee:
+    - Ein externer Adapter‑Prozess (z.B. in ``device_adapters/``) sendet Messwerte
+      an ``POST /api/ingest``.
+    - Anhand der Felder ``device_id`` oder ``device`` wird ein logischer
+      Geräte‑Identifier abgeleitet.
+    - Falls dieses Gerät nicht bereits in ``config.yaml`` unter ``adapters``
+      existiert, wird es in einer In‑Memory‑Liste ``dynamic_adapters``
+      registriert.
+
+    Dadurch tauchen auch Adapter, die nicht vorab in der Konfiguration
+    eingetragen wurden, automatisch im Geräte‑Bereich des Frontends auf.
+    """
+    # Globale App‑Config betrachten
+    config = app_state.get("config", {})
+    configured = (config.get("adapters") or {}).keys()
+
+    # Mögliche Feldnamen aus dem Adapter‑Payload
+    device_id = (
+        data.get("device_id")
+        or data.get("device")
+        or data.get("id")
+    )
+
+    if not device_id:
+        # Ohne Identifier können wir kein Gerät registrieren
+        return
+
+    # Bereits in YAML‑Config oder schon dynamisch bekannt -> nichts tun
+    if device_id in configured or device_id in dynamic_adapters:
+        # Optional: Last‑Seen aktualisieren
+        entry = dynamic_adapters.get(device_id)
+        if entry is not None:
+            entry["last_seen"] = data.get("timestamp")
+        return
+
+    device_type = (
+        (data.get("device_type") or data.get("type") or "generic").lower()
+    )
+    name = data.get("name") or f"{device_type.capitalize()} {device_id}"
+
+    entry = {
+        "id": device_id,
+        "type": device_type,
+        "name": name,
+        "source": "dynamic",
+        "status": "online",
+        "last_seen": data.get("timestamp"),
+    }
+    dynamic_adapters[device_id] = entry
+
+    # Falls der Adapter im Kontext eines konkreten Verbindungsversuchs
+    # gestartet wurde, kann eine optionale request_id mitgeschickt werden.
+    # Damit lässt sich der Verbindungsstatus fachlich verfolgen.
+    req_id = data.get("request_id")
+    if req_id and req_id in pending_connections:
+        pending_connections[req_id]["status"] = "connected"
+        pending_connections[req_id]["device_id"] = device_id
+        pending_connections[req_id]["last_seen"] = data.get("timestamp")
+        # Notify any websocket clients about the connection status change
+        try:
+            # schedule async broadcast so this sync function doesn't block
+            asyncio.create_task(broadcast_connection_event({
+                "type": "connection_update",
+                "request_id": req_id,
+                "status": "connected",
+                "device_id": device_id,
+                "last_seen": data.get("timestamp"),
+            }))
+        except Exception:
+            # best-effort
+            pass
+
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """Ingest‑Endpoint für externe Adapter‑Prozesse.
+
+    Erwarteter Body (Minimalbeispiel):
+
+    {
+      "device_id": "smartmeter_1",   # oder "device": "smartmeter_1"
+      "device_type": "smartmeter",   # optional, sonst "generic"
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+
+    Wichtig: Wenn ``device_id``/``device`` nicht in ``config.yaml`` vorkommt,
+    wird der Adapter automatisch als dynamisches Gerät registriert und
+    erscheint anschließend im Geräte‑Bereich des Frontends.
+    """
+    try:
+        data = await request.json()
+
+        # Dynamische Adapter‑Registrierung (auch wenn Influx aus ist)
+        if isinstance(data, dict):
+            _register_dynamic_adapter(data)
+
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+async def broadcast_connection_event(event: Dict[str, Any]) -> None:
+    """Broadcast a small JSON event to all connected websocket clients.
+
+    Event format is intentionally generic; frontend can filter by `type`.
+    """
+    # clients is a runtime list of WebSocket objects; iterate over a copy
+    try:
+        for ws in list(clients):
+            try:
+                await ws.send_json(event)
+            except Exception:
+                # remove dead sockets
+                try:
+                    await ws.close()
+                except Exception:
+                    pass
+                if ws in clients:
+                    clients.remove(ws)
+    except NameError:
+        # clients may not be defined yet at import time; ignore if so
+        return
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+import httpx
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+# Adapter, die nicht explizit in config.yaml definiert sind, aber
+# Messdaten an /api/ingest senden, werden hier zur Laufzeit gesammelt.
+# Diese Liste wird mit den statischen Adaptern zusammengeführt, wenn
+# das Frontend /devices abfragt.
+dynamic_adapters: Dict[str, Dict[str, Any]] = {}
+
+# Zuordnung für Verbindungsversuche aus dem UI ("Gerät verbinden")
+# auf Basis einer fachlichen Request-ID. Damit kann das Frontend
+# optional einen konkreten Connect-Versuch verfolgen.
+pending_connections: Dict[str, Dict[str, Any]] = {}
+
+
+# --- Devices and EV Profiles Endpoints ---
+from fastapi import Response
+
+@app.get("/devices")
+async def get_devices():
+    """Liefert Geräte aus config.yaml *und* dynamisch entdeckte Adapter.
+
+    - Statische Adapter: ``config.yaml -> adapters``
+    - Dynamische Adapter: werden über ``POST /api/ingest`` registriert,
+      wenn ein unbekannter ``device_id``/``device`` gemeldet wird.
+    """
+    config = app_state["config"]
+    adapters = config.get("adapters", {}) or {}
+
+    # Statische Geräte aus config.yaml
+    devices = [dict(id=k, **v) for k, v in adapters.items()]
+
+    # Dynamisch registrierte Adapter ergänzen (ohne Duplikate)
+    for dev_id, meta in dynamic_adapters.items():
+        if not any(d.get("id") == dev_id for d in devices):
+            devices.append(meta)
+
+    return {"devices": devices}
+
+
+@app.get("/devices/{device_id}/details")
+async def get_device_details(device_id: str):
+  """Liefert Detailstatus für ein Gerät.
+
+  Aktuell ist nur ein sinnvoller Laufzeitstatus für Wallboxen (z.B. go-eCharger)
+  implementiert. Für andere Gerätetypen wird eine einfache Stub-Antwort
+  mit Basisinformationen zurückgegeben.
+  """
+  config = app_state.get("config", {})
+  adapters = config.get("adapters", {}) or {}
+  dev = adapters.get(device_id)
+  if not dev:
+      raise HTTPException(status_code=404, detail="Device not found")
+
+  dev_type = (dev.get("type") or "").lower()
+
+  # Nur für Wallboxen versuchen wir, einen echten Status per HTTP abzufragen.
+  if dev_type != "wallbox":
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "unsupported",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": "Status-Endpunkt ist derzeit nur für Wallboxen implementiert.",
+      }
+
+  host = dev.get("ip") or dev.get("host")
+  if not host:
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "config_error",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": "Keine IP/Host für Wallbox in der Konfiguration hinterlegt.",
+      }
+
+  try:
+      async with httpx.AsyncClient(timeout=5) as client:
+          r = await client.get(f"http://{host}/api/status")
+          r.raise_for_status()
+          data = r.json()
+  except Exception as e:
+      return {
+          "device_id": device_id,
+          "type": dev.get("type"),
+          "online": False,
+          "status": "offline",
+          "ev_connected": False,
+          "connector_locked": False,
+          "power_kw": 0.0,
+          "soc": None,
+          "v2h_ready": bool(dev.get("v2h_capable", False)),
+          "error": f"Fehler bei Statusabfrage der Wallbox: {e}",
+      }
+
+  # go-e spezifische Auswertung
+  car_state = data.get("car", 0)
+  # einfache Heuristik: car_state > 0 bedeutet Fahrzeug erkannt/angeschlossen
+  ev_connected = car_state in (1, 2, 3, 4)
+  charging_state_map = {1: "ready", 2: "charging", 3: "waiting", 4: "done"}
+  charging_state = charging_state_map.get(car_state, "unknown")
+
+  nrg = data.get("nrg", [0] * 16)
+  power_w = nrg[11] if len(nrg) > 11 else 0
+  power_kw = round(float(power_w) / 1000.0, 3)
+
+  soc = data.get("soc")
+
+  # V2H-Bereitschaft: hängt von Konfiguration und angeschlossenem Fahrzeug ab.
+  v2h_ready = bool(dev.get("v2h_capable", False) and ev_connected)
+
+  return {
+      "device_id": device_id,
+      "type": dev.get("type"),
+      "online": True,
+      "status": charging_state,
+      "ev_connected": ev_connected,
+      # Konnektorverriegelung: hier vereinfachend gleichgesetzt mit "Fahrzeug erkannt".
+      "connector_locked": ev_connected,
+      "power_kw": power_kw,
+      "soc": soc,
+      "v2h_ready": v2h_ready,
+      "error": None,
+  }
+
+
+@app.post("/devices/{device_id}/connect")
+async def connect_device(device_id: str, payload: Dict[str, Any] = Body(None)):
+    """Startet einen Verbindungsversuch für ein Gerät.
+
+    Das Frontend kann optional eine ``request_id`` mitsenden. Falls keine
+    angegeben wird, generiert das Backend eine neue UUID.
+
+    Die so erzeugte Request-ID kann genutzt werden, um den Status eines
+    bestimmten "Gerät verbinden"-Klicks fachlich nachzuverfolgen.
+    """
+    from datetime import datetime
+
+    body: Dict[str, Any] = payload or {}
+    request_id = body.get("request_id") or str(uuid4())
+
+    pending_connections[request_id] = {
+        "device_id": device_id,
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat(),
+        "params": body,
+    }
+
+    # Broadcast pending state to websocket clients (best-effort)
+    try:
+        asyncio.create_task(broadcast_connection_event({
+            "type": "connection_update",
+            "request_id": request_id,
+            "status": "pending",
+            "device_id": device_id,
+            "created_at": pending_connections[request_id]["created_at"],
+        }))
+    except Exception:
+        pass
+
+    return {"request_id": request_id, "status": "pending"}
+
+
+@app.get("/connections/{request_id}")
+async def get_connection_status(request_id: str):
+    """Gibt den Status eines Verbindungsversuchs anhand der Request-ID zurück."""
+    info = pending_connections.get(request_id)
+    if not info:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    return info
+
+
+@app.get("/smartmeter/energy")
+async def smartmeter_energy():
+    """Aggregierte Energiewerte des Smart Meters.
+
+    Die Daten stammen aus dem zentralen `RealtimeState`, der u.a. über `mqtt_service`
+    aus den Topics `energy/smartmeter/import_kwh` und `energy/smartmeter/export_kwh`
+    gespeist wird. Das Frontend erwartet folgende Struktur:
+
+    {
+      "import_kwh": number | null,
+      "export_kwh": number | null,
+      "power_w": number | null,
+      "voltage_v": number | null,
+      "current_a": number | null,
+      "energy_today_kwh": number | null,
+      "energy_total_kwh": number | null
+    }
+
+    Nicht vorhandene Werte werden als null zurückgegeben, damit das Frontend
+    sie robust mit "-" darstellen kann.
+    """
+    current = await state.get()
+
+    import_kwh = current.get("smartmeter_import_kwh")
+    export_kwh = current.get("smartmeter_export_kwh")
+
+    # Versuche eine sinnvolle Leistungsableitung: bevorzugt Netzübergang,
+    # ansonsten Hauslast, falls vorhanden.
+    power_w: Optional[float] = None
+    grid_import_w = current.get("grid_import_w")
+    grid_export_w = current.get("grid_export_w")
+    house_load_w = current.get("house_load_w")
+
+    if grid_import_w is not None or grid_export_w is not None:
+        power_w = float(grid_import_w or 0.0) - float(grid_export_w or 0.0)
+    elif house_load_w is not None:
+        power_w = float(house_load_w or 0.0)
+
+    return {
+        "import_kwh": import_kwh,
+        "export_kwh": export_kwh,
+        "power_w": power_w,
+        # Diese Felder sind optional und können später durch Erweiterung
+        # des MQTT-Adapters/States mit echten Werten befüllt werden.
+        "voltage_v": None,
+        "current_a": None,
+        "energy_today_kwh": None,
+        "energy_total_kwh": None,
+    }
+
+
+@app.get("/ev/cloud_status")
+async def ev_cloud_status():
+    """Stub-Endpoint für optionale SOC-Daten aus der Fahrzeug-Cloud/BMS.
+
+    Frontend erwartet eine Struktur wie {"available": bool, "soc": number, "provider": str|null}.
+    Aktuell ist keine echte Cloud-Integration implementiert, daher liefern wir einen
+    sauberen Fallback, der lediglich signalisiert, dass keine Cloud-Daten vorliegen.
+    """
+    return {"available": False, "soc": None, "provider": None}
+
+
+@app.get("/v2h/status")
+async def v2h_status(wallbox_id: Optional[str] = Query(None)):
+    """Gibt den aktuellen V2H-Status zurück.
+
+    Diese Struktur ist auf das Frontend `ElektroautoV2H` abgestimmt und enthält
+    neben Aktiv-Status und Leistung auch Metadaten zur (optionalen) Wallbox.
+    """
+    current = await state.get()
+
+    # Basisleistungswerte aus dem Realtime-State ableiten
+    active = bool(current.get("ev_v2h") is True)
+    ev_power_w = float(current.get("ev_power_w") or 0.0)
+    power_kw = ev_power_w / 1000.0
+
+    house_power_kw: Optional[float] = None
+    if current.get("house_load_w") is not None:
+        house_power_kw = float(current.get("house_load_w") or 0.0) / 1000.0
+
+    # Wallbox-Informationen aus der Konfiguration auslesen
+    config = app_state.get("config", {})
+    adapters = config.get("adapters", {}) or {}
+    wallbox_entries = {
+        k: v
+        for k, v in adapters.items()
+        if (v.get("type") or "").lower().find("wallbox") != -1
+    }
+
+    selected_id: Optional[str] = None
+    if wallbox_id and wallbox_id in wallbox_entries:
+        selected_id = wallbox_id
+    elif wallbox_entries:
+        # Fallback: erste gefundene Wallbox nutzen
+        selected_id = next(iter(wallbox_entries.keys()))
+
+    dev = wallbox_entries.get(selected_id) if selected_id else None
+    wallbox_present = bool(wallbox_entries)
+    wallbox_enabled = bool(dev.get("enabled", True)) if dev else False
+    v2h_capable = bool(dev.get("v2h_capable", False)) if dev else False
+    # Ohne direkten Live-Status aus der Wallbox setzen wir "online" konservativ
+    # gleich "enabled" – das Frontend nutzt dies vor allem für UI-Hinweise.
+    wallbox_online = wallbox_enabled
+
+    return {
+        "active": active,
+        "power_kw": round(power_kw, 3),
+        "house_power_kw": round(house_power_kw, 3) if house_power_kw is not None else None,
+        "error": None,
+        "wallbox_present": wallbox_present,
+        "wallbox_enabled": wallbox_enabled,
+        "wallbox_online": wallbox_online,
+        "preferred_wallbox_id": selected_id,
+        "v2h_capable": v2h_capable,
+    }
+
+
+
+# --- /ev/profiles endpoint supporting GET, POST (save), PUT (activate), DELETE (delete) ---
+from fastapi import Request, Body
+from fastapi.responses import JSONResponse
+import copy
+
+@app.api_route("/ev/profiles", methods=["GET", "POST", "PUT", "DELETE"])
+async def ev_profiles_endpoint(request: Request, body: dict = Body(None)):
+    """
+    GET: Returns all EV profiles from config.yaml.
+    POST: Save (create/update) an EV profile. Expects {"id": ..., "profile": {...}}.
+    PUT: Activate an EV profile. Expects {"id": ...}.
+    DELETE: Delete an EV profile. Expects {"id": ...}.
+    """
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    method = request.method
+
+    if method == "GET":
+        # Return both ev_profiles and active_ev_id for frontend compatibility
+        active_ev_id = config.get("active_ev_id")
+        return {"ev_profiles": ev_profiles, "active_ev_id": active_ev_id}
+
+    if method == "POST":
+        # Save (create/update) an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        profile = data.get("profile")
+        if not ev_id or not profile:
+            return JSONResponse(status_code=400, content={"error": "Missing 'id' or 'profile' in request."})
+        ev_profiles[ev_id] = profile
+        app_state["config"]["ev_profiles"] = ev_profiles
+        # Optionally persist to config.yaml
+        _persist_config(app_state["config"])
+        return {"status": "saved", "ev_profiles": ev_profiles}
+
+
+    if method == "PUT":
+        # Activate an EV profile (set 'active' flag, deactivate others)
+        data = body or await request.json()
+        ev_id = data.get("id")
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        if not ev_id:
+            # If no id is given, deactivate all profiles
+            for k in ev_profiles:
+                ev_profiles[k]["active"] = False
+            app_state["config"]["ev_profiles"] = ev_profiles
+            _persist_config(app_state["config"])
+            return {"status": "deactivated_all", "active_id": None, "ev_profiles": ev_profiles}
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Deactivate all, activate one
+        for k in ev_profiles:
+            ev_profiles[k]["active"] = (k == match_id)
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "activated", "active_id": match_id, "ev_profiles": ev_profiles}
+
+
+    if method == "DELETE":
+        # Delete an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        if not ev_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Robust matching: case-insensitive, ignore spaces, underscores, hyphens
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        del ev_profiles[match_id]
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "deleted", "ev_profiles": ev_profiles}
+
+    return JSONResponse(status_code=405, content={"error": "Method not allowed."})
+
+# Helper to persist config to YAML
+import yaml
+import threading
+def _persist_config(config):
+    try:
+        with threading.Lock():
+            with open(os.path.join(os.path.dirname(__file__), '../config/config.yaml'), 'w') as f:
+                yaml.safe_dump(config, f, allow_unicode=True)
+    except Exception as e:
+        print(f"[ERROR] Failed to persist config: {e}")
+
+# --- STUB ENDPOINTS TO PREVENT FRONTEND 404s ---
+from fastapi.responses import JSONResponse
+
+# /api/alarms stub
+@app.get("/api/alarms")
+async def api_alarms_stub():
+    return JSONResponse(content={"alarms": []})
+
+# /history/pv stub
+@app.get("/history/pv")
+async def history_pv_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/consumption stub
+@app.get("/history/consumption")
+async def history_consumption_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/battery stub
+@app.get("/history/battery")
+async def history_battery_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+from fastapi import WebSocket
+# EV Runtime Vars (für /ws/mobile updates)
+clients: list = []
+
+
+
+
+
+
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "LoopIQ backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "LoopIQ backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# --- Devices and EV Profiles Endpoints ---
+from fastapi import Response
+
+@app.get("/devices")
+async def get_devices():
+    """Returns all device adapters from config.yaml as a list for frontend compatibility"""
+    config = app_state["config"]
+    adapters = config.get("adapters", {})
+    # Convert dict to list, but keep the device id as a property
+    devices = [dict(id=k, **v) for k, v in adapters.items()]
+    return {"devices": devices}
+
+
+
+# --- /ev/profiles endpoint supporting GET, POST (save), PUT (activate), DELETE (delete) ---
+from fastapi import Request, Body
+from fastapi.responses import JSONResponse
+import copy
+
+@app.api_route("/ev/profiles", methods=["GET", "POST", "PUT", "DELETE"])
+async def ev_profiles_endpoint(request: Request, body: dict = Body(None)):
+    """
+    GET: Returns all EV profiles from config.yaml.
+    POST: Save (create/update) an EV profile. Expects {"id": ..., "profile": {...}}.
+    PUT: Activate an EV profile. Expects {"id": ...}.
+    DELETE: Delete an EV profile. Expects {"id": ...}.
+    """
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    method = request.method
+
+    if method == "GET":
+        # Return both ev_profiles and active_ev_id for frontend compatibility
+        active_ev_id = config.get("active_ev_id")
+        return {"ev_profiles": ev_profiles, "active_ev_id": active_ev_id}
+
+    if method == "POST":
+        # Save (create/update) an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        profile = data.get("profile")
+        if not ev_id or not profile:
+            return JSONResponse(status_code=400, content={"error": "Missing 'id' or 'profile' in request."})
+        ev_profiles[ev_id] = profile
+        app_state["config"]["ev_profiles"] = ev_profiles
+        # Optionally persist to config.yaml
+        _persist_config(app_state["config"])
+        return {"status": "saved", "ev_profiles": ev_profiles}
+
+
+    if method == "PUT":
+        # Activate an EV profile (set 'active' flag, deactivate others)
+        data = body or await request.json()
+        ev_id = data.get("id")
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        if not ev_id:
+            # If no id is given, deactivate all profiles
+            for k in ev_profiles:
+                ev_profiles[k]["active"] = False
+            app_state["config"]["ev_profiles"] = ev_profiles
+            _persist_config(app_state["config"])
+            return {"status": "deactivated_all", "active_id": None, "ev_profiles": ev_profiles}
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Deactivate all, activate one
+        for k in ev_profiles:
+            ev_profiles[k]["active"] = (k == match_id)
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "activated", "active_id": match_id, "ev_profiles": ev_profiles}
+
+
+    if method == "DELETE":
+        # Delete an EV profile
+        data = body or await request.json()
+        ev_id = data.get("id")
+        if not ev_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        # Robust matching: case-insensitive, ignore spaces, underscores, hyphens
+        def normalize(s):
+            return str(s).replace(" ", "").replace("_", "").replace("-", "").lower()
+        norm_ev_id = normalize(ev_id)
+        match_id = None
+        for k in ev_profiles:
+            if normalize(k) == norm_ev_id:
+                match_id = k
+                break
+        if not match_id:
+            return JSONResponse(status_code=404, content={"error": "Profile not found."})
+        del ev_profiles[match_id]
+        app_state["config"]["ev_profiles"] = ev_profiles
+        _persist_config(app_state["config"])
+        return {"status": "deleted", "ev_profiles": ev_profiles}
+
+    return JSONResponse(status_code=405, content={"error": "Method not allowed."})
+
+# Helper to persist config to YAML
+import yaml
+import threading
+def _persist_config(config):
+    try:
+        with threading.Lock():
+            with open(os.path.join(os.path.dirname(__file__), '../config/config.yaml'), 'w') as f:
+                yaml.safe_dump(config, f, allow_unicode=True)
+    except Exception as e:
+        print(f"[ERROR] Failed to persist config: {e}")
+
+# --- STUB ENDPOINTS TO PREVENT FRONTEND 404s ---
+from fastapi.responses import JSONResponse
+
+# /api/alarms stub
+@app.get("/api/alarms")
+async def api_alarms_stub():
+    return JSONResponse(content={"alarms": []})
+
+# /history/pv stub
+@app.get("/history/pv")
+async def history_pv_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/consumption stub
+@app.get("/history/consumption")
+async def history_consumption_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+# /history/battery stub
+@app.get("/history/battery")
+async def history_battery_stub(hours: int = 24, raster: int = 0):
+    return JSONResponse(content={"history": []})
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+from fastapi import WebSocket
+# EV Runtime Vars (für /ws/mobile updates)
+clients: list = []
+
+# Minimal /ws WebSocket endpoint for dashboard/mobile
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    clients.append(websocket)
+    try:
+        await websocket.send_json({"message": "WebSocket connection established"})
+        while True:
+            await websocket.receive_text()
+    except Exception:
+        pass
+    finally:
+        if websocket in clients:
+            clients.remove(websocket)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+ 
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+    
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+@fleet_router.get("/fleet/ai_recommendation", dependencies=[Depends(get_api_key)])
+async def fleet_ai_recommendation():
+    """
+    Gibt für alle aktiven EVs/Wallboxen die aktuelle KI-Empfehlung und zugewiesene Ladeleistung zurück.
+    Berücksichtigt PV-Überschuss, Peak Shaving und gleichmäßige Verteilung.
+    """
+    # Hole Konfiguration und aktive EVs/Wallboxen
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    adapters = config.get("adapters", {})
+    # Finde alle aktiven Wallboxen/EVs
+    active_wallboxes = [
+        (k, v) for k, v in adapters.items()
+        if v.get("type", "").lower() == "wallbox" and v.get("enabled", True)
+    ]
+    # Annahme: Jedes Fahrzeug ist an eine Wallbox gekoppelt
+    # Hole aktuelle Systemdaten
+    from backend.services.pv_service import pv_service
+    snap = pv_service.snapshot()
+    pv_power = snap.get("pv_power_kw", 0)
+    house_load = snap.get("house_load_w", 0) / 1000
+    grid_price = 0.28
+    hour = datetime.now().hour
+    # Gesamtleistungs-Limit (Peak Shaving)
+    max_total_power = 22.0 if len(active_wallboxes) > 1 else 11.0
+    # Verfügbare Ladeleistung: PV-Überschuss + ggf. Netz (hier: PV-Überschuss bevorzugt)
+    pv_surplus = max(0.0, pv_power - house_load)
+    available_power = min(max_total_power, pv_surplus if pv_surplus > 0 else max_total_power)
+    # Gleichmäßig verteilen (kann später nach Priorität gewichtet werden)
+    per_ev_power = available_power / max(1, len(active_wallboxes))
+    # KI-Empfehlung pro EV/Wallbox
+    from backend.ai_controller import get_ai_controller
+    controller = await get_ai_controller()
+    results = []
+    for wallbox_id, wallbox in active_wallboxes:
+        ev_id = wallbox.get("ev_id") or wallbox_id
+        ev_profile = ev_profiles.get(ev_id, {})
+        ev_soc = snap.get("ev_soc", 50)
+        # Individuelle Ladefenster (optional, hier als Beispiel: nachts 22-6 Uhr)
+        charge_window = wallbox.get("charge_window") or {"start": 22, "end": 6}
+        # Individuelle max. Ladeleistung
+        max_ev_power = min(wallbox.get("power_kw", 11.0), ev_profile.get("max_charge_kw", 11.0))
+        # Systemdaten für dieses EV
+        current_data = {
+            "pv_power": pv_power,
+            "battery_soc": snap.get("battery_soc", 50),
+            "ev_soc": ev_soc,
+            "household_load": house_load,
+            "grid_price": grid_price,
+            "hour": hour,
+            "temperature": snap.get("temperature", 20),
+            "ev_connected": True
+        }
+        # KI-Empfehlung abrufen (mit Flottenparametern)
+        ai_result = await controller.get_optimal_action(
+            current_data,
+            charge_window=charge_window,
+            max_total_power_kw=per_ev_power,
+            pv_surplus_only=True
+        )
+        # Begrenze auf max_ev_power
+        ai_result["ev_charge_rate"] = min(ai_result["ev_charge_rate"], max_ev_power)
+        results.append({
+            "wallbox_id": wallbox_id,
+            "ev_id": ev_id,
+            "empfohlene_leistung_kw": round(ai_result["ev_charge_rate"], 2),
+            "grund": ai_result.get("explanation", ""),
+            "soc": ev_soc
+        })
+    return {"fleet_recommendations": results, "gesamtleistung_kw": round(available_power, 2), "pv_surplus_kw": round(pv_surplus, 2)}
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+@fleet_router.get("/fleet/ai_recommendation", dependencies=[Depends(get_api_key)])
+async def fleet_ai_recommendation():
+    """
+    Gibt für alle aktiven EVs/Wallboxen die aktuelle KI-Empfehlung und zugewiesene Ladeleistung zurück.
+    Berücksichtigt PV-Überschuss, Peak Shaving und gleichmäßige Verteilung.
+    """
+    # Hole Konfiguration und aktive EVs/Wallboxen
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    adapters = config.get("adapters", {})
+    # Finde alle aktiven Wallboxen/EVs
+    active_wallboxes = [
+        (k, v) for k, v in adapters.items()
+        if v.get("type", "").lower() == "wallbox" and v.get("enabled", True)
+    ]
+    # Annahme: Jedes Fahrzeug ist an eine Wallbox gekoppelt
+    # Hole aktuelle Systemdaten
+    from backend.services.pv_service import pv_service
+    snap = pv_service.snapshot()
+    pv_power = snap.get("pv_power_kw", 0)
+    house_load = snap.get("house_load_w", 0) / 1000
+    grid_price = 0.28
+    hour = datetime.now().hour
+    # Gesamtleistungs-Limit (Peak Shaving)
+    max_total_power = 22.0 if len(active_wallboxes) > 1 else 11.0
+    # Verfügbare Ladeleistung: PV-Überschuss + ggf. Netz (hier: PV-Überschuss bevorzugt)
+    pv_surplus = max(0.0, pv_power - house_load)
+    available_power = min(max_total_power, pv_surplus if pv_surplus > 0 else max_total_power)
+    # Gleichmäßig verteilen (kann später nach Priorität gewichtet werden)
+    per_ev_power = available_power / max(1, len(active_wallboxes))
+    # KI-Empfehlung pro EV/Wallbox
+    from backend.ai_controller import get_ai_controller
+    controller = await get_ai_controller()
+    results = []
+    for wallbox_id, wallbox in active_wallboxes:
+        ev_id = wallbox.get("ev_id") or wallbox_id
+        ev_profile = ev_profiles.get(ev_id, {})
+        ev_soc = snap.get("ev_soc", 50)
+        # Individuelle Ladefenster (optional, hier als Beispiel: nachts 22-6 Uhr)
+        charge_window = wallbox.get("charge_window") or {"start": 22, "end": 6}
+        # Individuelle max. Ladeleistung
+        max_ev_power = min(wallbox.get("power_kw", 11.0), ev_profile.get("max_charge_kw", 11.0))
+        # Systemdaten für dieses EV
+        current_data = {
+            "pv_power": pv_power,
+            "battery_soc": snap.get("battery_soc", 50),
+            "ev_soc": ev_soc,
+            "household_load": house_load,
+            "grid_price": grid_price,
+            "hour": hour,
+            "temperature": snap.get("temperature", 20),
+            "ev_connected": True
+        }
+        # KI-Empfehlung abrufen (mit Flottenparametern)
+        ai_result = await controller.get_optimal_action(
+            current_data,
+            charge_window=charge_window,
+            max_total_power_kw=per_ev_power,
+            pv_surplus_only=True
+        )
+        # Begrenze auf max_ev_power
+        ai_result["ev_charge_rate"] = min(ai_result["ev_charge_rate"], max_ev_power)
+        results.append({
+            "wallbox_id": wallbox_id,
+            "ev_id": ev_id,
+            "empfohlene_leistung_kw": round(ai_result["ev_charge_rate"], 2),
+            "grund": ai_result.get("explanation", ""),
+            "soc": ev_soc
+        })
+    return {"fleet_recommendations": results, "gesamtleistung_kw": round(available_power, 2), "pv_surplus_kw": round(pv_surplus, 2)}
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+@fleet_router.get("/fleet/ai_recommendation", dependencies=[Depends(get_api_key)])
+async def fleet_ai_recommendation():
+    """
+    Gibt für alle aktiven EVs/Wallboxen die aktuelle KI-Empfehlung und zugewiesene Ladeleistung zurück.
+    Berücksichtigt PV-Überschuss, Peak Shaving und gleichmäßige Verteilung.
+    """
+    # Hole Konfiguration und aktive EVs/Wallboxen
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    adapters = config.get("adapters", {})
+    # Finde alle aktiven Wallboxen/EVs
+    active_wallboxes = [
+        (k, v) for k, v in adapters.items()
+        if v.get("type", "").lower() == "wallbox" and v.get("enabled", True)
+    ]
+    # Annahme: Jedes Fahrzeug ist an eine Wallbox gekoppelt
+    # Hole aktuelle Systemdaten
+    from backend.services.pv_service import pv_service
+    snap = pv_service.snapshot()
+    pv_power = snap.get("pv_power_kw", 0)
+    house_load = snap.get("house_load_w", 0) / 1000
+    grid_price = 0.28
+    hour = datetime.now().hour
+    # Gesamtleistungs-Limit (Peak Shaving)
+    max_total_power = 22.0 if len(active_wallboxes) > 1 else 11.0
+    # Verfügbare Ladeleistung: PV-Überschuss + ggf. Netz (hier: PV-Überschuss bevorzugt)
+    pv_surplus = max(0.0, pv_power - house_load)
+    available_power = min(max_total_power, pv_surplus if pv_surplus > 0 else max_total_power)
+    # Gleichmäßig verteilen (kann später nach Priorität gewichtet werden)
+    per_ev_power = available_power / max(1, len(active_wallboxes))
+    # KI-Empfehlung pro EV/Wallbox
+    from backend.ai_controller import get_ai_controller
+    controller = await get_ai_controller()
+    results = []
+    for wallbox_id, wallbox in active_wallboxes:
+        ev_id = wallbox.get("ev_id") or wallbox_id
+        ev_profile = ev_profiles.get(ev_id, {})
+        ev_soc = snap.get("ev_soc", 50)
+        # Individuelle Ladefenster (optional, hier als Beispiel: nachts 22-6 Uhr)
+        charge_window = wallbox.get("charge_window") or {"start": 22, "end": 6}
+        # Individuelle max. Ladeleistung
+        max_ev_power = min(wallbox.get("power_kw", 11.0), ev_profile.get("max_charge_kw", 11.0))
+        # Systemdaten für dieses EV
+        current_data = {
+            "pv_power": pv_power,
+            "battery_soc": snap.get("battery_soc", 50),
+            "ev_soc": ev_soc,
+            "household_load": house_load,
+            "grid_price": grid_price,
+            "hour": hour,
+            "temperature": snap.get("temperature", 20),
+            "ev_connected": True
+        }
+        # KI-Empfehlung abrufen (mit Flottenparametern)
+        ai_result = await controller.get_optimal_action(
+            current_data,
+            charge_window=charge_window,
+            max_total_power_kw=per_ev_power,
+            pv_surplus_only=True
+        )
+        # Begrenze auf max_ev_power
+        ai_result["ev_charge_rate"] = min(ai_result["ev_charge_rate"], max_ev_power)
+        results.append({
+            "wallbox_id": wallbox_id,
+            "ev_id": ev_id,
+            "empfohlene_leistung_kw": round(ai_result["ev_charge_rate"], 2),
+            "grund": ai_result.get("explanation", ""),
+            "soc": ev_soc
+        })
+    return {"fleet_recommendations": results, "gesamtleistung_kw": round(available_power, 2), "pv_surplus_kw": round(pv_surplus, 2)}
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+
+
+@fleet_router.get("/fleet/ai_recommendation", dependencies=[Depends(get_api_key)])
+async def fleet_ai_recommendation():
+    """
+    Gibt für alle aktiven EVs/Wallboxen die aktuelle KI-Empfehlung und zugewiesene Ladeleistung zurück.
+    Berücksichtigt PV-Überschuss, Peak Shaving und gleichmäßige Verteilung.
+    """
+    # Hole Konfiguration und aktive EVs/Wallboxen
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    adapters = config.get("adapters", {})
+    # Finde alle aktiven Wallboxen/EVs
+    active_wallboxes = [
+        (k, v) for k, v in adapters.items()
+        if v.get("type", "").lower() == "wallbox" and v.get("enabled", True)
+    ]
+    # Annahme: Jedes Fahrzeug ist an eine Wallbox gekoppelt
+    # Hole aktuelle Systemdaten
+    from backend.services.pv_service import pv_service
+    snap = pv_service.snapshot()
+    pv_power = snap.get("pv_power_kw", 0)
+    house_load = snap.get("house_load_w", 0) / 1000
+    grid_price = 0.28
+    hour = datetime.now().hour
+    # Gesamtleistungs-Limit (Peak Shaving)
+    max_total_power = 22.0 if len(active_wallboxes) > 1 else 11.0
+    # Verfügbare Ladeleistung: PV-Überschuss + ggf. Netz (hier: PV-Überschuss bevorzugt)
+    pv_surplus = max(0.0, pv_power - house_load)
+    available_power = min(max_total_power, pv_surplus if pv_surplus > 0 else max_total_power)
+    # Gleichmäßig verteilen (kann später nach Priorität gewichtet werden)
+    per_ev_power = available_power / max(1, len(active_wallboxes))
+    # KI-Empfehlung pro EV/Wallbox
+    from backend.ai_controller import get_ai_controller
+    controller = await get_ai_controller()
+    results = []
+    for wallbox_id, wallbox in active_wallboxes:
+        ev_id = wallbox.get("ev_id") or wallbox_id
+        ev_profile = ev_profiles.get(ev_id, {})
+        ev_soc = snap.get("ev_soc", 50)
+        # Individuelle Ladefenster (optional, hier als Beispiel: nachts 22-6 Uhr)
+        charge_window = wallbox.get("charge_window") or {"start": 22, "end": 6}
+        # Individuelle max. Ladeleistung
+        max_ev_power = min(wallbox.get("power_kw", 11.0), ev_profile.get("max_charge_kw", 11.0))
+        # Systemdaten für dieses EV
+        current_data = {
+            "pv_power": pv_power,
+            "battery_soc": snap.get("battery_soc", 50),
+            "ev_soc": ev_soc,
+            "household_load": house_load,
+            "grid_price": grid_price,
+            "hour": hour,
+            "temperature": snap.get("temperature", 20),
+            "ev_connected": True
+        }
+        # KI-Empfehlung abrufen (mit Flottenparametern)
+        ai_result = await controller.get_optimal_action(
+            current_data,
+            charge_window=charge_window,
+            max_total_power_kw=per_ev_power,
+            pv_surplus_only=True
+        )
+        # Begrenze auf max_ev_power
+        ai_result["ev_charge_rate"] = min(ai_result["ev_charge_rate"], max_ev_power)
+        results.append({
+            "wallbox_id": wallbox_id,
+            "ev_id": ev_id,
+            "empfohlene_leistung_kw": round(ai_result["ev_charge_rate"], 2),
+            "grund": ai_result.get("explanation", ""),
+            "soc": ev_soc
+        })
+    return {"fleet_recommendations": results, "gesamtleistung_kw": round(available_power, 2), "pv_surplus_kw": round(pv_surplus, 2)}
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+
+
+@fleet_router.get("/fleet/ai_recommendation", dependencies=[Depends(get_api_key)])
+async def fleet_ai_recommendation():
+    """
+    Gibt für alle aktiven EVs/Wallboxen die aktuelle KI-Empfehlung und zugewiesene Ladeleistung zurück.
+    Berücksichtigt PV-Überschuss, Peak Shaving und gleichmäßige Verteilung.
+    """
+    # Hole Konfiguration und aktive EVs/Wallboxen
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    adapters = config.get("adapters", {})
+    # Finde alle aktiven Wallboxen/EVs
+    active_wallboxes = [
+        (k, v) for k, v in adapters.items()
+        if v.get("type", "").lower() == "wallbox" and v.get("enabled", True)
+    ]
+    # Annahme: Jedes Fahrzeug ist an eine Wallbox gekoppelt
+    # Hole aktuelle Systemdaten
+    from backend.services.pv_service import pv_service
+    snap = pv_service.snapshot()
+    pv_power = snap.get("pv_power_kw", 0)
+    house_load = snap.get("house_load_w", 0) / 1000
+    grid_price = 0.28
+    hour = datetime.now().hour
+    # Gesamtleistungs-Limit (Peak Shaving)
+    max_total_power = 22.0 if len(active_wallboxes) > 1 else 11.0
+    # Verfügbare Ladeleistung: PV-Überschuss + ggf. Netz (hier: PV-Überschuss bevorzugt)
+    pv_surplus = max(0.0, pv_power - house_load)
+    available_power = min(max_total_power, pv_surplus if pv_surplus > 0 else max_total_power)
+    # Gleichmäßig verteilen (kann später nach Priorität gewichtet werden)
+    per_ev_power = available_power / max(1, len(active_wallboxes))
+    # KI-Empfehlung pro EV/Wallbox
+    from backend.ai_controller import get_ai_controller
+    controller = await get_ai_controller()
+    results = []
+    for wallbox_id, wallbox in active_wallboxes:
+        ev_id = wallbox.get("ev_id") or wallbox_id
+        ev_profile = ev_profiles.get(ev_id, {})
+        ev_soc = snap.get("ev_soc", 50)
+        # Individuelle Ladefenster (optional, hier als Beispiel: nachts 22-6 Uhr)
+        charge_window = wallbox.get("charge_window") or {"start": 22, "end": 6}
+        # Individuelle max. Ladeleistung
+        max_ev_power = min(wallbox.get("power_kw", 11.0), ev_profile.get("max_charge_kw", 11.0))
+        # Systemdaten für dieses EV
+        current_data = {
+            "pv_power": pv_power,
+            "battery_soc": snap.get("battery_soc", 50),
+            "ev_soc": ev_soc,
+            "household_load": house_load,
+            "grid_price": grid_price,
+            "hour": hour,
+            "temperature": snap.get("temperature", 20),
+            "ev_connected": True
+        }
+        # KI-Empfehlung abrufen (mit Flottenparametern)
+        ai_result = await controller.get_optimal_action(
+            current_data,
+            charge_window=charge_window,
+            max_total_power_kw=per_ev_power,
+            pv_surplus_only=True
+        )
+        # Begrenze auf max_ev_power
+        ai_result["ev_charge_rate"] = min(ai_result["ev_charge_rate"], max_ev_power)
+        results.append({
+            "wallbox_id": wallbox_id,
+            "ev_id": ev_id,
+            "empfohlene_leistung_kw": round(ai_result["ev_charge_rate"], 2),
+            "grund": ai_result.get("explanation", ""),
+            "soc": ev_soc
+        })
+    return {"fleet_recommendations": results, "gesamtleistung_kw": round(available_power, 2), "pv_surplus_kw": round(pv_surplus, 2)}
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+from backend.controllers.v2h_controller import V2HController
+from backend.adapters.base import DeviceAdapter
+from backend.adapters.wallbox_goe import GoEWallboxAdapter
+from backend.adapters.inverter_fronius import FroniusInverterAdapter
+from backend.services.recommendation_service import generate_recommendation
+from .config_service import load_config
+from backend.routes.smartmeter import router as smartmeter_router
+
+# Periodischer KI-Steuerungs-Task
+async def ai_control_loop():
+    from backend.ai_controller import get_ai_controller
+    while True:
+        try:
+            controller = await get_ai_controller()
+            # Hole aktuelle Systemdaten (Dummy, hier anpassen für echte Daten)
+            current_data = {
+                'pv_power': state.get_value('pv_power_kw', 0),
+                'battery_soc': state.get_value('home_battery_soc', 0),
+                'ev_soc': state.get_value('ev_soc', 0),
+                'household_load': state.get_value('house_load_kw', 1.0),
+                'grid_price': 0.28,
+                'hour': datetime.now().hour,
+                'temperature': 20
+            }
+            action = await controller.get_optimal_action(current_data)
+            # Sende Steuerbefehle an Adapter (hier als Beispiel MQTT)
+            mqtt_publish('energy/control', action)
+            print(f"[KI] Steuerung ausgeführt: {action['explanation']}")
+        except Exception as e:
+            print(f"[KI] Fehler im Steuerungs-Loop: {e}")
+        await asyncio.sleep(300)  # alle 5 Minuten
+
+@app.on_event("startup")
+async def startup_event():
+    import redis.asyncio as aioredis
+    redis = await aioredis.from_url("redis://localhost")  # Keep as is for local Redis
+    await FastAPILimiter.init(redis)
+    # Disabled AI control loop to prevent backend crash during debugging
+    # asyncio.create_task(ai_control_loop())
+
+state = RealtimeState()
+battery = BatterySimulator(BatteryConfig())
+v2h_controller = V2HController(battery)
+influx_writer = None
+clients: List[WebSocket] = []
+mobile_clients = []
+app_state = {"config": load_config()}
+
+
+# Import routers for energy, reporting, alarms
+from backend.routes.energy_management import router as energy_router
+from backend.routes.reporting import router as reporting_router
+from backend.routes.alarms import router as alarms_router
+
+# EV Runtime Vars (für /ws/mobile updates)
+ev_soc = 0.0
+ev_power_kw = 0.0
+ev_charging = False
+# V2H Endpunkte
+from fastapi.security import APIKeyHeader
+from fastapi import Depends, HTTPException, status
+
+API_KEY = "mein_geheimer_schulkey123"
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+def get_api_key(api_key: str = Depends(api_key_header)):
+    if api_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiger API-Key",
+        )
+    return api_key
+
+# --- Flottenmanagement: KI-Empfehlung für alle EVs/Wallboxen ---
+from fastapi import APIRouter, Depends
+fleet_router = APIRouter()
+
+@fleet_router.get("/fleet/ai_recommendation", dependencies=[Depends(get_api_key)])
+async def fleet_ai_recommendation():
+    """
+    Gibt für alle aktiven EVs/Wallboxen die aktuelle KI-Empfehlung und zugewiesene Ladeleistung zurück.
+    Berücksichtigt PV-Überschuss, Peak Shaving und gleichmäßige Verteilung.
+    """
+    # canonical fleet_ai_recommendation implementation
+    # Hole Konfiguration und aktive EVs/Wallboxen
+    config = app_state["config"]
+    ev_profiles = config.get("ev_profiles", {})
+    adapters = config.get("adapters", {})
+    # Finde alle aktiven Wallboxen/EVs
+    active_wallboxes = [
+        (k, v) for k, v in adapters.items()
+        if v.get("type", "").lower() == "wallbox" and v.get("enabled", True)
+    ]
+    # Annahme: Jedes Fahrzeug ist an eine Wallbox gekoppelt
+    # Hole aktuelle Systemdaten
+    from backend.services.pv_service import pv_service
+    snap = pv_service.snapshot()
+    pv_power = snap.get("pv_power_kw", 0)
+    house_load = snap.get("house_load_w", 0) / 1000
+    grid_price = 0.28
+    hour = datetime.now().hour
+    # Gesamtleistungs-Limit (Peak Shaving)
+    max_total_power = 22.0 if len(active_wallboxes) > 1 else 11.0
+    # Verfügbare Ladeleistung: PV-Überschuss + ggf. Netz (hier: PV-Überschuss bevorzugt)
+    pv_surplus = max(0.0, pv_power - house_load)
+    available_power = min(max_total_power, pv_surplus if pv_surplus > 0 else max_total_power)
+    # Gleichmäßig verteilen (kann später nach Priorität gewichtet werden)
+    per_ev_power = available_power / max(1, len(active_wallboxes))
+    # KI-Empfehlung pro EV/Wallbox
+    from backend.ai_controller import get_ai_controller
+    controller = await get_ai_controller()
+    results = []
+    for wallbox_id, wallbox in active_wallboxes:
+        ev_id = wallbox.get("ev_id") or wallbox_id
+        ev_profile = ev_profiles.get(ev_id, {})
+        ev_soc = snap.get("ev_soc", 50)
+        # Individuelle Ladefenster (optional, hier als Beispiel: nachts 22-6 Uhr)
+        charge_window = wallbox.get("charge_window") or {"start": 22, "end": 6}
+        # Individuelle max. Ladeleistung
+        max_ev_power = min(wallbox.get("power_kw", 11.0), ev_profile.get("max_charge_kw", 11.0))
+        # Systemdaten für dieses EV
+        current_data = {
+            "pv_power": pv_power,
+            "battery_soc": snap.get("battery_soc", 50),
+            "ev_soc": ev_soc,
+            "household_load": house_load,
+            "grid_price": grid_price,
+            "hour": hour,
+            "temperature": snap.get("temperature", 20),
+            "ev_connected": True
+        }
+        # KI-Empfehlung abrufen (mit Flottenparametern)
+        ai_result = await controller.get_optimal_action(
+            current_data,
+            charge_window=charge_window,
+            max_total_power_kw=per_ev_power,
+            pv_surplus_only=True
+        )
+        # Begrenze auf max_ev_power
+        ai_result["ev_charge_rate"] = min(ai_result["ev_charge_rate"], max_ev_power)
+        results.append({
+            "wallbox_id": wallbox_id,
+            "ev_id": ev_id,
+            "empfohlene_leistung_kw": round(ai_result["ev_charge_rate"], 2),
+            "grund": ai_result.get("explanation", ""),
+            "soc": ev_soc
+        })
+    return {"fleet_recommendations": results, "gesamtleistung_kw": round(available_power, 2), "pv_surplus_kw": round(pv_surplus, 2)}
+
+app.include_router(fleet_router)
+
+# Test-Endpoint für API-Key und Schreibbarkeit
+
+from fastapi import HTTPException, Depends
+
+import logging
+logger = logging.getLogger("uvicorn.error")
+
+
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+
+import os
+frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
+app.mount("/static", StaticFiles(directory=os.path.abspath(frontend_public)), name="static")
+
+
+from fastapi import Request
+
+# Root route must be defined after app is created
+@app.get("/")
+async def root():
+    return {"message": "EnergyFlowHub_EV backend is running."}
+
+# REST endpoint for device adapters to ingest measurement data
+@app.post("/api/ingest")
+async def ingest_measurement(request: Request):
+    """
+    Endpoint für Adapter: POST JSON mit Messwerten (z.B. von Modbus, Cloud API).
+    Beispiel-Body:
+    {
+      "device": "smart_meter",
+      "power": 1234,
+      "voltage": 230.1,
+      "current": 5.2,
+      "timestamp": "2026-04-04T12:34:56Z"
+    }
+    """
+    try:
+        data = await request.json()
+        if not influx_writer:
+            return {"error": "InfluxDB nicht verfügbar"}
+        await influx_writer.write(data)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Import and include history router for charts
+
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Body
+import asyncio, random
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
+
+import os, yaml
+from fastapi import HTTPException, Query
+
+from backend.services.state import RealtimeState
+from backend.services.influx_service import create_influx_writer
+from backend.mqtt_service import run_mqtt_loop, mqtt_publish
+from backend.models.battery import BatterySimulator, BatteryConfig
+
+# Alias-Route für Kompatibilität: /airecommendation liefert das gleiche wie /fleet/ai_recommendation
+@app.get("/airecommendation", dependencies=[Depends(get_api_key)])
+async def airecommendation_alias(response: Response):
+    return await fleet_ai_recommendation()

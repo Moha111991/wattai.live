@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: ems-mqtt-broker
+    restart: unless-stopped
+    
+    ports:
+      - "1883:1883"   # MQTT (unverschlüsselt - nur für lokale Tests)
+      - "8883:8883"   # MQTT mit TLS (Produktion)
+      - "9001:9001"   # WebSocket
+      - "9002:9002"   # WebSocket mit TLS
+    
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./config/passwords.txt:/mosquitto/config/passwords.txt:ro
+      - ./config/acl.conf:/mosquitto/config/acl.conf:ro
+      - ./certs:/mosquitto/certs:ro
+      - ./data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    
+    environment:
+      - TZ=Europe/Berlin
+    
+    networks:
+      - ems-network
+    
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mosquitto-log:
+    driver: local
+
+networks:
+  ems-network:
+    driver: bridge
