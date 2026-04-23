@@ -225,7 +225,7 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
         {step === "welcome" && (
           <>
             <div style={styles.header}>
-		      <div style={styles.title}>⚡ Willkommen bei LoopIQ</div>
+          <div style={styles.title}>⚡ Willkommen bei WattAI</div>
               <div style={styles.subtitle}>
                 Lass uns deine Geräte einrichten, damit du sofort loslegen kannst!
               </div>

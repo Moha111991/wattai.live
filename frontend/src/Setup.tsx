@@ -149,7 +149,7 @@ export default function Setup({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="setup-wizard">
     <div className="setup-card">
-		<h1>⚡ LoopIQ Setup</h1>
+    <h1>⚡ WattAI Setup</h1>
         <div className="progress-bar">
           <div className="progress" style={{ width: `${(step / 5) * 100}%` }}></div>
         </div>

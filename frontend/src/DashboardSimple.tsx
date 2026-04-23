@@ -396,7 +396,7 @@ export default function DashboardSimple() {
     return (
       <div className="dashboard-grid">
         <header>
-		  <h1>⚡ LoopIQ</h1>
+          <h1>⚡ WattAI</h1>
           <span className={`status ${connected ? "online" : "offline"}`}>
             {connected ? "🟢 Live" : "🔴 Offline"}
           </span>
@@ -438,7 +438,7 @@ export default function DashboardSimple() {
     return (
       <div className="dashboard-grid">
         <header>
-		  <h1>⚡ LoopIQ</h1>
+          <h1>⚡ WattAI</h1>
           <span className={`status ${connected ? "online" : "offline"}`}>
             {connected ? "🟢 Live" : "🔴 Offline"}
           </span>
@@ -472,7 +472,7 @@ export default function DashboardSimple() {
     return (
       <div className="dashboard-grid">
         <header>
-		  <h1>⚡ LoopIQ</h1>
+          <h1>⚡ WattAI</h1>
           <span className={`status ${connected ? "online" : "offline"}`}>
             {connected ? "🟢 Live" : "🔴 Offline"}
           </span>
@@ -509,7 +509,7 @@ export default function DashboardSimple() {
       )}
 
       <header>
-		<h1>⚡ LoopIQ</h1>
+    <h1>⚡ WattAI</h1>
         <span className={`status ${connected ? "online" : "offline"}`}>
           {connected ? "🟢 Live" : "🔴 Offline"}
         </span>

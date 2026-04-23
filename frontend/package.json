@@ -3,11 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://moha111991.github.io/LoopIQ",
+  "homepage": "https://moha111991.github.io/WattAI",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-  "build:gh": "vite build --base=/LoopIQ/",
+  "build:gh": "vite build --base=/WattAI/",
     "preview": "vite preview",
     "predeploy": "npm run build:gh",
     "deploy": "gh-pages -d dist"

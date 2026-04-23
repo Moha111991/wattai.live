@@ -40,7 +40,7 @@ export const PLAN_STORAGE_KEY = 'ems_plan';
 export const FLEET_OVERRIDE_STORAGE_KEY = 'feature_fleet_tab';
 
 export const SALES_UPGRADE_LINK =
-  'mailto:sales@loopiq.energy?subject=Upgrade%20auf%20Flottenmanagement';
+  'mailto:sales@wattai.energy?subject=Upgrade%20auf%20Flottenmanagement';
 
 export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
   free: {

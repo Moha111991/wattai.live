@@ -56,8 +56,8 @@ export default defineConfig({
         ]
       },
       manifest: {
-    name: 'LoopIQ',
-    short_name: 'LoopIQ',
+  name: 'WattAI',
+  short_name: 'WattAI',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',

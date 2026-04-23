@@ -54,7 +54,7 @@ export function RealtimeDashboard() {
 
   return (
     <div style={{ padding: 24, fontFamily: "system-ui", maxWidth: 1200, margin: "0 auto" }}>
-  <h1 style={{ marginBottom: 32 }}>⚡ LoopIQ Dashboard</h1>
+  <h1 style={{ marginBottom: 32 }}>⚡ WattAI Dashboard</h1>
       
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
         <MetricCard 

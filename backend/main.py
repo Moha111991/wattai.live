@@ -457,7 +457,7 @@ def _normalize_id(value: Any) -> str:
 async def root():
     if _frontend_dist_ready():
         return FileResponse(_frontend_index_path())
-    return {"message": "LoopIQ backend is running."}
+    return {"message": "WattAI backend is running."}
 
 
 @app.get("/devices")
