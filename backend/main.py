@@ -19,8 +19,15 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from fastapi.websockets import WebSocket
-from fastapi_limiter import FastAPILimiter
-from fastapi_limiter.depends import RateLimiter
+
+try:
+    from fastapi_limiter import FastAPILimiter as _FastAPILimiter
+    from fastapi_limiter.depends import RateLimiter as _RateLimiter
+    _LIMITER_IMPORT_ERROR: Optional[Exception] = None
+except Exception as _limiter_import_error:
+    _FastAPILimiter = None
+    _RateLimiter = None
+    _LIMITER_IMPORT_ERROR = _limiter_import_error
 
 from backend.secure_logging import get_audit_logger
 
@@ -48,7 +55,9 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-API_KEY = os.getenv("API_KEY", "mein_geheimer_schulkey123")
+API_KEY = os.getenv("API_KEY", "").strip()
+if not API_KEY:
+    LOG.warning("API_KEY is not set. Admin API-key auth is disabled until API_KEY is configured.")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 ADAPTER_KEYS_FILE = os.path.join(os.path.dirname(__file__), "../data/adapter_keys.json")
 
@@ -83,6 +92,8 @@ def _verify_key(plain: str) -> Optional[str]:
 
 
 def get_api_key(api_key: Optional[str] = Depends(api_key_header)) -> str:
+    if not API_KEY:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Server API key is not configured")
     if api_key != API_KEY:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiger API-Key")
     return api_key
@@ -91,7 +102,7 @@ def get_api_key(api_key: Optional[str] = Depends(api_key_header)) -> str:
 async def verify_adapter_or_admin(api_key: Optional[str] = Depends(api_key_header)) -> str:
     if not api_key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing API key")
-    if api_key == API_KEY:
+    if API_KEY and api_key == API_KEY:
         return "admin"
     kid = _verify_key(api_key)
     if kid:
@@ -110,6 +121,8 @@ app.add_middleware(
         "http://127.0.0.1:5175",
         "http://localhost:8080",
         "http://127.0.0.1:8080",
+        "https://wattai.live",
+        "https://www.wattai.live",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -354,23 +367,31 @@ async def _startup_runtime() -> None:
         import redis.asyncio as aioredis
 
         redis_client = await aioredis.from_url(REDIS_URL)
-        await FastAPILimiter.init(redis_client)
-        rate_limiter_enabled = True
+
+        if _FastAPILimiter is not None:
+            await _FastAPILimiter.init(redis_client)
+            rate_limiter_enabled = True
+        else:
+            LOG.warning(
+                "fastapi_limiter unavailable, request rate limiting disabled: %s",
+                _LIMITER_IMPORT_ERROR,
+            )
+
         await _load_pending_connections()
     except Exception:
         LOG.info("Redis not available; pending_connections persistence disabled")
 
 
 async def _optional_rate_limit_ingest(request: Request, response: Response) -> None:
-    if not rate_limiter_enabled:
+    if not rate_limiter_enabled or _RateLimiter is None:
         return
-    await RateLimiter(times=60, seconds=60)(request, response)
+    await _RateLimiter(times=60, seconds=60)(request, response)
 
 
 async def _optional_rate_limit_connect(request: Request, response: Response) -> None:
-    if not rate_limiter_enabled:
+    if not rate_limiter_enabled or _RateLimiter is None:
         return
-    await RateLimiter(times=20, seconds=60)(request, response)
+    await _RateLimiter(times=20, seconds=60)(request, response)
 
 
 def _register_dynamic_adapter(data: Dict[str, Any]) -> None:
