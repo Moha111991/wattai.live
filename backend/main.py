@@ -21,26 +21,27 @@ from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from fastapi.websockets import WebSocket
 
-_limiter_import_error: Optional[Exception] = None
+_limiter_import_error_holder: Optional[Exception] = None
 
 try:
     # Most versions expose FastAPILimiter at package root.
     from fastapi_limiter import FastAPILimiter as _FastAPILimiter
-except Exception as _limiter_import_error:
+except Exception as _root_import_error:
+    _limiter_import_error_holder = _root_import_error
     try:
         # Some builds expose it only from submodule path.
         _FastAPILimiter = getattr(importlib.import_module("fastapi_limiter.fastapi_limiter"), "FastAPILimiter")
-        _limiter_import_error = None
+        _limiter_import_error_holder = None
     except Exception as _submodule_import_error:
         _FastAPILimiter = None
-        _limiter_import_error = _submodule_import_error
+        _limiter_import_error_holder = _submodule_import_error
 
 try:
     from fastapi_limiter.depends import RateLimiter as _RateLimiter
 except Exception:
     _RateLimiter = None
 
-_LIMITER_IMPORT_ERROR: Optional[Exception] = _limiter_import_error
+_LIMITER_IMPORT_ERROR: Optional[Exception] = _limiter_import_error_holder
 
 from backend.secure_logging import get_audit_logger
 
