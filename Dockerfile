@@ -29,4 +29,4 @@ COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
+CMD ["python", "-m", "backend.run_server"]
