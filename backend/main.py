@@ -34,7 +34,7 @@ from backend.secure_logging import get_audit_logger
 LOG = logging.getLogger("uvicorn.error")
 
 redis_client: Optional[Any] = None
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = os.getenv("REDIS_URL", "").strip()
 
 
 @asynccontextmanager
@@ -345,7 +345,7 @@ async def _save_pending_connections() -> None:
     try:
         await redis_client.set("pending_connections", json.dumps(pending_connections))
     except Exception:
-        LOG.exception("Failed to save pending_connections to Redis")
+        LOG.warning("Failed to save pending_connections to Redis; continuing without persistence")
 
 
 async def _load_pending_connections() -> None:
@@ -357,16 +357,29 @@ async def _load_pending_connections() -> None:
             pending_connections.clear()
             pending_connections.update(json.loads(val))
     except Exception:
-        LOG.exception("Failed to load pending_connections from Redis")
+        LOG.warning("Failed to load pending_connections from Redis; starting with empty pending connections")
 
 
 async def _startup_runtime() -> None:
     global redis_client, rate_limiter_enabled
     _ensure_smarthome_devices()
+    redis_client = None
+    rate_limiter_enabled = False
+
+    if not REDIS_URL:
+        LOG.info("REDIS_URL not set; Redis persistence and rate limiting are disabled")
+        if _LIMITER_IMPORT_ERROR is not None:
+            LOG.warning(
+                "fastapi_limiter unavailable, request rate limiting disabled: %s",
+                _LIMITER_IMPORT_ERROR,
+            )
+        return
+
     try:
         import redis.asyncio as aioredis
 
         redis_client = await aioredis.from_url(REDIS_URL)
+        await redis_client.ping()
 
         if _FastAPILimiter is not None:
             await _FastAPILimiter.init(redis_client)
@@ -379,7 +392,8 @@ async def _startup_runtime() -> None:
 
         await _load_pending_connections()
     except Exception:
-        LOG.info("Redis not available; pending_connections persistence disabled")
+        redis_client = None
+        LOG.info("Redis not available; pending_connections persistence and rate limiting disabled")
 
 
 async def _optional_rate_limit_ingest(request: Request, response: Response) -> None:
