@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { API_URL, resolveWsUrl } from "../lib/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 // Simple polling helper: polls GET /connections/{requestId} until status === 'connected'
 async function pollConnection(requestId: string, {
@@ -431,9 +431,7 @@ export default function DeviceManager() {
   // WebSocket push: listen for connection updates from backend
   useEffect(() => {
     try {
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      // allow override via env var VITE_API_WS, otherwise assume same host /ws
-      const wsUrl = import.meta.env.VITE_API_WS || `${wsProtocol}//${window.location.host}/ws`;
+      const wsUrl = resolveWsUrl();
       const socket = new WebSocket(wsUrl);
 
       socket.addEventListener('open', () => {

@@ -6,6 +6,7 @@ import DeviceManager from "./DeviceManager";
 import CO2CostWidget from './CO2CostWidget';
 import ErrorAlarmMonitor from './ErrorAlarmMonitor';
 import BatteryWidget from './BatteryWidget';
+import { API_URL, WS_URL } from '../lib/api';
 
 interface RealtimeData {
   pv_power_kw: number;
@@ -19,8 +20,8 @@ interface RealtimeData {
   battery_power_kw?: number;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const WS_BASE = `${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('https://', 'wss://').replace('http://', 'ws://')}/ws`;
+const API_BASE = API_URL;
+const WS_BASE = WS_URL;
 
 export default function Dashboard() {
   const [data, setData] = useState<RealtimeData | null>(null);

@@ -2,10 +2,7 @@
 import { useEffect, useState } from 'react';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 import BatteryWidget from './BatteryWidget';
-
-const isLocalHost = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
-const API_URL = import.meta.env.VITE_API_URL || (isLocalHost ? 'http://localhost:8000' : window.location.origin);
-const WS_URL = API_URL ? `${API_URL.replace(/^http/, 'ws')}/ws` : null;
+import { API_URL, WS_URL } from '../lib/api';
 
 type State = {
   battery_soc?: number;

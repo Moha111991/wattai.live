@@ -1,6 +1,38 @@
-const isLocalHost = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
-export const API_URL = import.meta.env.VITE_API_URL || (isLocalHost ? 'http://localhost:8000' : window.location.origin);
-export const WS_URL = API_URL ? API_URL.replace(/^http/, 'ws') : '';
+const PROD_API_URL = 'https://api.wattai.live';
+
+const isLocalHost =
+  typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const normalizeApiUrl = (raw?: string | null): string => {
+  const value = (raw || '').trim();
+  if (!value) return '';
+
+  try {
+    const parsed = new URL(value);
+    // If someone configured frontend domain as API URL, correct it to backend API domain.
+    if (['wattai.live', 'www.wattai.live'].includes(parsed.hostname)) {
+      parsed.protocol = 'https:';
+      parsed.hostname = 'api.wattai.live';
+    }
+    return parsed.toString().replace(/\/$/, '');
+  } catch {
+    return value.replace(/\/$/, '');
+  }
+};
+
+const fallbackApiUrl = isLocalHost ? 'http://localhost:8000' : PROD_API_URL;
+
+export const API_URL = normalizeApiUrl(import.meta.env.VITE_API_URL) || fallbackApiUrl;
+
+export const resolveWsUrl = (): string => {
+  const wsOverride = (import.meta.env.VITE_API_WS || '').trim();
+  if (wsOverride) {
+    return wsOverride;
+  }
+  return `${API_URL.replace(/^http/, 'ws')}/ws`;
+};
+
+export const WS_URL = resolveWsUrl();
 
 console.log('[API_URL]', API_URL);
 console.log('[WS_URL]', WS_URL);
