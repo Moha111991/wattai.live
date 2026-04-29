@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./ElektroautoV2H.module.css";
-import { fetchDevices } from "../lib/api";
+import { API_URL, fetchDevices } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = API_URL;
 
 const ElektroautoV2H: React.FC = () => {
   const [v2hStatus, setV2hStatus] = useState<{

@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-const WS_URL = `${(import.meta.env.VITE_API_URL || 'http://localhost:8000')
-  .replace('https://', 'wss://')
-  .replace('http://', 'ws://')}/ws`;
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_URL, WS_URL } from '../lib/api';
 
 interface EVState {
   ev_soc: number;

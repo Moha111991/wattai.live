@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import carDataRaw from "../data/cars.json";
+import { API_URL } from "../lib/api";
 
 // Add type for carData to allow dynamic string indexing
 type CarDataType = {
@@ -15,11 +16,6 @@ type CarDataType = {
 
 // Cast via unknown so TypeScript accepts the JSON shape while we use a flexible index signature
 const carData: CarDataType = carDataRaw as unknown as CarDataType;
-
-const API_URL =
-  import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim() !== ""
-    ? import.meta.env.VITE_API_URL
-  : import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 type EVProfile = {
   manufacturer: string;

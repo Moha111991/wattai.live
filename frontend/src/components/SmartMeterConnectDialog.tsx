@@ -1,7 +1,6 @@
 
-import React, { useState } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+import { useState } from "react";
+import { API_URL } from "../lib/api";
 
 export default function SmartMeterConnectDialog({ onConnect }: { onConnect: (params: any) => Promise<any> | void }) {
   const [protocol, setProtocol] = useState<'modbus' | 'cloud'>('modbus');
@@ -42,7 +41,7 @@ export default function SmartMeterConnectDialog({ onConnect }: { onConnect: (par
     setLoading(true);
     try {
       if (protocol === 'modbus') {
-        const result = await onConnect({ ip, port, meterId });
+        await onConnect({ ip, port, meterId });
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
       } else if (protocol === 'cloud') {

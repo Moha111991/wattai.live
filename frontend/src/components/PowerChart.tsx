@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
+import { API_URL } from "../lib/api";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -32,7 +33,6 @@ export default function PowerChart() {
     const fetchData = async () => {
       try {
         const agg = raster === "hour" ? "60" : "1";
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const pvRes = await fetch(`${API_URL}/history/pv?hours=24&raster=${agg}`, {
     headers: {
       'X-API-Key': import.meta.env.VITE_API_KEY || 'Quick10'

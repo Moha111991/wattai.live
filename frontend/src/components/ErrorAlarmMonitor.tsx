@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { API_URL } from "../lib/api";
 
 interface Alarm {
   id: string;
@@ -15,7 +16,7 @@ export default function ErrorAlarmMonitor() {
   useEffect(() => {
     async function fetchAlarms() {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/alarms`, {
+  const res = await fetch(`${API_URL}/api/alarms`, {
           headers: {
             'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE'
           }

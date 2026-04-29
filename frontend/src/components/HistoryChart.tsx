@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { API_URL } from '../lib/api';
 
 interface ChartProps {
   title: string;
@@ -16,7 +17,6 @@ export default function HistoryChart({ title, endpoint, dataKey, color, hours = 
   useEffect(() => {
     const fetchData = async () => {
       try {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const res = await fetch(`${API_URL}${endpoint}?hours=${hours}`, {
     headers: {
       'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE'

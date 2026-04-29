@@ -1,9 +1,8 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { API_URL } from "../lib/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "/api";
-
-export default function InverterConnectDialog({ inverter, onConnect }: { inverter: any, onConnect: (params: any) => Promise<any> | void }) {
+export default function InverterConnectDialog({ inverter: _inverter, onConnect }: { inverter: any, onConnect: (params: any) => Promise<any> | void }) {
   const [protocol, setProtocol] = useState<'modbus' | 'cloud'>('modbus');
   // Modbus fields
   const [ip, setIp] = useState("");
@@ -40,7 +39,7 @@ export default function InverterConnectDialog({ inverter, onConnect }: { inverte
     setLoading(true);
     try {
       if (protocol === 'modbus') {
-        const result = await onConnect({ ip, port });
+        await onConnect({ ip, port });
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
       } else if (protocol === 'cloud') {

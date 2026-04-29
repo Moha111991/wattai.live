@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../lib/api';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/airecommendation'; // Port angepasst
+const RECOMMENDATION_URL = `${API_URL}/airecommendation`;
 
 interface KIRecommendation {
   action: string;
@@ -17,7 +18,7 @@ const KIDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_URL, {
+  const res = await fetch(RECOMMENDATION_URL, {
         headers: {
           'X-API-Key': 'mein_geheimer_schulkey123'
         }

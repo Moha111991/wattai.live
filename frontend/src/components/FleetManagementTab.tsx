@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
+import { API_URL } from "../lib/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const API_KEY = "mein_geheimer_schulkey123";
 
 interface FleetRecommendation {

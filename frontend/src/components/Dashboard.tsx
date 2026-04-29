@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import HistoryChart from './HistoryChart';
-import EVProfileManager from "./EVProfileManager";
 import PowerChart from "./PowerChart";
 import DeviceManager from "./DeviceManager";
 import CO2CostWidget from './CO2CostWidget';
