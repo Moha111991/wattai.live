@@ -41,6 +41,8 @@ export default function App() {
     ? [...BASE_TABS.slice(0, 2), FLEET_TAB, ...BASE_TABS.slice(2)]
     : BASE_TABS;
 
+  const headerImageSrc = tab === 'ev' ? '/EMS-logo-plattform.png' : '/wattai.live-dashboard.png';
+
   // Feature-Gate zentral über config/featureFlags.ts
   useEffect(() => {
     const flags = resolveFeatureFlags();
@@ -78,7 +80,7 @@ export default function App() {
   <div className="main-app" style={{ minHeight: '100vh', width: '100vw', overflow: 'auto' }}>
     <div ref={appContentRef}>
       <header style={{textAlign:'center',marginBottom:'1.5rem',width:'100vw',maxWidth:'100%',overflow:'hidden', position:'relative'}}>
-      <img src="/EMS-logo-plattform.png" alt="WattAI Logo" style={{width:'100vw',maxWidth:'100%',height:'75vh',objectFit:'cover',marginBottom:8,display:'block'}} />
+  <img src={headerImageSrc} alt="WattAI Logo" style={{width:'100vw',maxWidth:'100%',height:'75vh',objectFit:'cover',marginBottom:8,display:'block'}} />
       <div style={{position:'absolute',left:'50%',top:'12%',transform:'translateX(-50%)',color:'#f9fafb',textShadow:'0 2px 8px rgba(15,23,42,0.9)',padding:'0.75rem 1.5rem',borderRadius:999,background:'rgba(15,23,42,0.65)'}}>
         <div style={{fontSize:'1.4rem',fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase'}}>WattAI</div>
         <div style={{fontSize:'0.9rem',marginTop:2}}>KI-basiertes Smart Charging & Energiemanagement</div>
