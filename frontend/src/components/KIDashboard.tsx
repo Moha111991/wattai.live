@@ -24,8 +24,29 @@ const KIDashboard: React.FC = () => {
         }
       });
       if (!res.ok) throw new Error('Fehler beim Laden der KI-Empfehlung');
+
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const body = await res.text();
+        throw new Error(`Ungültige API-Antwort (kein JSON): ${body.slice(0, 80)}`);
+      }
+
       const data = await res.json();
-      setRec(data);
+
+      if (Array.isArray(data?.actions)) {
+        const firstAction = data.actions[0] || 'Keine Aktion erforderlich';
+        const reasonFromNotes = Array.isArray(data?.notes) && data.notes.length > 0
+          ? data.notes.join(' · ')
+          : 'Automatisch aus dem aktuellen Betriebszustand abgeleitet';
+
+        setRec({
+          action: firstAction,
+          reason: reasonFromNotes,
+          confidence: typeof data?.confidence === 'number' ? data.confidence : 0.8,
+        });
+      } else {
+        setRec(data as KIRecommendation);
+      }
     } catch (e: any) {
       setError(e.message || 'Unbekannter Fehler');
     } finally {

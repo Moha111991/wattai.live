@@ -44,6 +44,7 @@ except Exception:
 _LIMITER_IMPORT_ERROR: Optional[Exception] = _limiter_import_error_holder
 
 from backend.secure_logging import get_audit_logger
+from backend.services.recommendation_service import generate_recommendation
 
 LOG = logging.getLogger("uvicorn.error")
 
@@ -653,6 +654,27 @@ async def ev_profiles_endpoint(request: Request, body: Optional[dict] = Body(Non
 @app.get("/api/alarms")
 async def api_alarms_stub():
     return JSONResponse(content={"alarms": []})
+
+
+@app.get("/airecommendation")
+async def ai_recommendation_stub():
+    devices_map = app_state.get("smarthome_devices", {}) or {}
+    total_house_load = sum(_to_float(d.get("power_w")) or 0.0 for d in devices_map.values())
+
+    recommendation_input = {
+        "pv_power_w": _to_float(app_state.get("pv_power_w")) or 0.0,
+        "house_load_w": total_house_load,
+        "battery_soc": _to_float(app_state.get("battery_soc")) or 0.0,
+        "battery_power_kw": _to_float(app_state.get("battery_power_kw")) or 0.0,
+        "ev_soc": _to_float(app_state.get("ev_soc")) or 0.0,
+        "ev_charging": bool(app_state.get("ev_charging", False)),
+        "grid_import_w": _to_float(app_state.get("grid_import_w")) or 0.0,
+        "grid_export_w": _to_float(app_state.get("grid_export_w")) or 0.0,
+    }
+
+    recommendation = generate_recommendation(recommendation_input)
+    recommendation.setdefault("confidence", 0.8)
+    return JSONResponse(content=recommendation)
 
 
 @app.get("/history/pv")
