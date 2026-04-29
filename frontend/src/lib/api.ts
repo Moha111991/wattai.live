@@ -9,6 +9,9 @@ const normalizeApiUrl = (raw?: string | null): string => {
 
   try {
     const parsed = new URL(value);
+    if (['localhost', '127.0.0.1'].includes(parsed.hostname) && !isLocalHost) {
+      return PROD_API_URL;
+    }
     // If someone configured frontend domain as API URL, correct it to backend API domain.
     if (['wattai.live', 'www.wattai.live'].includes(parsed.hostname)) {
       parsed.protocol = 'https:';
