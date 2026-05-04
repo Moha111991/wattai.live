@@ -8,7 +8,18 @@ type State = {
   battery_soc?: number;
   battery_power_kw?: number;
   house_load_w?: number;
-  [key: string]: any;
+  [key: string]: unknown;
+};
+
+type SmartHomeDevicePayload = {
+  id?: unknown;
+  name?: unknown;
+  status?: unknown;
+  power_w?: unknown;
+  flexibility?: unknown;
+  last_seen?: unknown;
+  type?: unknown;
+  source?: unknown;
 };
 
 type EvProfileSummary = {
@@ -102,15 +113,15 @@ const HouseholdDashboard = () => {
         const data = await res.json();
         const incoming = Array.isArray(data.devices) ? data.devices : [];
 
-        const mapped: SmartHomeDevice[] = incoming.map((device: any) => ({
+        const mapped: SmartHomeDevice[] = incoming.map((device: SmartHomeDevicePayload) => ({
           id: String(device.id || device.name || Math.random()),
           name: String(device.name || device.id || 'SmartHome-Gerät'),
           status: normalizeStatus(device.status),
           powerW: Number(device.power_w ?? 0),
           flexibility: normalizeFlexibility(device.flexibility),
           lastSeen: device.last_seen ?? null,
-          type: device.type,
-          source: device.source,
+          type: typeof device.type === 'string' ? device.type : undefined,
+          source: typeof device.source === 'string' ? device.source : undefined,
         }));
 
         if (mapped.length > 0) {
@@ -143,13 +154,17 @@ const HouseholdDashboard = () => {
   }, []);
 
   return (
-    <div className="household-dashboard" style={{maxWidth: 700, margin: '0 auto'}}>
-      <h2 style={{fontSize: 24, fontWeight: 700, marginBottom: 16}}>Haushalt & Heimspeicher (Batterie)</h2>
-      <div style={{display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 24}}>
-        <div style={{flex: 1, minWidth: 320}}>
+  <div className="household-dashboard tab-content-full" style={{ width: '100%', maxWidth: '100%', margin: 0 }}>
+      <div className="animate-fade-in">
+        <h2 className="tab-page-title" style={{ marginBottom: 16 }}>Haushalt & Heimspeicher (Batterie)</h2>
+        <p className="tab-page-subtitle">Echtzeit-Überblick für Hauslast, Speicherstatus und flexible Smarthome-Lasten im selben Steuerungsfenster.</p>
+      </div>
+      
+      <div className="tab-grid-main animate-stagger-1 animate-page-enter" style={{ marginBottom: 24 }}>
+        <div className="glass-effect" style={{ minWidth: 0, borderRadius: '12px', padding: '16px' }}>
           <SmartMeterEnergyWidget />
         </div>
-        <div style={{flex: 1, minWidth: 320}}>
+        <div className="glass-effect" style={{ minWidth: 0, borderRadius: '12px', padding: '16px' }}>
           <BatteryWidget
             data={{
               soc: state?.battery_soc ?? 0,
@@ -158,7 +173,7 @@ const HouseholdDashboard = () => {
             }}
           />
           {evProfile && (
-            <div style={{ marginTop: 8, fontSize: 13, color: '#555' }}>
+            <div className="animate-fade-in delay-300" style={{ marginTop: 8, fontSize: 13, color: '#94a3b8' }}>
               Verbundenes Elektroauto: {evProfile.manufacturer} {evProfile.model}
               {` 
 · ${evProfile.capacity_kwh.toFixed(1)} kWh Batterie`}
@@ -168,43 +183,55 @@ const HouseholdDashboard = () => {
       </div>
 
       {/* Smarthome Section */}
-      <div style={{ background: '#f3f4f6', borderRadius: 10, padding: 20, marginTop: 16 }}>
-        <h3 style={{ fontSize: 20, marginBottom: 12 }}>IoT & Smarthome-Orchestrierung</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14 }}>
-          <div style={{ background: '#fff', borderRadius: 8, padding: 12 }}>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>Aktive IoT-Geräte</div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{activeSmartHomeDevices}</div>
+      <div className="glass-effect animate-stagger-2 animate-page-enter" style={{ background: 'rgba(15,23,42,0.78)', borderRadius: 12, padding: 20, marginTop: 16, border: '1px solid rgba(148,163,184,0.22)' }}>
+        <h3 className="tab-section-title neon-glow">IoT & Smarthome-Orchestrierung</h3>
+        
+        <div className="tab-grid-compact animate-stagger-3 animate-page-enter" style={{ marginBottom: 14 }}>
+          <div className="metric-card clickable" style={{ background: 'rgba(2,6,23,0.74)', borderRadius: 8, padding: 12, border: '1px solid rgba(71,85,105,0.45)' }}>
+            <div style={{ fontSize: 12, color: '#94a3b8' }}>Aktive IoT-Geräte</div>
+            <div className="value-increase" style={{ fontSize: 22, fontWeight: 700, color: '#f8fafc' }}>{activeSmartHomeDevices}</div>
           </div>
-          <div style={{ background: '#fff', borderRadius: 8, padding: 12 }}>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>Verschiebbare Lasten</div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{flexibleLoads}</div>
+          <div className="metric-card clickable" style={{ background: 'rgba(2,6,23,0.74)', borderRadius: 8, padding: 12, border: '1px solid rgba(71,85,105,0.45)' }}>
+            <div style={{ fontSize: 12, color: '#94a3b8' }}>Verschiebbare Lasten</div>
+            <div className="value-increase" style={{ fontSize: 22, fontWeight: 700, color: '#f8fafc' }}>{flexibleLoads}</div>
           </div>
-          <div style={{ background: '#fff', borderRadius: 8, padding: 12 }}>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>Smarthome-Leistung</div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{smartHomePowerW} W</div>
+          <div className="metric-card clickable" style={{ background: 'rgba(2,6,23,0.74)', borderRadius: 8, padding: 12, border: '1px solid rgba(71,85,105,0.45)' }}>
+            <div style={{ fontSize: 12, color: '#94a3b8' }}>Smarthome-Leistung</div>
+            <div className="value-increase" style={{ fontSize: 22, fontWeight: 700, color: '#f8fafc' }}>{smartHomePowerW} W</div>
           </div>
         </div>
 
-        <div style={{ background: '#ffffff', borderRadius: 8, padding: 14, marginBottom: 12 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Empfohlene Automationen</div>
-          <ul style={{ margin: 0, paddingLeft: 20, color: '#374151' }}>
+        <div className="animate-stagger-4 animate-page-enter" style={{ background: 'rgba(2,6,23,0.7)', borderRadius: 8, padding: 14, marginBottom: 12, border: '1px solid rgba(71,85,105,0.4)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 8, color: '#e2e8f0' }}>💡 Empfohlene Automationen</div>
+          <ul style={{ margin: 0, paddingLeft: 20, color: '#cbd5e1' }}>
             <li>Wärmepumpe bevorzugt bei PV-Überschuss &gt; 1.5 kW laufen lassen.</li>
             <li>Waschmaschine automatisch in Zeitfenster mit niedrigem Börsenpreis verschieben.</li>
             <li>Wallbox nur bei SOC &lt; 35% priorisieren, sonst Haushaltslast glätten.</li>
           </ul>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
-          {smartHomeDevices.map((device) => (
-            <div key={device.id} style={{ background: '#fff', borderRadius: 8, padding: 12, border: '1px solid #e5e7eb' }}>
+        <div className="tab-grid-compact" style={{ gap: 10 }}>
+          {smartHomeDevices.map((device, index) => (
+            <div 
+              key={device.id} 
+              className={`device-card clickable animate-scale-in delay-${Math.min(index, 5) * 100}`}
+              style={{ 
+                background: 'rgba(2,6,23,0.74)', 
+                borderRadius: 8, 
+                padding: 12, 
+                border: '1px solid rgba(71,85,105,0.45)',
+                opacity: 0
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <b>{device.name}</b>
-                <span style={{ color: device.status === 'aktiv' ? '#15803d' : device.status === 'standby' ? '#6b7280' : '#b91c1c' }}>
+                <b style={{ color: '#f8fafc' }}>{device.name}</b>
+                <span className={device.status === 'aktiv' ? 'status-live' : device.status === 'standby' ? 'status-connecting' : 'status-offline'} style={{ color: device.status === 'aktiv' ? '#22c55e' : device.status === 'standby' ? '#f59e0b' : '#ef4444', fontWeight: 'bold' }}>
+                  <span className={`status-dot ${device.status === 'aktiv' ? 'status-live' : device.status === 'standby' ? 'status-connecting' : 'status-offline'}`}></span>
                   {device.status}
                 </span>
               </div>
-              <div style={{ fontSize: 13, color: '#6b7280' }}>Aktuelle Last: {device.powerW} W</div>
-              <div style={{ fontSize: 13, color: '#6b7280' }}>Flexibilität: {device.flexibility}</div>
+              <div style={{ fontSize: 13, color: '#cbd5e1' }}>Aktuelle Last: <strong>{device.powerW} W</strong></div>
+              <div style={{ fontSize: 13, color: '#cbd5e1' }}>Flexibilität: <span style={{ color: device.flexibility === 'hoch' ? '#22c55e' : device.flexibility === 'mittel' ? '#f59e0b' : '#94a3b8' }}>{device.flexibility}</span></div>
               {device.lastSeen && (
                 <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
                   Letztes Update: {new Date(device.lastSeen).toLocaleTimeString()}

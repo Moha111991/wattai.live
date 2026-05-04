@@ -1,0 +1,50 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="icon-gradient-main" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#67e8f9;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="icon-gradient-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+
+    <filter id="icon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Circle -->
+  <circle cx="50" cy="50" r="46" fill="none" stroke="url(#icon-gradient-main)" stroke-width="3" opacity="0.6"/>
+
+  <!-- Neural Network Nodes -->
+  <g opacity="0.8">
+    <circle cx="50" cy="4" r="4" fill="url(#icon-gradient-main)"/>
+    <circle cx="89" cy="25" r="4" fill="url(#icon-gradient-main)"/>
+    <circle cx="89" cy="75" r="4" fill="url(#icon-gradient-main)"/>
+    <circle cx="50" cy="96" r="4" fill="url(#icon-gradient-main)"/>
+    <circle cx="11" cy="75" r="4" fill="url(#icon-gradient-main)"/>
+    <circle cx="11" cy="25" r="4" fill="url(#icon-gradient-main)"/>
+  </g>
+
+  <!-- Connection Lines -->
+  <g opacity="0.3" stroke="url(#icon-gradient-main)" stroke-width="1.5">
+    <line x1="50" y1="4" x2="89" y2="75"/>
+    <line x1="89" y1="75" x2="11" y2="75"/>
+    <line x1="11" y1="75" x2="50" y2="4"/>
+  </g>
+
+  <!-- Lightning Bolt -->
+  <path d="M 50,14 L 34,50 L 50,50 L 50,86 L 66,50 L 50,50 Z" 
+        fill="url(#icon-gradient-accent)" 
+        filter="url(#icon-glow)"/>
+
+  <!-- AI Circuit -->
+  <g opacity="0.4">
+    <path d="M 30 -5 Q 50 -15 70 -5" fill="none" stroke="url(#icon-gradient-main)" stroke-width="2"/>
+    <path d="M 30 105 Q 50 115 70 105" fill="none" stroke="url(#icon-gradient-main)" stroke-width="2"/>
+  </g>
+</svg>

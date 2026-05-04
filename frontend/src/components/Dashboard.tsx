@@ -5,6 +5,7 @@ import DeviceManager from "./DeviceManager";
 import CO2CostWidget from './CO2CostWidget';
 import ErrorAlarmMonitor from './ErrorAlarmMonitor';
 import BatteryWidget from './BatteryWidget';
+import AnimatedEnergyFlow from './AnimatedEnergyFlow';
 import { API_URL, WS_URL } from '../lib/api';
 
 interface RealtimeData {
@@ -19,6 +20,10 @@ interface RealtimeData {
   battery_power_kw?: number;
 }
 
+interface DeviceSummary {
+  type?: string;
+}
+
 const API_BASE = API_URL;
 const WS_BASE = WS_URL;
 
@@ -28,7 +33,7 @@ export default function Dashboard() {
   const [wsStatus, setWsStatus] = useState<'connecting'|'live'|'offline'>('connecting');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [devices, setDevices] = useState<any[]>([]);
+  const [devices, setDevices] = useState<DeviceSummary[]>([]);
   // Geräte-Liste laden (nur einmal beim Mount)
   useEffect(() => {
     fetch(`${API_BASE}/devices`, {
@@ -45,7 +50,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Use ngrok WebSocket URL
-    let wsUrl = WS_BASE;
+    const wsUrl = WS_BASE;
 
     const connect = () => {
       if (wsRef.current) return;
@@ -107,7 +112,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Use ngrok WebSocket URL for second connection
-    let wsUrl2 = WS_BASE;
+    const wsUrl2 = WS_BASE;
     const ws = new WebSocket(wsUrl2);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -118,11 +123,11 @@ export default function Dashboard() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 rounded-full border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verbinde mit Backend...</p>
-          <p className="text-xs text-gray-400 mt-2">WebSocket: {wsStatus}</p>
+      <div className="min-h-screen bg-transparent flex items-center justify-center animate-fade-in">
+        <div className="text-center glass-effect p-8 rounded-2xl">
+          <div className="spinner mx-auto mb-4"></div>
+          <p className="text-cyan-100 neon-glow text-lg">Verbinde mit Backend...</p>
+          <p className="text-xs text-cyan-100/70 mt-2 animate-pulse">WebSocket: {wsStatus}</p>
         </div>
       </div>
     );
@@ -135,28 +140,49 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5 space-y-3">
-      <div className="flex flex-col items-center justify-center w-full mt-2 mb-6">
-        <h1 className="text-sm font-bold text-gray-900 whitespace-nowrap text-center mb-2">KI-gestützte Energie- und Lademanagement-Plattform für E-Autos</h1>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium`} style={{marginTop: '-4px', color: wsStatus === 'live' ? '#16a34a' : '#111', background: wsStatus === 'live' ? '#e6fbe6' : '#f3f4f6'}}>
-          {wsStatus === 'live' ? '● Live' : '● Offline'}
+  <div className="tab-content-full w-full bg-transparent p-2 md:p-4 space-y-4">
+      <div className="flex flex-col items-start justify-center w-full mt-2 mb-6 animate-fade-in">
+        <h1 className="tab-page-title" style={{ marginBottom: 8 }}>
+          KI-gestützte Energie- und Lademanagement-Plattform für E-Autos
+        </h1>
+        <p className="tab-page-subtitle">
+          Live-Status, Lastmanagement und Energieflussanalyse in einer einheitlichen Steuerungsoberfläche.
+        </p>
+        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${wsStatus === 'live' ? 'status-live' : ''}`} style={{marginTop: '-2px', color: wsStatus === 'live' ? '#16a34a' : '#e2e8f0', background: wsStatus === 'live' ? '#dcfce7' : 'rgba(15,23,42,0.72)', border: wsStatus === 'live' ? '1px solid #86efac' : '1px solid rgba(148,163,184,0.35)'}}>
+          <span className={`status-dot ${wsStatus === 'live' ? 'status-live' : wsStatus === 'connecting' ? 'status-connecting' : 'status-offline'}`}></span>
+          {wsStatus === 'live' ? 'Live' : wsStatus === 'connecting' ? 'Verbinde...' : 'Offline'}
         </span>
       </div>
 
       {/* CO2 & Kosten Widget */}
-      <CO2CostWidget co2SavedKg={123.4} costEur={56.78} autarky={87.6} period="Monat" />
+      <div className="animate-stagger-1 animate-page-enter">
+        <CO2CostWidget co2SavedKg={123.4} costEur={56.78} autarky={87.6} period="Monat" />
+      </div>
 
       {/* Error/Alarm Monitor */}
-      <ErrorAlarmMonitor />
+      <div className="animate-stagger-2 animate-page-enter">
+        <ErrorAlarmMonitor />
+      </div>
+
+      {/* Animierter Energiefluss */}
+      <div className="animate-stagger-3 animate-page-enter">
+        <AnimatedEnergyFlow
+          pvPower={data.pv_power_kw}
+          housePower={data.house_load_w / 1000}
+          batteryPower={battery.power_kw}
+          gridPower={(data.grid_import_w - data.grid_export_w) / 1000}
+          evPower={data.ev_power_w / 1000}
+        />
+      </div>
 
       {/* Heimspeicher und Geräte ganz oben */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-2">Heimspeicher</h2>
+      <div className="tab-grid-main mt-6">
+        <div className="tab-modern-card animate-stagger-4 animate-page-enter glass-effect" style={{ color: '#e2e8f0' }}>
+          <h2 className="tab-section-title">Heimspeicher</h2>
           <BatteryWidget data={battery} />
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-2">Geräte</h2>
+        <div className="tab-modern-card animate-stagger-5 animate-page-enter glass-effect" style={{ color: '#e2e8f0' }}>
+          <h2 className="tab-section-title">Geräte</h2>
           <DeviceManager />
         </div>
       </div>
@@ -164,19 +190,27 @@ export default function Dashboard() {
       {/* Charts darunter nur wenn echte Geräte */}
       {hasRealDevice ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <HistoryChart title="PV-Ertrag (24h)" endpoint="/history/pv" dataKey="PV (kW)" color="#10b981" />
-            <HistoryChart title="Verbrauch (24h)" endpoint="/history/consumption" dataKey="Verbrauch (kW)" color="#3b82f6" />
+          <div className="tab-grid-main mt-6">
+            <div className="tab-modern-card animate-stagger-5 animate-page-enter chart-container">
+              <HistoryChart title="PV-Ertrag (24h)" endpoint="/history/pv" dataKey="PV (kW)" color="#10b981" />
+            </div>
+            <div className="tab-modern-card animate-stagger-5 animate-page-enter chart-container delay-100">
+              <HistoryChart title="Verbrauch (24h)" endpoint="/history/consumption" dataKey="Verbrauch (kW)" color="#3b82f6" />
+            </div>
           </div>
-          <HistoryChart title="Batterie-SOC (24h)" endpoint="/history/battery" dataKey="SOC (%)" color="#f59e0b" />
+          <div className="tab-modern-card animate-stagger-5 animate-page-enter chart-container delay-200">
+            <HistoryChart title="Batterie-SOC (24h)" endpoint="/history/battery" dataKey="SOC (%)" color="#f59e0b" />
+          </div>
         </>
       ) : (
-        <div className="bg-white rounded-lg shadow p-6 mt-6 text-center text-gray-500">
+        <div className="tab-modern-card mt-6 text-center animate-pulse" style={{ border: '1px solid rgba(251, 191, 36, 0.34)', color: 'rgba(254, 243, 199, 0.92)' }}>
           <p>⚠️ Die Zeitreihen-Diagramme werden erst angezeigt, wenn mindestens ein echtes Gerät (Smart Meter, Inverter, Heimspeicher oder Wallbox) verbunden ist.</p>
         </div>
       )}
 
-      <PowerChart />
+      <div className="animate-stagger-5 animate-page-enter delay-300">
+        <PowerChart />
+      </div>
     </div>
   );
 }
