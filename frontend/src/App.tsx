@@ -85,43 +85,31 @@ export default function App() {
     minHeight: '100dvh',
     maxWidth: '100%',
     margin: 0,
-    padding: 'clamp(10px, 1.6vw, 20px) clamp(10px, 2.4vw, 30px)',
+    padding: 0,
     boxSizing: 'border-box',
   };
 
   const headerStyle: CSSProperties = {
     textAlign: 'center',
-    marginBottom: 'clamp(1rem, 2vw, 1.5rem)',
+    marginBottom: 0,
     width: '100%',
     overflow: 'hidden',
     position: 'relative',
     padding: 0,
     lineHeight: 0,
-    borderRadius: 'clamp(16px, 2.2vw, 22px)',
-    border: '1px solid rgba(103, 232, 249, 0.28)',
-    boxShadow: '0 16px 44px rgba(2, 6, 23, 0.45)',
-    backgroundImage: 'url(/wattai.live-header-bg.svg)',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  };
-
-  const headerImageFrameStyle: CSSProperties = {
-    width: '100%',
-    height: 'var(--tab-header-image-height)',
-    position: 'relative',
-    borderRadius: 'inherit',
-    overflow: 'hidden',
-    background: '#020617',
-    lineHeight: 0,
+    borderRadius: 0,
+    border: 'none',
+    boxShadow: 'none',
   };
 
   const navStyle: CSSProperties = {
     marginBottom: 'clamp(1rem, 1.8vw, 1.4rem)',
+    marginTop: 'clamp(1.5rem, 2.5vw, 2rem)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: 'clamp(8px, 1.6vw, 14px)',
+    position: 'relative',
   };
 
   const appHintBannerStyle: CSSProperties = {
@@ -250,30 +238,35 @@ export default function App() {
   <div className="main-app" style={appShellStyle}>
     <div ref={appContentRef} style={appContentStyle}>
       <header style={headerStyle}>
-        <div style={headerImageFrameStyle}>
-          {/* WattAI Logo Overlay - Unten Rechts */}
+        <div style={{ position: 'relative', width: '100%' }}>
+          {/* WattAI Logo Overlay - Top Left */}
           <div style={{
             position: 'absolute',
-            bottom: '20px',
-            right: '20px',
+            top: '20px',
+            left: '20px',
             zIndex: 10,
-            background: 'rgba(2, 6, 23, 0.85)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderRadius: '16px',
-            padding: '12px 20px',
-            border: '1px solid rgba(103, 232, 249, 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+            background: 'rgba(2, 6, 23, 0.75)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderRadius: '20px',
+            padding: '16px 24px',
+            border: '1px solid rgba(103, 232, 249, 0.25)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
           } as CSSProperties}>
-            <WattAILogo size={100} animated={true} variant="full" />
+            <WattAILogo size={80} animated={true} variant="full" />
           </div>
           
-          <div style={headerImageFrameStyle}>
-            {renderHeaderComponent()}
-          </div>
+          {/* Full-Width Header - No Frame */}
+          {renderHeaderComponent()}
         </div>
       </header>
-        <nav style={navStyle}>
+        
+        {/* Main Content Container with Padding */}
+        <div style={{
+          padding: 'clamp(10px, 1.6vw, 20px) clamp(10px, 2.4vw, 30px)',
+          boxSizing: 'border-box',
+        }}>
+          <nav style={navStyle}>
           <div style={appHintBannerStyle}>
             <span style={appHintTextStyle}>📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.</span>
             <div style={appHintActionsStyle}>
@@ -357,6 +350,8 @@ export default function App() {
           </div>
           <LegalFooter />
         </section>
+        </div>
+        {/* End Main Content Container */}
     </div>
       <UpgradeModal
         open={isUpgradeModalOpen}

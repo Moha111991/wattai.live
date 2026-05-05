@@ -1,6 +1,6 @@
 export default function AIHeader3D() {
   return (
-    <svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+    <svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
       <defs>
         {/* Gradients */}
         <linearGradient id="aiGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
