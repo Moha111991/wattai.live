@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./ElektroautoV2H.module.css";
 import { API_URL, fetchDevices } from "../lib/api";
+import V2HAnimated3D from "./graphics/V2HAnimated3D";
 
 const API_BASE = API_URL;
 
@@ -168,11 +169,9 @@ const ElektroautoV2H: React.FC = () => {
         fährst oder der Akku ohnehin hoch geladen ist – so kannst du abends und
         nachts mehr eigenen Solarstrom nutzen.
       </p>
-      <img
-        src="/v2h-hero.png"
-        alt="Vehicle-to-Home Illustration: PV, Haus und Elektroauto"
-        className={styles.heroImage}
-      />
+      <div className={styles.heroImageContainer}>
+        <V2HAnimated3D />
+      </div>
       <div>
         <strong>Status:</strong> {v2hStatus.active ? "Aktiv" : "Inaktiv"}
       </div>
