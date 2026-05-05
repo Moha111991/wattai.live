@@ -340,4 +340,24 @@ nav {
   :root {
     --tab-header-image-height: clamp(260px, 62vw, 440px);
   }
+  
+  /* Logo Card Optimization for Mobile */
+  .logo-overlay-card {
+    top: 8px !important;
+    left: 8px !important;
+    padding: 6px 10px !important;
+    border-radius: 10px !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Extra small phones */
+  .logo-overlay-card {
+    top: 5px !important;
+    left: 5px !important;
+    padding: 4px 8px !important;
+    border-radius: 8px !important;
+  }
 }

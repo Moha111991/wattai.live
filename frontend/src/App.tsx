@@ -44,7 +44,31 @@ export default function App() {
   const [fleetEnabled, setFleetEnabled] = useState(false);
   const [planLabel, setPlanLabel] = useState('Free');
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const appContentRef = useRef<HTMLDivElement | null>(null);
+
+  // Detect mobile screen size with finer granularity
+  useEffect(() => {
+    const checkMobile = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Calculate responsive logo size
+  const getLogoSize = () => {
+    if (typeof window === 'undefined') return 80;
+    const width = window.innerWidth;
+    if (width < 360) return 40; // Extra small phones
+    if (width < 480) return 50; // Small phones
+    if (width < 768) return 60; // Tablets portrait
+    return 80; // Desktop
+  };
 
   const tabs = fleetEnabled
     ? [...BASE_TABS.slice(0, 2), FLEET_TAB, ...BASE_TABS.slice(2)]
@@ -239,21 +263,27 @@ export default function App() {
     <div ref={appContentRef} style={appContentStyle}>
       <header style={headerStyle}>
         <div style={{ position: 'relative', width: '100%' }}>
-          {/* WattAI Logo Overlay - Top Left */}
-          <div style={{
-            position: 'absolute',
-            top: '20px',
-            left: '20px',
-            zIndex: 10,
-            background: 'rgba(2, 6, 23, 0.75)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderRadius: '20px',
-            padding: '16px 24px',
-            border: '1px solid rgba(103, 232, 249, 0.25)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-          } as CSSProperties}>
-            <WattAILogo size={80} animated={true} variant="full" />
+          {/* WattAI Logo Overlay - Top Left - Responsive */}
+          <div 
+            className="logo-overlay-card"
+            style={{
+              position: 'absolute',
+              top: 'clamp(10px, 2vw, 20px)',
+              left: 'clamp(10px, 2vw, 20px)',
+              zIndex: 10,
+              background: 'rgba(2, 6, 23, 0.75)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              borderRadius: 'clamp(12px, 2vw, 20px)',
+              padding: 'clamp(8px, 1.5vw, 16px) clamp(12px, 2vw, 24px)',
+              border: '1px solid rgba(103, 232, 249, 0.25)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            } as CSSProperties}>
+            <WattAILogo 
+              size={getLogoSize()} 
+              animated={!isMobile} 
+              variant="full" 
+            />
           </div>
           
           {/* Full-Width Header - No Frame */}
