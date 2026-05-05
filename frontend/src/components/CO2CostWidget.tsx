@@ -1,5 +1,3 @@
-import React from "react";
-
 interface CO2CostWidgetProps {
   co2SavedKg: number;
   costEur: number;
@@ -32,8 +30,10 @@ export default function CO2CostWidget({
         padding: 28,
         color: "#F5F7FA",
         boxShadow: "0 4px 24px rgba(33,150,243,0.13)",
-        maxWidth: 440,
-        margin: "28px auto",
+        width: "100%",
+        maxWidth: "100%",
+        margin: "28px 0",
+        boxSizing: "border-box",
         fontFamily: "Inter, Arial, sans-serif",
         transition: "box-shadow 0.2s"
       }}

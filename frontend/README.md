@@ -71,3 +71,15 @@ export default defineConfig([
   },
 ])
 ```
+
+## Testing (Vitest)
+
+Dieses Frontend nutzt ein minimales Test-Setup mit **Vitest + jsdom + React Testing Library**.
+
+- Interaktiv (Watch-Modus):
+  - `npm test`
+- Einmaliger Lauf (CI-freundlich):
+  - `npm run test:run`
+
+Der Setup-Einstieg liegt in `src/test/setup.ts`.
+Beispieltests liegen in `src/**/*.test.tsx`.

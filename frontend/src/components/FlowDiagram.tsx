@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface FlowProps {
   data: {
     pv_power_kw: number;
@@ -23,17 +21,16 @@ export default function FlowDiagram({ data, battery }: FlowProps) {
   const house = data.house_load_w / 1000;
   const ev = data.ev_power_w / 1000;
   const batt = battery.power_kw; // + laden, - entladen
-  const gridIn = data.grid_import_w / 1000;
   const gridOut = data.grid_export_w / 1000;
 
-  let pv_to_house = Math.min(pv, house);
+  const pv_to_house = Math.min(pv, house);
   let remaining_pv = Math.max(0, pv - pv_to_house);
-  let pv_to_batt = batt > 0 ? Math.min(remaining_pv, batt) : 0;
+  const pv_to_batt = batt > 0 ? Math.min(remaining_pv, batt) : 0;
   remaining_pv -= pv_to_batt;
-  let pv_to_grid = remaining_pv;
+  const pv_to_grid = remaining_pv;
 
-  let batt_to_house = batt < 0 ? Math.min(house - pv_to_house, Math.abs(batt)) : 0;
-  let grid_to_house = Math.max(0, house - pv_to_house - batt_to_house);
+  const batt_to_house = batt < 0 ? Math.min(house - pv_to_house, Math.abs(batt)) : 0;
+  const grid_to_house = Math.max(0, house - pv_to_house - batt_to_house);
 
   const ev_load_kw = Math.max(0, ev);
 

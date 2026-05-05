@@ -1,8 +1,30 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./ElektroautoV2H.module.css";
 import { API_URL, fetchDevices } from "../lib/api";
 
 const API_BASE = API_URL;
+
+type WallboxDevice = {
+  id?: string;
+  device_id?: string;
+  name?: string;
+  model?: string;
+  brand?: string;
+  type?: string;
+};
+
+type WallboxDetails = {
+  status?: string;
+  ev_connected?: boolean;
+  connector_locked?: boolean;
+  power_kw?: number;
+  soc?: number;
+  v2h_ready?: boolean;
+};
+
+type DevicesResponse = {
+  devices?: WallboxDevice[];
+};
 
 const ElektroautoV2H: React.FC = () => {
   const [v2hStatus, setV2hStatus] = useState<{
@@ -19,14 +41,14 @@ const ElektroautoV2H: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [wallboxData, setWallboxData] = useState<any>(null);
-  const [wallboxes, setWallboxes] = useState<any[]>([]);
+  const [wallboxData, setWallboxData] = useState<WallboxDetails | null>(null);
+  const [wallboxes, setWallboxes] = useState<WallboxDevice[]>([]);
   const [selectedWallboxId, setSelectedWallboxId] = useState<string | null>(null);
   const [autoDisabledHint, setAutoDisabledHint] = useState(false);
   const prevActiveRef = useRef<boolean>(false);
 
   // Fetch V2H status (inkl. optional ausgewählter Wallbox-ID)
-  const fetchV2hStatus = async () => {
+  const fetchV2hStatus = useCallback(async () => {
     try {
       // Nur dann eine wallbox_id übergeben, wenn der Nutzer bereits eine explizit gewählt hat.
       const query = selectedWallboxId
@@ -52,18 +74,18 @@ const ElektroautoV2H: React.FC = () => {
       if (!selectedWallboxId && data.preferred_wallbox_id) {
         setSelectedWallboxId(data.preferred_wallbox_id);
       }
-    } catch (err) {
+    } catch {
       setErrorMsg("Fehler beim Laden des V2H-Status.");
     }
-  };
+  }, [selectedWallboxId]);
 
   // Fetch wallbox data after V2H activation
   const fetchWallboxData = async () => {
     try {
       const res = await fetch(`${API_BASE}/devices/wallbox_goe/details`);
-      const data = await res.json();
+      const data: WallboxDetails = await res.json();
       setWallboxData(data);
-    } catch (err) {
+    } catch {
       setWallboxData(null);
     }
   };
@@ -71,9 +93,9 @@ const ElektroautoV2H: React.FC = () => {
   // verfügbare Wallboxen laden
   useEffect(() => {
     fetchDevices()
-      .then((data: any) => {
+      .then((data: DevicesResponse) => {
         const all = (data.devices || []).filter(
-          (dev: any) => (dev.type || "").toLowerCase().includes("wallbox")
+          (dev) => (dev.type || "").toLowerCase().includes("wallbox")
         );
         setWallboxes(all);
       })
@@ -85,7 +107,7 @@ const ElektroautoV2H: React.FC = () => {
     fetchV2hStatus();
     const interval = setInterval(fetchV2hStatus, 5000);
     return () => clearInterval(interval);
-  }, [selectedWallboxId]);
+  }, [fetchV2hStatus]);
 
   // Enable V2H with confirmation
   const handleEnable = () => {
@@ -114,7 +136,7 @@ const ElektroautoV2H: React.FC = () => {
         await fetchWallboxData();
       }
       await fetchV2hStatus();
-    } catch (err) {
+    } catch {
       setErrorMsg("Fehler bei Aktivierung.");
     }
     setLoading(false);
@@ -127,7 +149,7 @@ const ElektroautoV2H: React.FC = () => {
     try {
       await fetch(`${API_BASE}/v2h/disable`, { method: "POST" });
       await fetchV2hStatus();
-    } catch (err) {
+    } catch {
       setErrorMsg("Fehler beim Deaktivieren.");
     }
     setLoading(false);
@@ -139,8 +161,8 @@ const ElektroautoV2H: React.FC = () => {
 
   return (
     <div className={styles.card}>
-      <h2>Vehicle-to-Home (V2H)</h2>
-      <p className={styles.hint}>
+      <h2 className="tab-page-title">Vehicle-to-Home (V2H)</h2>
+      <p className={`tab-page-subtitle ${styles.hint}`}>
         Mit V2H kann dein Elektroauto als zusätzlicher Hausspeicher dienen. Am
         sinnvollsten ist der Einsatz, wenn das Fahrzeug häufig steht, du wenig
         fährst oder der Akku ohnehin hoch geladen ist – so kannst du abends und
@@ -206,7 +228,7 @@ const ElektroautoV2H: React.FC = () => {
               setSelectedWallboxId(e.target.value || null)
             }
           >
-            {wallboxes.map((wb: any) => {
+            {wallboxes.map((wb) => {
               const id = wb.id || wb.device_id || wb.name || wb.model;
               const label =
                 wb.name ||
@@ -285,8 +307,8 @@ const ElektroautoV2H: React.FC = () => {
       {showConfirm && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
-            <h3>V2H aktivieren bestätigen</h3>
-            <p>Möchten Sie Vehicle-to-Home wirklich aktivieren? Die Wallbox wird verbunden und die Automatisierung gestartet.</p>
+            <h3 className="tab-section-title">V2H aktivieren bestätigen</h3>
+            <p className="tab-section-subtitle">Möchten Sie Vehicle-to-Home wirklich aktivieren? Die Wallbox wird verbunden und die Automatisierung gestartet.</p>
             <button className={styles.button} onClick={confirmEnable} disabled={loading}>Bestätigen</button>
             <button className={styles.button} onClick={() => setShowConfirm(false)} disabled={loading}>Abbrechen</button>
           </div>

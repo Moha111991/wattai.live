@@ -1,0 +1,51 @@
+<svg width="2100" height="900" viewBox="0 0 2100 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="WattAI header background">
+  <defs>
+    <linearGradient id="bgGradient" x1="2100" y1="0" x2="0" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1220"/>
+      <stop offset="0.38" stop-color="#0F172A"/>
+      <stop offset="0.72" stop-color="#0B2B3B"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+
+    <radialGradient id="glowA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 150) rotate(18) scale(620 330)">
+      <stop stop-color="#22D3EE" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="glowB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1710 780) rotate(-20) scale(710 390)">
+      <stop stop-color="#34D399" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#34D399" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="lineGlow" x1="260" y1="130" x2="1840" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67E8F9" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#A7F3D0" stop-opacity="0.88"/>
+    </linearGradient>
+
+    <filter id="softBlur" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <rect width="2100" height="900" fill="url(#bgGradient)"/>
+  <rect width="2100" height="900" fill="url(#glowA)"/>
+  <rect width="2100" height="900" fill="url(#glowB)"/>
+
+  <g opacity="0.45" filter="url(#softBlur)">
+    <path d="M120 700C410 570 680 600 860 510C1035 422 1200 280 1460 305C1650 325 1805 438 1985 390" stroke="#67E8F9" stroke-width="16" stroke-linecap="round"/>
+    <path d="M210 790C480 650 730 672 930 590C1120 512 1295 380 1545 390C1730 398 1842 500 2015 465" stroke="#6EE7B7" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <g opacity="0.86">
+    <path d="M120 700C410 570 680 600 860 510C1035 422 1200 280 1460 305C1650 325 1805 438 1985 390" stroke="url(#lineGlow)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M210 790C480 650 730 672 930 590C1120 512 1295 380 1545 390C1730 398 1842 500 2015 465" stroke="#6EE7B7" stroke-opacity="0.9" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <g opacity="0.45">
+    <circle cx="480" cy="560" r="6" fill="#A5F3FC"/>
+    <circle cx="820" cy="512" r="7" fill="#67E8F9"/>
+    <circle cx="1110" cy="435" r="6" fill="#99F6E4"/>
+    <circle cx="1450" cy="334" r="7" fill="#5EEAD4"/>
+    <circle cx="1748" cy="404" r="6" fill="#67E8F9"/>
+  </g>
+</svg>

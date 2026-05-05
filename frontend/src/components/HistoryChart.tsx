@@ -10,8 +10,22 @@ interface ChartProps {
   hours?: number;
 }
 
+interface HistoryApiPoint {
+  time: string;
+  value: number;
+}
+
+interface HistoryApiResponse {
+  data?: HistoryApiPoint[];
+}
+
+interface ChartDataPoint {
+  time: string;
+  value: number;
+}
+
 export default function HistoryChart({ title, endpoint, dataKey, color, hours = 24 }: ChartProps) {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,10 +36,10 @@ export default function HistoryChart({ title, endpoint, dataKey, color, hours = 
       'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE'
     }
   });
-        const json = await res.json();
+        const json: HistoryApiResponse = await res.json();
         
-        if (json.data) {
-          setData(json.data.map((d: any) => ({
+        if (Array.isArray(json.data)) {
+          setData(json.data.map((d) => ({
             time: new Date(d.time).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
             value: d.value
           })));
@@ -44,23 +58,23 @@ export default function HistoryChart({ title, endpoint, dataKey, color, hours = 
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">{title}</h3>
-        <div className="h-64 flex items-center justify-center text-gray-400">Lade Daten...</div>
+      <div className="rounded-2xl border border-cyan-200/20 bg-slate-900/82 shadow-[0_14px_36px_rgba(2,6,23,0.34)] p-6" style={{ color: '#e2e8f0' }}>
+        <h3 className="text-xl md:text-2xl font-bold text-cyan-50 mb-4 leading-tight break-words" style={{ color: '#e0f2fe', fontSize: '1.35rem', lineHeight: 1.3 }}>{title}</h3>
+        <div className="h-64 flex items-center justify-center text-cyan-100/70">Lade Daten...</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+    <div className="rounded-2xl border border-cyan-200/20 bg-slate-900/82 shadow-[0_14px_36px_rgba(2,6,23,0.34)] p-6" style={{ color: '#e2e8f0' }}>
+      <h3 className="text-xl md:text-2xl font-bold text-cyan-50 mb-4 leading-tight break-words" style={{ color: '#e0f2fe', fontSize: '1.35rem', lineHeight: 1.3 }}>{title}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.25)" />
+          <XAxis dataKey="time" tick={{ fontSize: 12, fill: '#cbd5e1' }} />
+          <YAxis tick={{ fontSize: 12, fill: '#cbd5e1' }} />
           <Tooltip />
-          <Legend />
+          <Legend wrapperStyle={{ color: '#e2e8f0' }} />
           <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} name={dataKey} />
         </LineChart>
       </ResponsiveContainer>

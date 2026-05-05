@@ -1,41 +1,144 @@
 .ev-dashboard {
-  background: #f7f9fa;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  padding: 2rem;
-  margin: 1rem 0;
-  min-width: 280px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #e2e8f0;
 }
+
+.ev-section-card {
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
 .ev-dashboard h2 {
-  color: #1976d2;
-  margin-bottom: 1rem;
+  color: #e2e8f0;
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
+
 .ev-dashboard p {
-  font-size: 1.1rem;
-  margin: 0.5rem 0;
+  font-size: 0.98rem;
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
+
+.ev-subtitle {
+  margin-bottom: 14px !important;
+  color: #cbd5e1;
+}
+
+.ev-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--tab-grid-compact-min)), 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ev-info-grid > div {
+  background: rgba(2, 6, 23, 0.74);
+  border: 1px solid rgba(71, 85, 105, 0.45);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ev-label {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ev-value {
+  font-size: 1rem;
+  color: #f8fafc;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .ev-status {
   font-weight: bold;
-  color: #388e3c;
+  color: #22c55e;
 }
+
 .ev-status.not-charging {
-  color: #d32f2f;
+  color: #f87171;
 }
-.ev-dashboard .ev-actions {
-  margin-top: 1.5rem;
+
+.ev-power-select {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
+
+.ev-power-select select {
+  background: rgba(2, 6, 23, 0.74);
+  color: #e2e8f0;
+  border: 1px solid rgba(71, 85, 105, 0.65);
+  border-radius: 8px;
+  padding: 0.42rem 0.58rem;
+  max-width: 100%;
+}
+
+.ev-dashboard .ev-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .ev-dashboard button {
-  background: #1976d2;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.5rem 1.2rem;
-  font-size: 1rem;
+  background: linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%);
+  color: #f8fafc;
+  border: 1px solid rgba(125, 211, 252, 0.38);
+  border-radius: 999px;
+  padding: var(--tab-button-padding);
+  min-height: var(--tab-button-min-height);
+  font-size: var(--tab-button-font-size);
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: transform 140ms ease, filter 140ms ease;
 }
+
 .ev-dashboard button:hover {
-  background: #1565c0;
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.ev-dashboard button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+  filter: none;
+}
+
+.ev-dashboard .ev-actions button {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .ev-dashboard .ev-actions button {
+    flex-basis: 100%;
+  }
+
+  .ev-power-select {
+    align-items: stretch;
+  }
 }

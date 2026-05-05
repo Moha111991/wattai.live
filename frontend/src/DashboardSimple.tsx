@@ -3,9 +3,11 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import SmartMeterConnectDialog from "./components/SmartMeterConnectDialog";
 import ConsumerProfileSelector from "./components/ConsumerProfileSelector";
 import ConsumerProfileDetails from "./components/ConsumerProfileDetails";
+import type { ConsumerProfile } from "./components/ConsumerProfileSelector";
 import CO2CostWidget from "./components/CO2CostWidget";
 import ErrorAlarmMonitor from "./components/ErrorAlarmMonitor";
 import InverterSelector from "./components/InverterSelector";
+import type { InverterOption } from "./components/InverterSelector";
 import InverterConnectDialog from "./components/InverterConnectDialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import "./styles/styles.css";
@@ -13,7 +15,6 @@ import RecommendationCard from "./components/RecommendationCard";
 import DeviceManager from "./components/DeviceManager";
 import OnboardingWizard from "./components/OnboardingWizard";
 import EVProfileManager from "./components/EVProfileManager";
-import EVProfileForm from "./components/EVProfileForm";
 
 // Statt location.host:
 const isLocalHost = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
@@ -46,6 +47,47 @@ interface HistoryPoint {
   consumption_kw?: number;
 }
 
+interface ReportData {
+  co2_saved_kg: number;
+  cost_eur: number;
+  autarky: number;
+  period?: string;
+  co2_last_year?: number;
+  cost_last_year?: number;
+}
+
+interface BackendConsumptionPoint {
+  time: string;
+  value: number;
+}
+
+interface EnergyAction {
+  explanation?: string;
+  ev_charge_rate?: number;
+  battery_charge_enable?: boolean;
+  battery_discharge_enable?: boolean;
+  grid_import?: number;
+  grid_export?: number;
+  confidence?: number;
+}
+
+interface EVProfile {
+  id: number;
+  manufacturer: string;
+  model: string;
+  active?: boolean;
+}
+
+interface InverterData {
+  error?: string;
+  [key: string]: unknown;
+}
+
+interface HistoryApiPoint {
+  time: string;
+  value: number;
+}
+
 export default function DashboardSimple() {
   // KI-Optimierung
   const handleOptimize = async () => {
@@ -67,23 +109,22 @@ export default function DashboardSimple() {
       });
       const result = await res.json();
       setEnergyAction(result);
-    } catch (err) {
+    } catch {
       setEnergyAction({ explanation: "Fehler bei KI-Optimierung" });
     }
     setOptimizing(false);
   };
   // Fehlende State-Hooks ergänzen
   const [smartMeterConnected, setSmartMeterConnected] = useState(false);
-  const [smartMeterParams, setSmartMeterParams] = useState<any>(null);
-  const [selectedConsumer, setSelectedConsumer] = useState<any>(null);
+  const [smartMeterParams, setSmartMeterParams] = useState<Record<string, unknown> | null>(null);
+  const [selectedConsumer, setSelectedConsumer] = useState<ConsumerProfile | null>(null);
   const [consumerSoc, setConsumerSoc] = useState(80); // Beispielwert
   const [consumerCycles, setConsumerCycles] = useState(120); // Beispielwert
-  const [backendProfile, setBackendProfile] = useState<any>(null);
-  const [reportData, setReportData] = useState<any>(null);
+  const [backendProfile, setBackendProfile] = useState<Partial<ConsumerProfile> | null>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
 
   // CO2/Kosten/Autarkie regelmäßig laden
   useEffect(() => {
-    let interval: any;
     const fetchReport = async () => {
       try {
         const res = await fetch(`${API_URL}/reporting/co2_costs?period=Monat`, {
@@ -91,16 +132,16 @@ export default function DashboardSimple() {
         });
         const json = await res.json();
         setReportData(json);
-      } catch (err) {
+      } catch {
         // Fehler ignorieren, Widget bleibt leer
       }
     };
     fetchReport();
-    interval = setInterval(fetchReport, 60000); // alle 60s
+    const interval = setInterval(fetchReport, 60000); // alle 60s
     return () => clearInterval(interval);
   }, []);
-  const [backendConsumption, setBackendConsumption] = useState<any[]>([]);
-  const [energyAction, setEnergyAction] = useState<any>(null);
+  const [backendConsumption, setBackendConsumption] = useState<BackendConsumptionPoint[]>([]);
+  const [energyAction, setEnergyAction] = useState<EnergyAction | null>(null);
   const [optimizing, setOptimizing] = useState(false);
   const [data, setData] = useState<RealtimeData | null>(null);
   const [aiRec, setAiRec] = useState<AIRecommendation | null>(null);
@@ -112,13 +153,13 @@ export default function DashboardSimple() {
   const [showOnboarding, setShowOnboarding] = useState(
     !localStorage.getItem("onboarding_completed")
   );
-  const [evProfiles, setEvProfiles] = useState<any[]>([]);
+  const [evProfiles, setEvProfiles] = useState<EVProfile[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   // Wechselrichter-Auswahl und Verbindung
-  const [selectedInverter, setSelectedInverter] = useState<any>(null);
+  const [selectedInverter, setSelectedInverter] = useState<InverterOption | null>(null);
   const [inverterConnected, setInverterConnected] = useState(false);
-  const [inverterParams, setInverterParams] = useState<any>(null);
-  const [inverterData, setInverterData] = useState<any>(null);
+  const [inverterParams, setInverterParams] = useState<Record<string, unknown> | null>(null);
+  const [inverterData, setInverterData] = useState<InverterData | null>(null);
 
   // WebSocket Connection
   useEffect(() => {
@@ -245,11 +286,11 @@ export default function DashboardSimple() {
         const pvJson = await pvRes.json();
         const consJson = await consRes.json();
 
-        const pvMapped = (pvJson.data || []).map((d: any) => ({
+        const pvMapped = ((pvJson.data || []) as HistoryApiPoint[]).map((d) => ({
           hour: new Date(d.time).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
           power_kw: d.value, // bereits kW im Backend
         }));
-        const consMapped = (consJson.data || []).map((d: any) => ({
+        const consMapped = ((consJson.data || []) as HistoryApiPoint[]).map((d) => ({
           hour: new Date(d.time).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }),
           consumption_kw: d.value,
         }));
@@ -343,26 +384,6 @@ export default function DashboardSimple() {
     }
   }, [data?.ev_v2h]);
 
-  const handleSave = async (profile: any) => {
-    // Sende das Profil ans Backend
-    await fetch(`${API_URL}/ev/profiles`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE'
-      },
-      body: JSON.stringify({
-        manufacturer: profile.manufacturer,
-        model: profile.model || "",
-        capacity_kwh: profile.battery_capacity_kwh,
-        max_charge_kw: profile.onboard_charger_kw,
-        connector: "Type 2",
-        notes: "",
-      }),
-    });
-    alert("EV-Profil gespeichert!");
-  };
-
   const activateEV = async (id: number) => {
     try {
       const res = await fetch(`${API_URL}/ev/active/${id}`, {
@@ -384,7 +405,7 @@ export default function DashboardSimple() {
     }
   };
 
-  const safe = (val: any, decimals: number = 2) => (val ?? 0).toFixed(decimals);
+  const safe = (val: number | string | null | undefined, decimals: number = 2) => Number(val ?? 0).toFixed(decimals);
 
   // data kommt aus WebSocket-State
   const evSoc = data?.ev_soc;
@@ -425,7 +446,7 @@ export default function DashboardSimple() {
               });
               const data = await res.json();
               setInverterData(data);
-            } catch (err) {
+            } catch {
               setInverterData({ error: 'Fehler beim Laden der Inverter-Daten' });
             }
           }} />
@@ -755,7 +776,7 @@ export default function DashboardSimple() {
   );
 }
 
-function MetricCard({ title, value, subtitle, color }: any) {
+function MetricCard({ title, value, subtitle, color }: { title: string; value: string; subtitle?: string; color: string }) {
   return (
     <div className="metric-card" style={{ borderColor: color }}>
       <div className="metric-title">{title}</div>
@@ -766,12 +787,12 @@ function MetricCard({ title, value, subtitle, color }: any) {
 }
 
 function getActionEmoji(action: string) {
-  const emojis: any = { charge_ev: "🔌", charge_battery: "🔋", v2h: "🏠", idle: "⏸️" };
+  const emojis: Record<string, string> = { charge_ev: "🔌", charge_battery: "🔋", v2h: "🏠", idle: "⏸️" };
   return emojis[action] || "❓";
 }
 
 function getActionText(action: string) {
-  const texts: any = {
+  const texts: Record<string, string> = {
     charge_ev: "E-Auto laden",
     charge_battery: "Speicher laden",
     v2h: "Haus versorgen (V2H)",

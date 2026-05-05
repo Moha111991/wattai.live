@@ -9,7 +9,7 @@ type CarDataType = {
     [model: string]: {
       battery_capacity_kwh: number;
       max_dc_charge_kw: number;
-      [key: string]: any;
+      [key: string]: unknown;
     };
   };
 };
@@ -26,6 +26,9 @@ type EVProfile = {
   data_source?: "wallbox" | "cloud" | "phone";
   notes?: string;
 };
+
+const isDataSource = (value: string): value is NonNullable<EVProfile["data_source"]> =>
+  value === "wallbox" || value === "cloud" || value === "phone";
 
 export default function EVProfileManager({
   evSoc,
@@ -78,7 +81,7 @@ export default function EVProfileManager({
         notes: "",
       });
     }
-  }, [selectedManufacturer, selectedModel]);
+  }, [selectedManufacturer, selectedModel, selectedCar]);
 
   // Profile laden
   const load = async () => {
@@ -197,7 +200,7 @@ export default function EVProfileManager({
       <h3>🚗 E-Auto Profil</h3>
 
       {/* Aktives Fahrzeug */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 16 }}>
         <div>
           <strong>Aktives Fahrzeug</strong>
           {active ? (
@@ -267,7 +270,7 @@ export default function EVProfileManager({
           }}
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
             gap: 12,
             marginTop: 8,
           }}
@@ -329,9 +332,12 @@ export default function EVProfileManager({
 
           <select
             value={form.data_source}
-            onChange={(e) =>
-              setForm({ ...form, data_source: e.target.value as any })
-            }
+            onChange={(e) => {
+              const next = e.target.value;
+              if (isDataSource(next)) {
+                setForm({ ...form, data_source: next });
+              }
+            }}
             style={{ padding: 8 }}
           >
             <option value="wallbox">Wallbox</option>

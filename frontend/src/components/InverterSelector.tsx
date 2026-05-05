@@ -1,13 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
-const inverterList = [
+export interface InverterOption {
+  id: string;
+  name: string;
+  protocol: string;
+}
+
+const inverterList: InverterOption[] = [
   { id: "fronius", name: "Fronius Symo", protocol: "HTTP" },
   { id: "sma", name: "SMA Sunny Boy", protocol: "Modbus" },
   { id: "huawei", name: "Huawei SUN2000", protocol: "Cloud" },
   { id: "kostal", name: "Kostal Plenticore", protocol: "Modbus" },
 ];
 
-export default function InverterSelector({ onSelect }: { onSelect: (inverter: any) => void }) {
+export default function InverterSelector({ onSelect }: { onSelect: (inverter: InverterOption) => void }) {
   const [selected, setSelected] = useState<string>("");
 
   return (

@@ -64,5 +64,11 @@ export default defineConfig({
         theme_color: '#4CAF50'
       }
     })
-  ]
+  ],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    css: true,
+    include: ['src/**/*.test.{ts,tsx}']
+  }
 })

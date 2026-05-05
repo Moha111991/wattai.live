@@ -35,7 +35,7 @@ export default function SmartMeterEnergyWidget() {
   if (error) return <div style={{color: 'red'}}>{error}</div>;
 
   return (
-    <div style={{background: '#f5f7fa', border: '1.5px solid #2196f3', borderRadius: 8, padding: 16, margin: 12, maxWidth: 320}}>
+  <div style={{background: '#f5f7fa', border: '1.5px solid #2196f3', borderRadius: 8, padding: 16, margin: 0, width: '100%', maxWidth: '100%', minWidth: 0}}>
       <h4 style={{color: '#2196f3', marginBottom: 12}}>⚡ Smart Meter Energie</h4>
       <div style={{marginBottom: 8}}>
         <b>Bezogene Energie:</b> {importKwh !== null ? importKwh.toLocaleString(undefined, {maximumFractionDigits: 2}) : "-"} kWh

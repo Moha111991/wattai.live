@@ -14,10 +14,10 @@ export const getPVRealtime = () => api.get("/pv/realtime");
 export const getGridRealtime = () => api.get("/grid/realtime");
 export const getInverterStatus = () => api.get("/inverter/status");
 
-export const fetch = (url, {
+export const fetch = (url: string, {
   method = 'GET',
   headers = {}
-}) => api.get(url, {
+}: { method?: string; headers?: Record<string, string> } = {}) => api.get(url, {
   method,
   headers: {
     'X-API-Key': import.meta.env.VITE_API_KEY || 'Quick10',

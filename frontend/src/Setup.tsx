@@ -3,11 +3,39 @@ import "./Setup.css";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+interface PvSystemPreset {
+  manufacturer: string;
+  models: string[];
+  typical_power_kw: number[];
+}
+
+interface WallboxPreset {
+  manufacturer: string;
+  model: string;
+  power_kw: number;
+  phases: number;
+}
+
+interface HomeBatteryPreset {
+  manufacturer: string;
+  model: string;
+  capacity_kwh: number;
+  power_kw: number;
+}
+
+interface EVPreset {
+  manufacturer: string;
+  model: string;
+  capacity_kwh: number;
+  max_charge_ac_kw: number;
+  v2h: boolean;
+}
+
 interface Presets {
-  pv_systems: any[];
-  wallboxes: any[];
-  home_batteries: any[];
-  evs: any[];
+  pv_systems: PvSystemPreset[];
+  wallboxes: WallboxPreset[];
+  home_batteries: HomeBatteryPreset[];
+  evs: EVPreset[];
 }
 
 interface HouseholdPreset {
@@ -87,47 +115,51 @@ export default function Setup({ onComplete }: { onComplete: () => void }) {
     }
   };
 
-  const selectPreset = (type: string, item: any) => {
+  const selectPreset = (type: string, item: PvSystemPreset | WallboxPreset | HomeBatteryPreset | EVPreset) => {
     if (type === "pv") {
+      const pvItem = item as PvSystemPreset;
       setConfig({
         ...config,
         pv_system: {
           ...config.pv_system,
-          manufacturer: item.manufacturer,
-          model: item.models[0],
-          peak_power_kw: item.typical_power_kw[0]
+          manufacturer: pvItem.manufacturer,
+          model: pvItem.models[0],
+          peak_power_kw: pvItem.typical_power_kw[0]
         }
       });
     } else if (type === "wallbox") {
+      const wallboxItem = item as WallboxPreset;
       setConfig({
         ...config,
         wallbox: {
-          manufacturer: item.manufacturer,
-          model: item.model,
-          max_power_kw: item.power_kw,
-          phases: item.phases
+          manufacturer: wallboxItem.manufacturer,
+          model: wallboxItem.model,
+          max_power_kw: wallboxItem.power_kw,
+          phases: wallboxItem.phases
         }
       });
     } else if (type === "battery") {
+      const batteryItem = item as HomeBatteryPreset;
       setConfig({
         ...config,
         home_battery: {
-          manufacturer: item.manufacturer,
-          model: item.model,
-          capacity_kwh: item.capacity_kwh,
-          max_charge_kw: item.power_kw,
-          max_discharge_kw: item.power_kw
+          manufacturer: batteryItem.manufacturer,
+          model: batteryItem.model,
+          capacity_kwh: batteryItem.capacity_kwh,
+          max_charge_kw: batteryItem.power_kw,
+          max_discharge_kw: batteryItem.power_kw
         }
       });
     } else if (type === "ev") {
+      const evItem = item as EVPreset;
       setConfig({
         ...config,
         ev: {
-          manufacturer: item.manufacturer,
-          model: item.model,
-          battery_capacity_kwh: item.capacity_kwh,
-          max_charge_kw: item.max_charge_ac_kw,
-          v2h_capable: item.v2h
+          manufacturer: evItem.manufacturer,
+          model: evItem.model,
+          battery_capacity_kwh: evItem.capacity_kwh,
+          max_charge_kw: evItem.max_charge_ac_kw,
+          v2h_capable: evItem.v2h
         }
       });
     }

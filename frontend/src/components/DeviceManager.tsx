@@ -1,5 +1,58 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { API_URL, resolveWsUrl } from "../lib/api";
+
+type ConnectParams = Record<string, unknown>;
+
+interface DeviceLike {
+  id: string;
+  type: string;
+  brand: string;
+  enabled: boolean;
+  ip: string;
+  port?: string | number;
+  status: string;
+  manufacturer?: string;
+  model?: string;
+  soc?: number;
+  power_kw?: number;
+}
+
+interface ConnectionInfo {
+  status?: string;
+  device_id?: string;
+  request_id?: string;
+  requestId?: string;
+  [key: string]: unknown;
+}
+
+interface PollOptions {
+  interval?: number;
+  maxInterval?: number;
+  timeout?: number;
+  backoff?: number;
+  signal?: AbortSignal;
+  onUpdate?: (info: ConnectionInfo) => void;
+}
+
+const getRequestId = (data: ConnectionInfo): string | undefined => {
+  if (typeof data.request_id === 'string') return data.request_id;
+  if (typeof data.requestId === 'string') return data.requestId;
+  return undefined;
+};
+
+const normalizeDevice = (device: Partial<DeviceLike>): DeviceLike => ({
+  id: String(device.id ?? `${(device.type ?? 'device').toLowerCase()}_${Math.random().toString(36).slice(2, 8)}`),
+  type: String(device.type ?? 'Unbekannt'),
+  brand: String(device.brand ?? 'Unbekannt'),
+  enabled: Boolean(device.enabled ?? false),
+  ip: String(device.ip ?? '-'),
+  status: String(device.status ?? 'offline'),
+  port: device.port,
+  manufacturer: typeof device.manufacturer === 'string' ? device.manufacturer : undefined,
+  model: typeof device.model === 'string' ? device.model : undefined,
+  soc: typeof device.soc === 'number' ? device.soc : undefined,
+  power_kw: typeof device.power_kw === 'number' ? device.power_kw : undefined,
+});
 
 
 // Simple polling helper: polls GET /connections/{requestId} until status === 'connected'
@@ -10,7 +63,7 @@ async function pollConnection(requestId: string, {
   backoff = 1.5,
   signal,
   onUpdate,
-} : any = {}) {
+} : PollOptions = {}) {
   const start = Date.now();
   let current = interval;
 
@@ -35,12 +88,12 @@ async function pollConnection(requestId: string, {
           throw new Error(`Polling failed: ${res.status} ${txt}`);
         }
       } else {
-        const info = await res.json();
+        const info: ConnectionInfo = await res.json();
         if (onUpdate) onUpdate(info);
         if (info.status === 'connected') return info;
       }
-    } catch (err: any) {
-      if (err?.name === 'AbortError') throw err;
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') throw err;
       // network/transient errors: ignore and retry until timeout
     }
 
@@ -58,7 +111,7 @@ async function pollConnection(requestId: string, {
   }
 }
 
-function BatteryModbusDialog({ onConnect, onClose, realDevices }: { onConnect: (params: any) => void, onClose: () => void, realDevices: any[] }) {
+function BatteryModbusDialog({ onConnect, onClose, realDevices }: { onConnect: (params: ConnectParams) => void | Promise<void>, onClose: () => void, realDevices: DeviceLike[] }) {
   const [protocol, setProtocol] = useState<'modbus' | 'cloud'>('modbus');
   const [step, setStep] = useState(1);
   // Modbus fields
@@ -104,7 +157,7 @@ function BatteryModbusDialog({ onConnect, onClose, realDevices }: { onConnect: (
     try {
       if (protocol === 'modbus') {
         // Only allow if IP/port matches a real battery device
-        const found = realDevices.find((d: any) => (d.ip === ip || (d.ip || '').split(',').includes(ip)) && (d.port ? d.port == port : true));
+  const found = realDevices.find((d: DeviceLike) => (d.ip === ip || (d.ip || '').split(',').includes(ip)) && (d.port ? d.port == port : true));
         if (found) {
           setStep(2);
           setError('');
@@ -129,8 +182,9 @@ function BatteryModbusDialog({ onConnect, onClose, realDevices }: { onConnect: (
         onClose();
         alert("Batterie über Cloud API verbunden und registriert!");
       }
-    } catch (e: any) {
-      setError(e?.message || "Verbindung fehlgeschlagen.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Verbindung fehlgeschlagen.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -194,12 +248,14 @@ function BatteryModbusDialog({ onConnect, onClose, realDevices }: { onConnect: (
   );
 }
 
+void BatteryModbusDialog;
+
 // ...existing code...
 import DeviceGrid from './DeviceGrid';
 import SmartMeterConnectDialog from './SmartMeterConnectDialog';
 import InverterConnectDialog from './InverterConnectDialog';
 
-function DeviceConnectDialog({ deviceType, realDevices, onConnect, onClose }: { deviceType: string, realDevices: any[], onConnect: (params: any) => void, onClose: () => void }) {
+function DeviceConnectDialog({ deviceType, realDevices, onConnect, onClose }: { deviceType: string, realDevices: DeviceLike[], onConnect: (params: ConnectParams) => void | Promise<void>, onClose: () => void }) {
   const [protocol, setProtocol] = useState<'modbus' | 'cloud'>('modbus');
   const [step, setStep] = useState(1);
   const [ip, setIp] = useState('');
@@ -249,7 +305,7 @@ function DeviceConnectDialog({ deviceType, realDevices, onConnect, onClose }: { 
     setLoading(true);
     try {
       if (protocol === 'modbus') {
-        const found = realDevices.find((d: any) => (d.ip === ip || (d.ip || '').split(',').includes(ip)) && (d.port ? d.port == port : true));
+  const found = realDevices.find((d: DeviceLike) => (d.ip === ip || (d.ip || '').split(',').includes(ip)) && (d.port ? d.port == port : true));
         if (found) {
           setStep(2);
           setError('');
@@ -274,15 +330,16 @@ function DeviceConnectDialog({ deviceType, realDevices, onConnect, onClose }: { 
         onClose();
         alert(`${deviceType} über Cloud API verbunden und registriert!`);
       }
-    } catch (e: any) {
-      setError(e?.message || "Verbindung fehlgeschlagen.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Verbindung fehlgeschlagen.";
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRegister = () => {
-    let params: any = { ip, port };
+    let params: ConnectParams = { ip, port };
     if (deviceType === 'Battery') {
       params = { ...params, soc, soh, voltage, current, temperature, errorStatus, command };
     } else if (deviceType === 'Wallbox') {
@@ -373,20 +430,21 @@ function DeviceConnectDialog({ deviceType, realDevices, onConnect, onClose }: { 
 export default function DeviceManager() {
   const [showConnectDialog, setShowConnectDialog] = useState(false);
   const [connectType, setConnectType] = useState<string>('');
-  const [devices, setDevices] = useState<any[]>([]);
+  const [devices, setDevices] = useState<DeviceLike[]>([]);
   const [showSmartMeterDialog, setShowSmartMeterDialog] = useState(false);
-  const [smartMeterDevice, setSmartMeterDevice] = useState<any>(null);
+  const [smartMeterDevice, setSmartMeterDevice] = useState<DeviceLike | null>(null);
   const [showInverterDialog, setShowInverterDialog] = useState(false);
-  const [inverterDevice, setInverterDevice] = useState<any>(null);
+  const [inverterDevice, setInverterDevice] = useState<DeviceLike | null>(null);
   // track active poll controllers so we can cancel if component unmounts
   const pollControllers = useRef<Map<string, AbortController>>(new Map());
   // cleanup on unmount: abort any outstanding polls
   useEffect(() => {
+    const controllers = pollControllers.current;
     return () => {
-      pollControllers.current.forEach(ac => {
-        try { ac.abort(); } catch (e) { /* ignore */ }
+      controllers.forEach(ac => {
+        try { ac.abort(); } catch { /* ignore */ }
       });
-      pollControllers.current.clear();
+      controllers.clear();
     };
   }, []);
   useEffect(() => {
@@ -399,26 +457,27 @@ export default function DeviceManager() {
       .then(res => res.json())
       .then(data => {
         // Aggregate all batteries into one card (average SOC, sum power)
-        const typeMap: Record<string, any> = {};
-        const batteries = (data.devices || []).filter((dev: any) => (dev.type || '').toLowerCase().includes('battery'));
+        const deviceList = ((data.devices || []) as Partial<DeviceLike>[]).map(normalizeDevice);
+        const typeMap: Record<string, DeviceLike> = {};
+        const batteries = deviceList.filter((dev: DeviceLike) => (dev.type || '').toLowerCase().includes('battery'));
         if (batteries.length > 0) {
           // Aggregate: average SOC, sum power, concat brands/models
-          const avgSoc = batteries.reduce((sum: number, b: any) => sum + (b.soc ?? 0), 0) / batteries.length;
-          const sumPower = batteries.reduce((sum: number, b: any) => sum + (b.power_kw ?? 0), 0);
+          const avgSoc = batteries.reduce((sum: number, b: DeviceLike) => sum + (b.soc ?? 0), 0) / batteries.length;
+          const sumPower = batteries.reduce((sum: number, b: DeviceLike) => sum + (b.power_kw ?? 0), 0);
           typeMap['battery'] = {
             id: 'batteries_agg',
             type: 'Battery',
-            brand: batteries.map((b: any) => b.brand || 'Unbekannt').filter(Boolean).join(' + ') || 'Unbekannt',
+            brand: batteries.map((b: DeviceLike) => b.brand || 'Unbekannt').filter(Boolean).join(' + ') || 'Unbekannt',
             enabled: true,
-            ip: batteries.map((b: any) => b.ip || '').filter(Boolean).join(', '),
-            status: batteries.every((b: any) => b.status === 'connected') ? 'connected' : 'partially connected',
-            manufacturer: batteries.map((b: any) => b.manufacturer || '').filter(Boolean).join(' + ') || '-',
-            model: batteries.map((b: any) => b.model || '').filter(Boolean).join(' + ') || '-',
+            ip: batteries.map((b: DeviceLike) => b.ip || '').filter(Boolean).join(', '),
+            status: batteries.every((b: DeviceLike) => b.status === 'connected') ? 'connected' : 'partially connected',
+            manufacturer: batteries.map((b: DeviceLike) => b.manufacturer || '').filter(Boolean).join(' + ') || '-',
+            model: batteries.map((b: DeviceLike) => b.model || '').filter(Boolean).join(' + ') || '-',
             soc: Math.round(avgSoc),
             power_kw: Math.round(sumPower * 100) / 100
           };
         }
-        (data.devices || []).forEach((dev: any) => {
+        deviceList.forEach((dev: DeviceLike) => {
           const t = (dev.type || '').toLowerCase();
           if (t.includes('smart meter') && !typeMap['smart_meter']) typeMap['smart_meter'] = dev;
           else if (t.includes('inverter') && !typeMap['inverter']) typeMap['inverter'] = dev;
@@ -452,7 +511,7 @@ export default function DeviceManager() {
               setDevices(devs => devs.map(d => d.status === 'pending' ? { ...d, status } : d));
             }
           }
-        } catch (e) {
+        } catch {
           // ignore malformed messages
         }
       });
@@ -462,19 +521,19 @@ export default function DeviceManager() {
       });
 
       return () => {
-        try { socket.close(); } catch (e) { }
+        try { socket.close(); } catch { }
       };
     } catch (e) {
       console.warn('ws init failed', e);
     }
   }, []);
 
-  const handleConnect = (device: any) => {
+  const handleConnect = (device: DeviceLike) => {
     setConnectType(device.type);
     setShowConnectDialog(true);
   };
 
-  const handleInverterConnect = async (params: any) => {
+  const handleInverterConnect = async (params: ConnectParams) => {
     if (!inverterDevice) return;
     try {
       const res = await fetch(`${API_URL}/devices/${inverterDevice.id}/connect`, {
@@ -485,8 +544,8 @@ export default function DeviceManager() {
         },
         body: JSON.stringify(params)
       });
-      const data = await res.json().catch(() => ({}));
-      const requestId = data.request_id || data.requestId || data.requestId;
+  const data: ConnectionInfo = await res.json().catch(() => ({} as ConnectionInfo));
+  const requestId = getRequestId(data);
 
       // mark pending in UI
       setDevices(devices => devices.map(d => d.id === inverterDevice.id ? { ...d, status: "pending" } : d));
@@ -496,16 +555,16 @@ export default function DeviceManager() {
         pollControllers.current.set(requestId, ac);
         pollConnection(requestId, {
           signal: ac.signal,
-          onUpdate: (info: any) => {
+          onUpdate: (info: ConnectionInfo) => {
             // if backend reports a different device_id, try to update that one too
             const devId = info.device_id || inverterDevice.id;
             setDevices(devices => devices.map(d => d.id === devId ? { ...d, status: info.status || d.status } : d));
           }
-        }).then((info: any) => {
+        }).then((info: ConnectionInfo) => {
           const devId = info.device_id || inverterDevice.id;
           setDevices(devices => devices.map(d => d.id === devId ? { ...d, status: "connected" } : d));
           alert("Inverter verbunden!");
-        }).catch((err: any) => {
+        }).catch((err: unknown) => {
           console.warn('poll failed', err);
           setDevices(devices => devices.map(d => d.id === inverterDevice.id ? { ...d, status: "failed" } : d));
         }).finally(() => {
@@ -529,7 +588,7 @@ export default function DeviceManager() {
     }
   };
 
-  const handleSmartMeterConnect = async (params: any) => {
+  const handleSmartMeterConnect = async (params: ConnectParams) => {
     if (!smartMeterDevice) return;
     try {
       const res = await fetch(`${API_URL}/devices/${smartMeterDevice.id}/connect`, {
@@ -540,8 +599,8 @@ export default function DeviceManager() {
         },
         body: JSON.stringify(params)
       });
-      const data = await res.json().catch(() => ({}));
-      const requestId = data.request_id || data.requestId || data.requestId;
+  const data: ConnectionInfo = await res.json().catch(() => ({} as ConnectionInfo));
+  const requestId = getRequestId(data);
 
       setDevices(devices => devices.map(d => d.id === smartMeterDevice.id ? { ...d, status: "pending" } : d));
 
@@ -550,15 +609,15 @@ export default function DeviceManager() {
         pollControllers.current.set(requestId, ac);
         pollConnection(requestId, {
           signal: ac.signal,
-          onUpdate: (info: any) => {
+          onUpdate: (info: ConnectionInfo) => {
             const devId = info.device_id || smartMeterDevice.id;
             setDevices(devices => devices.map(d => d.id === devId ? { ...d, status: info.status || d.status } : d));
           }
-        }).then((info: any) => {
+        }).then((info: ConnectionInfo) => {
           const devId = info.device_id || smartMeterDevice.id;
           setDevices(devices => devices.map(d => d.id === devId ? { ...d, status: "connected" } : d));
           alert("Smart Meter verbunden!");
-        }).catch((err: any) => {
+        }).catch((err: unknown) => {
           console.warn('poll failed', err);
           setDevices(devices => devices.map(d => d.id === smartMeterDevice.id ? { ...d, status: "failed" } : d));
         }).finally(() => {
@@ -598,8 +657,8 @@ export default function DeviceManager() {
       {showConnectDialog && (
         <DeviceConnectDialog
           deviceType={connectType}
-          realDevices={devices.filter((d: any) => (d.type || '').toLowerCase().includes(connectType.toLowerCase()))}
-          onConnect={async (params: any) => {
+          realDevices={devices.filter((d: DeviceLike) => (d.type || '').toLowerCase().includes(connectType.toLowerCase()))}
+          onConnect={async (params: ConnectParams) => {
             // Try to find a representative device for this type to POST a connect request to
             const target = devices.find(d => (d.type || '').toLowerCase() === connectType.toLowerCase() || (d.type || '').toLowerCase().includes(connectType.toLowerCase()));
             if (!target) {
@@ -617,8 +676,8 @@ export default function DeviceManager() {
                 },
                 body: JSON.stringify(params)
               });
-              const data = await res.json().catch(() => ({}));
-              const requestId = data.request_id || data.requestId || data.requestId;
+              const data: ConnectionInfo = await res.json().catch(() => ({} as ConnectionInfo));
+              const requestId = getRequestId(data);
 
               setDevices(devices => devices.map(d => (d.id === target.id ? { ...d, status: 'pending' } : d)));
 
@@ -627,14 +686,14 @@ export default function DeviceManager() {
                 pollControllers.current.set(requestId, ac);
                 pollConnection(requestId, {
                   signal: ac.signal,
-                  onUpdate: (info: any) => {
+                  onUpdate: (info: ConnectionInfo) => {
                     const devId = info.device_id || target.id;
                     setDevices(devices => devices.map(d => d.id === devId ? { ...d, status: info.status || d.status } : d));
                   }
-                }).then((info: any) => {
+                }).then((info: ConnectionInfo) => {
                   const devId = info.device_id || target.id;
                   setDevices(devices => devices.map(d => d.id === devId ? { ...d, status: 'connected', ...params } : d));
-                }).catch((err: any) => {
+                }).catch((err: unknown) => {
                   console.warn('poll failed', err);
                   setDevices(devices => devices.map(d => d.id === target.id ? { ...d, status: 'failed' } : d));
                 }).finally(() => {

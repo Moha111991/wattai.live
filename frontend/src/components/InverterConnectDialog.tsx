@@ -1,8 +1,25 @@
 
 import { useState } from "react";
 import { API_URL } from "../lib/api";
+import type { InverterOption } from "./InverterSelector";
 
-export default function InverterConnectDialog({ inverter: _inverter, onConnect }: { inverter: any, onConnect: (params: any) => Promise<any> | void }) {
+type ModbusConnectParams = {
+  ip: string;
+  port: number;
+};
+
+type CloudConnectParams = {
+  protocol: 'cloud';
+  ip?: string;
+} & Record<string, unknown>;
+
+type ConnectParams = ModbusConnectParams | CloudConnectParams;
+
+type CloudSyncResponse = {
+  error?: string;
+} & Record<string, unknown>;
+
+export default function InverterConnectDialog({ inverter: _inverter, onConnect }: { inverter: InverterOption | { id?: string; name?: string; protocol?: string } | null, onConnect: (params: ConnectParams) => Promise<unknown> | void }) {
   const [protocol, setProtocol] = useState<'modbus' | 'cloud'>('modbus');
   // Modbus fields
   const [ip, setIp] = useState("");
@@ -52,21 +69,22 @@ export default function InverterConnectDialog({ inverter: _inverter, onConnect }
           },
           body: JSON.stringify({ device_id: deviceId, api_base_url: apiBaseUrl, api_key: apiKey })
         });
-        const data = await res.json();
+        const data: CloudSyncResponse = await res.json();
         if (!res.ok || data.error) throw new Error(data.error || 'Cloud API Verbindung fehlgeschlagen');
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
         if (onConnect) await onConnect({ protocol: 'cloud', ...data });
       }
-    } catch (e: any) {
-      setError(e?.message || "Verbindung fehlgeschlagen.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Verbindung fehlgeschlagen.";
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="inverter-connect-dialog" style={{ minWidth: 340, padding: 16, background: '#fff', borderRadius: 8, boxShadow: '0 2px 16px #0002', textAlign: 'left' }}>
+  <div className="inverter-connect-dialog" style={{ minWidth: 'var(--tab-dialog-min-width)', padding: 16, background: '#fff', borderRadius: 8, boxShadow: '0 2px 16px #0002', textAlign: 'left' }}>
       <h3 style={{ marginTop: 0 }}>Inverter verbinden</h3>
       <div style={{ marginBottom: 12 }}>
         <label>

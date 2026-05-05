@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import Dashboard from "./components/Dashboard";
 import EVDashboard from "./components/EVDashboard";
+import DevicesDashboard from "./components/DevicesDashboard";
 import HouseholdDashboard from "./components/HouseholdDashboard";
 import KIDashboard from "./components/KIDashboard";
 import FleetManagementTab from "./components/FleetManagementTab";
 import LegalFooter from "./components/LegalFooter";
 import UpgradeModal from "./components/UpgradeModal";
 import WattAILogo from "./components/WattAILogo";
+import DashboardHeader3D from "./components/headers/DashboardHeader3D";
+import EVHeader3D from "./components/headers/EVHeader3D";
+import DevicesHeader3D from "./components/headers/DevicesHeader3D";
+import SmartHomeHeader3D from "./components/headers/SmartHomeHeader3D";
+import AIHeader3D from "./components/headers/AIHeader3D";
 import {
   resolveFeatureFlags,
 } from "./config/featureFlags";
@@ -22,6 +28,7 @@ type TabDefinition = {
 const BASE_TABS: TabDefinition[] = [
   { key: 'main', label: 'Dashboard', component: <Dashboard /> },
   { key: 'ev', label: 'Elektroauto', component: <EVDashboard /> },
+  { key: 'devices', label: 'Geräte', component: <DevicesDashboard /> },
   { key: 'house', label: 'Smart Home', component: <HouseholdDashboard /> },
   { key: 'ki', label: 'KI-Empfehlung', component: <KIDashboard /> },
 ];
@@ -43,16 +50,26 @@ export default function App() {
     ? [...BASE_TABS.slice(0, 2), FLEET_TAB, ...BASE_TABS.slice(2)]
     : BASE_TABS;
 
-  const isDashboardTab = tab === 'main';
   const appStoreUrl = import.meta.env.VITE_APP_STORE_URL || 'https://apps.apple.com/';
   const playStoreUrl = import.meta.env.VITE_PLAY_STORE_URL || 'https://play.google.com/store/apps';
-  const headerImageSrc = tab === 'ev'
-    ? '/wattai.ive-eauto.png'
-    : tab === 'house'
-      ? '/wattai.live-smarthome.png'
-      : tab === 'ki'
-        ? '/wattai.live-KI.png'
-      : '/wattai.live-dashboard.png';
+  
+  // Render 3D Header Component based on tab
+  const renderHeaderComponent = () => {
+    switch (tab) {
+      case 'main':
+        return <DashboardHeader3D />;
+      case 'ev':
+        return <EVHeader3D />;
+      case 'devices':
+        return <DevicesHeader3D />;
+      case 'house':
+        return <SmartHomeHeader3D />;
+      case 'ki':
+        return <AIHeader3D />;
+      default:
+        return <DashboardHeader3D />;
+    }
+  };
 
   const appShellStyle: CSSProperties = {
     minHeight: '100dvh',
@@ -97,51 +114,6 @@ export default function App() {
     overflow: 'hidden',
     background: '#020617',
     lineHeight: 0,
-  };
-
-  const headerImageStyle: CSSProperties = {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    objectPosition: 'center 18%',
-    display: 'block',
-    borderRadius: 'inherit',
-    filter: 'saturate(1.07) contrast(1.04)',
-  };
-
-  const headerOverlayStyle: CSSProperties = {
-    position: 'absolute',
-    left: '50%',
-    bottom: 'clamp(10px, 2.2vw, 18px)',
-    transform: 'translateX(-50%)',
-    width: 'min(92%, 620px)',
-    color: '#ecfeff',
-    textShadow: '0 2px 10px rgba(15,23,42,0.9)',
-    padding: 'clamp(0.62rem, 1.8vw, 0.8rem) clamp(0.9rem, 2.4vw, 1.35rem)',
-    borderRadius: 14,
-    background: 'linear-gradient(180deg, rgba(2,6,23,0.78) 0%, rgba(2,6,23,0.58) 100%)',
-    border: '1px solid rgba(103,232,249,0.25)',
-    backdropFilter: 'blur(5px)',
-    lineHeight: 1.2,
-    textAlign: 'center',
-    boxSizing: 'border-box',
-  };
-
-  const headerOverlayTitleStyle: CSSProperties = {
-    fontSize: 'clamp(1rem, 2.3vw, 1.22rem)',
-    fontWeight: 800,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    margin: 0,
-  };
-
-  const headerOverlaySubtitleStyle: CSSProperties = {
-    fontSize: 'clamp(0.74rem, 1.65vw, 0.9rem)',
-    marginTop: 4,
-    opacity: 0.98,
-    lineHeight: 1.35,
   };
 
   const navStyle: CSSProperties = {
@@ -296,13 +268,9 @@ export default function App() {
             <WattAILogo size={100} animated={true} variant="full" />
           </div>
           
-          <img src={headerImageSrc} alt="WattAI Header" style={headerImageStyle} />
-          {!isDashboardTab && (
-            <div style={headerOverlayStyle}>
-              <div style={headerOverlayTitleStyle}>WattAI</div>
-              <div style={headerOverlaySubtitleStyle}>KI-basiertes Smart Charging & Energiemanagement</div>
-            </div>
-          )}
+          <div style={headerImageFrameStyle}>
+            {renderHeaderComponent()}
+          </div>
         </div>
       </header>
         <nav style={navStyle}>

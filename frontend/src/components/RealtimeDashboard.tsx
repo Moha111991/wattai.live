@@ -37,7 +37,7 @@ export function RealtimeDashboard() {
           });
           setError("");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (active) {
           setError("Backend nicht erreichbar");
           console.error("API error", err);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 const isLocalHost = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const API_URL = import.meta.env.VITE_API_URL || (isLocalHost ? "http://localhost:8000" : window.location.origin);
@@ -86,7 +86,7 @@ export default function MobileRelay() {
         return;
       }
       
-      // @ts-ignore
+  // @ts-expect-error: Web Bluetooth API is not available in all TS DOM lib targets
       const device = await navigator.bluetooth.requestDevice({
         filters: [{ services: ['battery_service'] }],
         optionalServices: ['device_information']
@@ -94,8 +94,9 @@ export default function MobileRelay() {
       
       log(`📱 Verbunden mit: ${device.name}`);
       setPaired(true);
-    } catch (err: any) {
-      log(`❌ BLE Fehler: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      log(`❌ BLE Fehler: ${message}`);
     }
   };
 

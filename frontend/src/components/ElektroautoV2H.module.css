@@ -73,11 +73,13 @@
 
 /* Neue Styles für Wallbox-Auswahl im Elektroauto-Tab */
 .card {
-  background: #f6f8fa;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  padding: 1.5rem 2rem;
-  margin-top: 1.5rem;
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.34);
+  padding: 1.25rem 1.4rem;
+  margin-top: 0;
+  color: #e2e8f0;
 }
 
 .heroImage {
@@ -85,7 +87,7 @@
   max-width: 520px;
   border-radius: 12px;
   margin: 0.75rem auto 1rem auto;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.32);
   display: block;
   object-fit: contain;
 }
@@ -99,6 +101,10 @@
   display: inline-block;
   margin-left: 0.5rem;
   padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(71, 85, 105, 0.65);
+  background: rgba(2, 6, 23, 0.74);
+  color: #e2e8f0;
 }
 
 .wallboxInfo {
@@ -108,7 +114,7 @@
 
 .error {
   margin-top: 0.75rem;
-  color: #b00020;
+  color: #f87171;
   font-size: 0.9rem;
 }
 
@@ -119,14 +125,49 @@
 }
 
 .button {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
+  padding: var(--tab-button-padding);
+  min-height: var(--tab-button-min-height);
+  font-size: var(--tab-button-font-size);
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.38);
   cursor: pointer;
+  color: #f8fafc;
+  font-weight: 700;
+  background: linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%);
+}
+
+.active {
+  background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);
+}
+
+.inactive {
+  background: rgba(51, 65, 85, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+}
+
+.modalContent {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 20px 44px rgba(2, 6, 23, 0.5);
+  border-radius: 14px;
+  padding: 1.15rem 1.2rem;
+  max-width: 520px;
+  color: #e2e8f0;
 }
 
 .hint {
   margin-top: 0.5rem;
   font-size: 0.85rem;
-  color: #555;
+  color: #94a3b8;
 }

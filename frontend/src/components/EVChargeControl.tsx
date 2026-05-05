@@ -16,6 +16,15 @@ interface WallboxInfo {
   model?: string;
 }
 
+interface DevicesResponse {
+  devices?: WallboxInfo[];
+}
+
+interface ChargingResponse {
+  soc?: number;
+  power_kw?: number;
+}
+
 /**
  * Reusable EV charging control: shows SOC, power, status and allows
  * starting/stopping charging via the Wallbox.
@@ -62,16 +71,17 @@ const EVChargeControl: React.FC = () => {
           },
         });
         if (!res.ok) return;
-        const data = await res.json();
+        const data: DevicesResponse = await res.json();
         const devices = data.devices || [];
         const wb = devices.find(
-          (d: any) => (d.type || '').toLowerCase().includes('wallbox')
+          (d) => (d.type || '').toLowerCase().includes('wallbox')
         );
         if (wb) {
           setWallbox(wb);
         }
-      } catch (e: any) {
-        setWallboxError(e?.message || 'Geräteübersicht konnte nicht geladen werden.');
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Geräteübersicht konnte nicht geladen werden.';
+        setWallboxError(message);
       }
     };
     loadWallbox();
@@ -128,15 +138,16 @@ const EVChargeControl: React.FC = () => {
         body: JSON.stringify({ state: charging, power_kw: power }),
       });
       if (!res.ok) throw new Error('Fehler beim Senden der Anfrage');
-      const result = await res.json();
+      const result: ChargingResponse = await res.json();
       setEvState((prev) => ({
         ...prev,
         ev_soc: result.soc ?? prev.ev_soc,
         ev_power_kw: result.power_kw ?? prev.ev_power_kw,
         ev_charging: charging,
       }));
-    } catch (e: any) {
-      setError(e.message || 'Unbekannter Fehler');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -144,8 +155,8 @@ const EVChargeControl: React.FC = () => {
 
   return (
     <div>
-      <h2>EV-Ladeübersicht</h2>
-      <p className="ev-subtitle">
+      <h2 className="tab-page-title">EV-Ladeübersicht</h2>
+      <p className="ev-subtitle tab-page-subtitle">
         Übersicht zum aktuellen Ladestand deines E-Autos und Steuerung der Wallbox.
         Die Verbindung bzw. das Entfernen der Wallbox erfolgt im Tab "Übersicht" → "Geräte";
         hier steuerst du nur den aktuellen Ladevorgang (Start/Stop und Ladeleistung).

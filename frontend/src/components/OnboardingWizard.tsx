@@ -1,19 +1,31 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { API_URL } from "../lib/api";
 
 type Step = "welcome" | "device-type" | "wallbox" | "inverter" | "battery" | "meter" | "heatpump" | "complete";
 
+interface DeviceConfig {
+  type: string;
+  brand: string;
+  ip: string;
+  poll_interval: number;
+}
+
+interface TestResult {
+  success: boolean;
+  message: string;
+}
+
 export default function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState<Step>("welcome");
-  const [devices, setDevices] = useState<any[]>([]);
-  const [currentDevice, setCurrentDevice] = useState({
+  const [devices, setDevices] = useState<DeviceConfig[]>([]);
+  const [currentDevice, setCurrentDevice] = useState<DeviceConfig>({
     type: "",
     brand: "",
     ip: "",
     poll_interval: 10
   });
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
 
   const handleSkip = () => {
     localStorage.setItem("onboarding_completed", "true");
@@ -42,10 +54,11 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
       } else {
         setTestResult({ success: false, message: `❌ HTTP ${res.status}` });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setTestResult({ 
         success: false, 
-        message: `❌ Verbindung fehlgeschlagen: ${err.message}` 
+        message: `❌ Verbindung fehlgeschlagen: ${message}` 
       });
     } finally {
       setTesting(false);

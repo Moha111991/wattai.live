@@ -1,16 +1,34 @@
 // EVProfileForm.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+
+type EVModelEntry = {
+  manufacturer: string;
+  model: string;
+  efficiency_kwh_per_100km?: Record<string, number>;
+  battery_capacity_kwh?: number;
+  max_dc_charge_kw?: number;
+  typical_range_km?: number;
+};
+
+type CarInfoLike = {
+  efficiency_kwh_per_100km?: Record<string, number>;
+  battery_capacity_kwh?: number;
+  max_dc_charge_kw?: number;
+  typical_range_km?: number;
+} & Record<string, unknown>;
 
 export default function EVProfileForm() {
-  const [evModels, setEvModels] = useState<any[]>([]);
+  const [evModels, setEvModels] = useState<EVModelEntry[]>([]);
 
   useEffect(() => {
     import("../data/cars.json").then((data) => {
       // Falls die Struktur ein Objekt ist, in ein Array umwandeln
-      const arr: any[] = [];
+      const arr: EVModelEntry[] = [];
       Object.entries(data.default).forEach(([manufacturer, models]) => {
-        Object.entries(models as any).forEach(([model, info]) => {
-          arr.push({ manufacturer, model, ...info });
+        Object.entries(models as Record<string, unknown>).forEach(([model, info]) => {
+          const infoObj: CarInfoLike =
+            info && typeof info === "object" ? (info as CarInfoLike) : {};
+          arr.push({ manufacturer, model, ...infoObj });
         });
       });
       setEvModels(arr);

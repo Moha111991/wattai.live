@@ -1,9 +1,18 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
-export default function EVControlBox({ activeEV }) 
+interface ActiveEV {
+  active: boolean;
+  manufacturer: string;
+  model: string;
+  battery_capacity_kwh: number;
+  typical_range_km: number;
+}
 
-{/* <EVControlBox activeEV={activeEV} /> */}
+interface EVControlBoxProps {
+  activeEV?: ActiveEV | null;
+}
 
+export default function EVControlBox({ activeEV }: EVControlBoxProps) {
 
   const [v2hConfirm, setV2hConfirm] = useState(false);
 
