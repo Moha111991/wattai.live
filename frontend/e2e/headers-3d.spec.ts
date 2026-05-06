@@ -45,8 +45,20 @@ test.describe('3D Header Tests', () => {
         }
       }
       
-      // Das größte SVG sollte der Header sein (mindestens 500px)
-      expect(maxWidth).toBeGreaterThan(500);
+      // Get viewport width and set appropriate threshold
+      const viewportSize = page.viewportSize();
+      let minHeaderWidth = 500; // Desktop default
+
+      if (viewportSize) {
+        if (viewportSize.width < 768) {
+          minHeaderWidth = 200; // Mobile
+        } else if (viewportSize.width < 1024) {
+          minHeaderWidth = 350; // Tablet
+        }
+      }
+
+      // Das größte SVG sollte der Header sein
+      expect(maxWidth).toBeGreaterThan(minHeaderWidth);
       expect(largestSvg).toBeTruthy();
     });
   }
