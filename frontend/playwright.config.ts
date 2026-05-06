@@ -61,41 +61,55 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // ✅ Standard Chromium (Open-Source)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // Firefox und WebKit optional (langsamer in CI)
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
+    // ✅ Firefox
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
 
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+    // ✅ WebKit (Safari-Engine)
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    // ✅ Mobile Chrome (Pixel 5)
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    // ✅ Mobile Safari (iPhone 12)
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
+
+    // ✅ Google Chrome (branded - requires Chrome installed)
+    {
+      name: 'Google Chrome',
+      use: { 
+        ...devices['Desktop Chrome'],
+        browserName: 'chromium',  // Correct: Chrome uses chromium engine
+        channel: 'chrome'  // Use installed Chrome browser
+      }
+    },
+
+    // ✅ Microsoft Edge (branded - requires Edge installed)
+    {
+      name: 'Microsoft Edge',
+      use: { 
+        ...devices['Desktop Edge'],
+        browserName: 'chromium',  // Correct: Edge uses chromium engine
+        channel: 'msedge'  // Use installed Edge browser
+      }
+    },
   ],
 
   /* Optional: Run local dev server for development
