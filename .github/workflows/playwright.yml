@@ -27,13 +27,13 @@ jobs:
       working-directory: ./frontend
       run: npm ci
 
-    - name: 🎭 Install Playwright Browsers
+    - name: 📦 Install Playwright Browsers
       working-directory: ./frontend
-      run: npx playwright install chromium webkit --with-deps
+      run: npx playwright install --with-deps
 
     - name: ✅ Run Playwright Tests
       working-directory: ./frontend
-      run: npx playwright test --project=chromium --project=webkit
+      run: npx playwright test
       continue-on-error: false
 
     - name: 📊 Upload Test Report
