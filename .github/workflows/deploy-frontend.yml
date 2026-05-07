@@ -51,24 +51,23 @@ jobs:
           echo "=== Dateien ==="
           find frontend/dist -type f | sort
 
-      # ── 6. Auf united-domains deployen via FTP ──────────────
-      - name: 🚀 Deploy via FTP to united-domains (www.wattai.live)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      # ── 6. Auf united-domains deployen via SFTP/SSH ─────────
+      # Benötigte Secrets:
+      # - SFTP_HOST
+      # - SFTP_USERNAME
+      # - SFTP_TARGET_DIR
+      # - Optional: SFTP_PRIVATE_KEY (empfohlen) oder SFTP_PASSWORD
+      - name: 🚀 Deploy via SFTP/SSH to united-domains (www.wattai.live)
+        uses: appleboy/scp-action@v0.1.7
         with:
-          server: ${{ secrets.SFTP_SERVER }}
+          host: ${{ secrets.SFTP_HOST }}
           username: ${{ secrets.SFTP_USERNAME }}
           password: ${{ secrets.SFTP_PASSWORD }}
           port: 22
-          protocol: sftp
-          local-dir: ./frontend/dist/
-          server-dir: ${{ secrets.SFTP_SERVER_DIR }}
-          # Sicherheit: nur geänderte Dateien hochladen
-          state-name: .ftp-deploy-sync-state.json
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/*.map
+          key: ${{ secrets.SFTP_PRIVATE_KEY }}
+          source: "frontend/dist/*"
+          target: ${{ secrets.SFTP_TARGET_DIR }}
+          strip_components: 2
 
       # ── 7. Deployment bestätigen ────────────────────────────
       - name: ✅ Deployment erfolgreich
