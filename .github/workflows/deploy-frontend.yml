@@ -56,16 +56,15 @@ jobs:
       # - SFTP_HOST
       # - SFTP_USERNAME
       # - SFTP_TARGET_DIR
-      # - Optional: SFTP_PRIVATE_KEY (empfohlen) oder SFTP_PASSWORD
+      # - SFTP_PRIVATE_KEY (SSH Private Key)
       - name: 🚀 Deploy via SFTP/SSH to united-domains (www.wattai.live)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SFTP_HOST }}
           username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
           port: 22
           key: ${{ secrets.SFTP_PRIVATE_KEY }}
-          source: "frontend/dist/*"
+          source: "frontend/dist/**"
           target: ${{ secrets.SFTP_TARGET_DIR }}
           strip_components: 2
 
