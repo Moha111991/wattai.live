@@ -2,24 +2,23 @@ name: 🚀 Deploy Frontend → www.wattai.live
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'frontend/**'       # Nur wenn Frontend-Dateien geändert wurden
+      - 'frontend/**'
       - '.github/workflows/deploy-frontend.yml'
-  workflow_dispatch:        # Manueller Start jederzeit möglich
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy to IONOS
+    name: Build & Deploy to united-domains
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
-      # ── 1. Code holen ───────────────────────────────────────
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      # ── 2. Node.js einrichten ───────────────────────────────
       - name: 🔧 Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -27,22 +26,18 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      # ── 3. Abhängigkeiten installieren ──────────────────────
       - name: 📦 Install Dependencies
         working-directory: ./frontend
         run: npm ci
 
-      # ── 4. Production Build erstellen ───────────────────────
       - name: 🏗️ Build Frontend (Production)
         working-directory: ./frontend
         run: npm run build
         env:
-          # Produktions-API-URL → Railway Backend
           VITE_API_URL: https://api.wattai.live
           VITE_WS_URL: wss://api.wattai.live/ws
           NODE_ENV: production
 
-      # ── 5. Build-Größe anzeigen ─────────────────────────────
       - name: 📊 Show Build Size
         run: |
           echo "=== Frontend Build Größe ==="
@@ -51,19 +46,26 @@ jobs:
           echo "=== Dateien ==="
           find frontend/dist -type f | sort
 
-      # ── 6. Auf united-domains deployen via SFTP ─────────────
-      - name: 🚀 Deploy via SFTP to united-domains (www.wattai.live)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SFTP_SERVER }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          port: 22
-          source: "frontend/dist/*"
-          target: ${{ secrets.SFTP_SERVER_DIR }}
-          strip_components: 2   # entfernt "frontend/dist/" vom Pfad
+      - name: 📦 Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
 
-      # ── 7. Deployment bestätigen ────────────────────────────
+      - name: 🚀 Deploy via SFTP to united-domains
+        env:
+          SFTP_SERVER: ${{ secrets.SFTP_SERVER }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_DIR: ${{ secrets.SFTP_DIR }}
+        run: |
+          lftp -u "$SFTP_USERNAME","$SFTP_PASSWORD" sftp://$SFTP_SERVER:$SFTP_PORT <<EOF
+          set cmd:fail-exit yes
+          set sftp:auto-confirm yes
+          mirror -R --delete --verbose frontend/dist/ "$SFTP_DIR"
+          bye
+          EOF
+
       - name: ✅ Deployment erfolgreich
         run: |
           echo "============================================"
