@@ -55,13 +55,13 @@ jobs:
       - name: 🚀 Deploy via FTP to united-domains (www.wattai.live)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}          # z.B. w01234567.kasserver.com
-          username: ${{ secrets.FTP_USERNAME }}      # united-domains FTP-Benutzername
-          password: ${{ secrets.FTP_PASSWORD }}      # united-domains FTP-Passwort
-          port: 21
-          protocol: ftps                             # FTPS (sicher) – united-domains unterstützt dies
+          server: ${{ secrets.SFTP_SERVER }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          port: 22
+          protocol: sftp
           local-dir: ./frontend/dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}  # z.B. /www/ oder /html/
+          server-dir: ${{ secrets.SFTP_SERVER_DIR }}
           # Sicherheit: nur geänderte Dateien hochladen
           state-name: .ftp-deploy-sync-state.json
           exclude: |
