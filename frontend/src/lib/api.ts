@@ -1,4 +1,4 @@
-const PROD_API_URL = 'https://api.wattai.live';
+const PROD_API_URL = 'https://www.wattai.live';
 
 const isLocalHost =
   typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
@@ -12,10 +12,9 @@ const normalizeApiUrl = (raw?: string | null): string => {
     if (['localhost', '127.0.0.1'].includes(parsed.hostname) && !isLocalHost) {
       return PROD_API_URL;
     }
-    // If someone configured frontend domain as API URL, correct it to backend API domain.
-    if (['wattai.live', 'www.wattai.live'].includes(parsed.hostname)) {
-      parsed.protocol = 'https:';
-      parsed.hostname = 'api.wattai.live';
+    // api.wattai.live → www.wattai.live (same Railway service)
+    if (parsed.hostname === 'api.wattai.live') {
+      parsed.hostname = 'www.wattai.live';
     }
     return parsed.toString().replace(/\/$/, '');
   } catch {

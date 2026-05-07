@@ -138,6 +138,8 @@ app.add_middleware(
         "http://127.0.0.1:8080",
         "https://wattai.live",
         "https://www.wattai.live",
+        "https://api.wattai.live",
+        "https://wattailive-production.up.railway.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],

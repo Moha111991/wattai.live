@@ -34,8 +34,8 @@ jobs:
         working-directory: ./frontend
         run: npm run build
         env:
-          VITE_API_URL: https://api.wattai.live
-          VITE_WS_URL: wss://api.wattai.live/ws
+          VITE_API_URL: https://www.wattai.live
+          VITE_WS_URL: wss://www.wattai.live/ws
           NODE_ENV: production
 
       - name: 📊 Show Build Size
