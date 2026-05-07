@@ -51,17 +51,17 @@ jobs:
           echo "=== Dateien ==="
           find frontend/dist -type f | sort
 
-      # ── 6. Auf IONOS deployen via FTP ───────────────────────
-      - name: 🚀 Deploy via FTP to IONOS (www.wattai.live)
+      # ── 6. Auf united-domains deployen via FTP ──────────────
+      - name: 🚀 Deploy via FTP to united-domains (www.wattai.live)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}          # z.B. access-XXXXXXXXXX.ud-webspace.de
-          username: ${{ secrets.FTP_USERNAME }}      # IONOS FTP-Benutzername
-          password: ${{ secrets.FTP_PASSWORD }}      # IONOS FTP-Passwort
+          server: ${{ secrets.FTP_SERVER }}          # z.B. w01234567.kasserver.com
+          username: ${{ secrets.FTP_USERNAME }}      # united-domains FTP-Benutzername
+          password: ${{ secrets.FTP_PASSWORD }}      # united-domains FTP-Passwort
           port: 21
-          protocol: ftps                             # FTPS (sicher) – IONOS unterstützt dies
+          protocol: ftps                             # FTPS (sicher) – united-domains unterstützt dies
           local-dir: ./frontend/dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}  # z.B. /htdocs/ oder /public_html/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}  # z.B. /www/ oder /html/
           # Sicherheit: nur geänderte Dateien hochladen
           state-name: .ftp-deploy-sync-state.json
           exclude: |
