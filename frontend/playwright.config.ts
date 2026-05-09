@@ -36,6 +36,7 @@ export default defineConfig({
   /* Reporter to use */
   reporter: [
     ['html'],
+    ['blob'],
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }]
   ],
