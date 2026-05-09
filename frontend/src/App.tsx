@@ -159,7 +159,7 @@ export default function App() {
     color: '#bae6fd',
     fontWeight: 500,
     flex: '1 1 180px',
-    minWidth: 0,
+    minWidth: 120,
   };
 
   const appHintActionsStyle: CSSProperties = {
@@ -167,7 +167,7 @@ export default function App() {
     gap: 6,
     flexWrap: 'wrap',
     justifyContent: 'flex-end',
-    flex: '0 0 auto',
+    flex: '0 1 auto',
   };
 
   const appStoreButtonStyle: CSSProperties = {
