@@ -49,7 +49,6 @@ jobs:
           find frontend/dist -type f | sort
 
       - name: 🚀 Deploy to Railway
-        working-directory: ./frontend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
