@@ -35,6 +35,8 @@ jobs:
       working-directory: ./frontend
       run: npx playwright test
       continue-on-error: false
+      env:
+        CI: true
 
     - name: 📊 Upload Test Report
       uses: actions/upload-artifact@v4
@@ -56,4 +58,4 @@ jobs:
       uses: daun/playwright-report-comment@v3
       if: github.event_name == 'pull_request'
       with:
-        report-path: frontend/playwright-report
+        report-path: frontend/test-results/results.json
