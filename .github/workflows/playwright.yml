@@ -56,4 +56,4 @@ jobs:
       uses: daun/playwright-report-comment@v3
       if: github.event_name == 'pull_request'
       with:
-        report-file: frontend/blob-report/report.zip
+        report-file: frontend/test-results/results.json
