@@ -58,7 +58,7 @@ jobs:
       uses: daun/playwright-report-comment@v3
       if: github.event_name == 'pull_request'
       with:
-        report-file: frontend/playwright-report/results.json
+        report-file: frontend/test-results/results.json
         comment-title: Playwright test results
         job-summary: false
         icon-style: octicons
