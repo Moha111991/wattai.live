@@ -146,28 +146,32 @@ export default function App() {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 'clamp(4px, 1vw, 8px)',
-    flexWrap: 'wrap',
-    padding: '0.32rem clamp(0.5rem, 1.2vw, 0.7rem)',
+    gap: isMobile ? 4 : 'clamp(4px, 1vw, 8px)',
+    flexWrap: 'nowrap' as const,
+    padding: isMobile ? '0.22rem 0.5rem' : '0.32rem clamp(0.5rem, 1.2vw, 0.7rem)',
     boxSizing: 'border-box',
     boxShadow: '0 4px 12px rgba(2,6,23,0.18)',
+    overflow: 'hidden',
   };
 
   const appHintTextStyle: CSSProperties = {
-    fontSize: 11,
+    fontSize: isMobile ? 10 : 11,
     lineHeight: 1.3,
     color: '#bae6fd',
     fontWeight: 500,
-    flex: '1 1 180px',
-    minWidth: 120,
+    flex: '1 1 0',
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: isMobile ? 'nowrap' : 'normal',
   };
 
   const appHintActionsStyle: CSSProperties = {
     display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap',
+    gap: isMobile ? 4 : 6,
+    flexWrap: 'nowrap' as const,
     justifyContent: 'flex-end',
-    flex: '0 1 auto',
+    flex: '0 0 auto',
   };
 
   const appStoreButtonStyle: CSSProperties = {
@@ -178,14 +182,14 @@ export default function App() {
     background: 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)',
     color: '#f8fafc',
     borderRadius: 999,
-    padding: '0.25rem 0.65rem',
+    padding: isMobile ? '0.18rem 0.45rem' : '0.25rem 0.65rem',
     fontWeight: 600,
-    fontSize: 11,
+    fontSize: isMobile ? 10 : 11,
     letterSpacing: '0.01em',
     border: '1px solid rgba(165,243,252,0.35)',
     boxShadow: '0 3px 8px rgba(20,184,166,0.18)',
     whiteSpace: 'nowrap',
-    minHeight: 28,
+    minHeight: isMobile ? 24 : 28,
   };
 
   const playStoreButtonStyle: CSSProperties = {
@@ -298,7 +302,11 @@ export default function App() {
         }}>
           <nav style={navStyle}>
           <div style={appHintBannerStyle}>
-            <span style={appHintTextStyle}>📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.</span>
+            <span style={appHintTextStyle}>
+              {isMobile
+                ? '📱 App für iOS & Android'
+                : '📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.'}
+            </span>
             <div style={appHintActionsStyle}>
               <a
                 href={appStoreUrl}
@@ -308,7 +316,7 @@ export default function App() {
                 style={appStoreButtonStyle}
                 aria-label="WattAI im Apple App Store herunterladen"
               >
-                iOS · App Store
+                {isMobile ? 'iOS' : 'iOS · App Store'}
               </a>
               <a
                 href={playStoreUrl}
@@ -318,7 +326,7 @@ export default function App() {
                 style={playStoreButtonStyle}
                 aria-label="WattAI im Google Play Store herunterladen"
               >
-                Android · Google Play
+                {isMobile ? 'Android' : 'Android · Google Play'}
               </a>
             </div>
           </div>
