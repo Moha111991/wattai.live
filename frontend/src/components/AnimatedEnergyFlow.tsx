@@ -37,17 +37,21 @@ const AnimatedEnergyFlow = ({
 
       <div style={{ 
         position: 'relative', 
-        width: '100%', 
+        width: '100%',
+        maxWidth: '720px',
+        margin: '0 auto',
         minHeight: '400px',
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gridTemplateRows: 'repeat(3, 1fr)',
         gap: '20px',
-        padding: '20px'
+        padding: '20px',
+        justifyItems: 'center',
+        alignItems: 'center'
       }}>
         
         {/* PV (Oben Mitte) */}
-        <div style={{ gridColumn: '2', gridRow: '1', position: 'relative' }}>
+        <div style={{ gridColumn: '2', gridRow: '1', position: 'relative', width: '100%' }}>
           <div 
             className={`energy-node ${isPVActive ? 'energy-glow float-animation' : ''} ${mounted ? 'animate-scale-in' : ''}`}
             style={{
@@ -100,7 +104,7 @@ const AnimatedEnergyFlow = ({
         </div>
 
         {/* Netz (Links Mitte) */}
-        <div style={{ gridColumn: '1', gridRow: '2', position: 'relative' }}>
+        <div style={{ gridColumn: '1', gridRow: '2', position: 'relative', width: '100%' }}>
           <div 
             className={`energy-node ${isGridImport || isGridExport ? 'energy-pulse' : ''} ${mounted ? 'animate-scale-in delay-100' : ''}`}
             style={{
@@ -192,7 +196,7 @@ const AnimatedEnergyFlow = ({
         </div>
 
         {/* Haus (Mitte) */}
-        <div style={{ gridColumn: '2', gridRow: '2' }}>
+        <div style={{ gridColumn: '2', gridRow: '2', width: '100%' }}>
           <div 
             className={`energy-node energy-pulse ${mounted ? 'animate-scale-in delay-200' : ''}`}
             style={{
@@ -214,7 +218,7 @@ const AnimatedEnergyFlow = ({
         </div>
 
         {/* Batterie (Rechts Mitte) */}
-        <div style={{ gridColumn: '3', gridRow: '2', position: 'relative' }}>
+        <div style={{ gridColumn: '3', gridRow: '2', position: 'relative', width: '100%' }}>
           <div 
             className={`energy-node ${isBatteryCharging || isBatteryDischarging ? 'energy-glow' : ''} ${mounted ? 'animate-scale-in delay-300' : ''}`}
             style={{
@@ -306,7 +310,7 @@ const AnimatedEnergyFlow = ({
         </div>
 
         {/* EV (Unten Mitte) */}
-        <div style={{ gridColumn: '2', gridRow: '3', position: 'relative' }}>
+        <div style={{ gridColumn: '2', gridRow: '3', position: 'relative', width: '100%' }}>
           <div 
             className={`energy-node ${isEVCharging ? 'charging-active' : ''} ${mounted ? 'animate-scale-in delay-400' : ''}`}
             style={{
