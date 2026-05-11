@@ -139,37 +139,38 @@ export default function App() {
 
   const appHintBannerStyle: CSSProperties = {
     width: '100%',
-    marginBottom: 8,
-    borderRadius: isMobile ? 10 : 16,
-    border: '1px solid rgba(125, 211, 252, 0.35)',
-    background: 'linear-gradient(110deg, rgba(14,165,233,0.16) 0%, rgba(20,184,166,0.14) 100%)',
+    marginBottom: 6,
+    borderRadius: 10,
+    border: '1px solid rgba(125, 211, 252, 0.28)',
+    background: 'linear-gradient(110deg, rgba(14,165,233,0.12) 0%, rgba(20,184,166,0.10) 100%)',
     color: '#e0f2fe',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: isMobile ? 6 : 12,
-    flexWrap: isMobile ? 'nowrap' : 'wrap',
-    padding: isMobile ? '6px 10px' : 'clamp(0.62rem, 1.4vw, 0.78rem) clamp(0.78rem, 1.8vw, 1rem)',
+    gap: isMobile ? 4 : 'clamp(4px, 1vw, 8px)',
+    flexWrap: 'nowrap' as const,
+    padding: isMobile ? '0.22rem 0.5rem' : '0.32rem clamp(0.5rem, 1.2vw, 0.7rem)',
     boxSizing: 'border-box',
-    boxShadow: '0 4px 12px rgba(2,6,23,0.2)',
+    boxShadow: '0 4px 12px rgba(2,6,23,0.18)',
+    overflow: 'hidden',
   };
 
   const appHintTextStyle: CSSProperties = {
-    fontSize: isMobile ? 11 : 13,
-    lineHeight: 1.35,
-    color: '#dbeafe',
-    fontWeight: 600,
-    flex: '1 1 auto',
+    fontSize: isMobile ? 10 : 11,
+    lineHeight: 1.3,
+    color: '#bae6fd',
+    fontWeight: 500,
+    flex: '1 1 0',
     minWidth: 0,
     overflow: 'hidden',
+    textOverflow: 'ellipsis',
     whiteSpace: isMobile ? 'nowrap' : 'normal',
-    textOverflow: isMobile ? 'ellipsis' : 'unset',
   };
 
   const appHintActionsStyle: CSSProperties = {
     display: 'flex',
-    gap: isMobile ? 5 : 8,
-    flexWrap: 'nowrap',
+    gap: isMobile ? 4 : 6,
+    flexWrap: 'nowrap' as const,
     alignItems: 'center',
     flexShrink: 0,
   };
@@ -182,21 +183,21 @@ export default function App() {
     background: 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)',
     color: '#f8fafc',
     borderRadius: 999,
-    padding: isMobile ? '4px 10px' : '0.52rem 1rem',
-    fontWeight: 700,
-    fontSize: isMobile ? 11 : 13,
-    letterSpacing: '0.02em',
-    border: '1px solid rgba(165,243,252,0.45)',
-    boxShadow: '0 4px 10px rgba(20,184,166,0.2)',
+    padding: isMobile ? '0.18rem 0.45rem' : '0.25rem 0.65rem',
+    fontWeight: 600,
+    fontSize: isMobile ? 10 : 11,
+    letterSpacing: '0.01em',
+    border: '1px solid rgba(165,243,252,0.35)',
+    boxShadow: '0 3px 8px rgba(20,184,166,0.18)',
     whiteSpace: 'nowrap',
-    minHeight: isMobile ? 28 : 40,
+    minHeight: isMobile ? 24 : 28,
   };
 
   const playStoreButtonStyle: CSSProperties = {
     ...appStoreButtonStyle,
     background: 'linear-gradient(90deg, #22c55e 0%, #14b8a6 100%)',
-    border: '1px solid rgba(167,243,208,0.45)',
-    boxShadow: '0 8px 18px rgba(34,197,94,0.2)',
+    border: '1px solid rgba(167,243,208,0.35)',
+    boxShadow: '0 3px 8px rgba(34,197,94,0.15)',
   };
 
   const tabsWrapStyle: CSSProperties = {
@@ -324,8 +325,7 @@ export default function App() {
                 style={playStoreButtonStyle}
                 aria-label="WattAI im Google Play Store herunterladen"
               >
-                {isMobile ? '🤖 Android' : 'Android · Google Play'}
-              </a>
+                {isMobile ? '🤖 Android' : 'Android · Google Play'}</a>
               <button
                 onClick={() => setShowBanner(false)}
                 aria-label="Banner schließen"
