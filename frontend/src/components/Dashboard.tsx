@@ -175,8 +175,8 @@ export default function Dashboard() {
       </div>
 
       {/* Heimspeicher */}
-      <div className="tab-grid-main mt-6">
-        <div className="tab-modern-card animate-stagger-4 animate-page-enter glass-effect" style={{ color: '#e2e8f0' }}>
+      <div className="mt-6 flex justify-center">
+        <div className="tab-modern-card animate-stagger-4 animate-page-enter glass-effect w-full max-w-2xl" style={{ color: '#e2e8f0' }}>
           <h2 className="tab-section-title">Heimspeicher</h2>
           <BatteryWidget data={battery} />
         </div>
