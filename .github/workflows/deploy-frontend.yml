@@ -1,4 +1,4 @@
-name: 🚀 Deploy Frontend → www.wattai.live
+name: 🚀 Deploy to Railway
 
 on:
   push:
@@ -6,83 +6,34 @@ on:
       - main
     paths:
       - 'frontend/**'
+      - 'backend/**'
+      - 'Dockerfile'
+      - 'railway.toml'
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    name: Build & Deploy to united-domains
+  deploy:
+    name: Deploy to Railway
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
 
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: 📦 Install Dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: 🏗️ Build Frontend (Production)
-        working-directory: ./frontend
-        run: npm run build
+      - name: 🚀 Deploy to Railway
         env:
-          VITE_API_URL: https://www.wattai.live
-          VITE_WS_URL: wss://www.wattai.live/ws
-          NODE_ENV: production
-
-      - name: 📊 Show Build Size
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          echo "=== Frontend Build Größe ==="
-          du -sh frontend/dist/
-          echo ""
-          echo "=== Dateien ==="
-          find frontend/dist -type f | sort
-
-      - name: 📦 Install lftp
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lftp
-
-      - name: 🚀 Deploy via SFTP to united-domains
-        env:
-          SFTP_SERVER: ${{ secrets.SFTP_SERVER }}
-          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
-          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
-          SFTP_PORT: ${{ secrets.SFTP_PORT }}
-          SFTP_DIR: ${{ secrets.SFTP_DIR }}
-        run: |
-          echo "=== Konfiguration ==="
-          echo "Server : $SFTP_SERVER"
-          echo "Port   : $SFTP_PORT"
-          echo "User   : $SFTP_USERNAME"
-          echo "Dir    : '${SFTP_DIR}'"
-
-          # Fallback falls SFTP_DIR leer ist
-          TARGET_DIR="${SFTP_DIR:-/html/}"
-          echo "Ziel-Verzeichnis: $TARGET_DIR"
-
-          lftp -u "$SFTP_USERNAME","$SFTP_PASSWORD" sftp://$SFTP_SERVER:$SFTP_PORT <<LFTP_EOF
-          set cmd:fail-exit yes
-          set sftp:auto-confirm yes
-          set net:max-retries 3
-          mirror -R --delete --verbose frontend/dist/ $TARGET_DIR
-          echo "=== Dateien auf Server ==="
-          ls -la $TARGET_DIR
-          bye
-          LFTP_EOF
+          npm install -g @railway/cli
+          railway up
 
       - name: ✅ Deployment erfolgreich
         run: |
           echo "============================================"
-          echo "✅ Frontend wurde erfolgreich deployed!"
+          echo "✅ Service wurde erfolgreich deployed!"
           echo "🌐 https://www.wattai.live"
-          echo "⚡ Backend API: https://api.wattai.live"
           echo "============================================"
