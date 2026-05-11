@@ -339,6 +339,8 @@ export default function App() {
                   lineHeight: 1,
                   flexShrink: 0,
                 }}
+              >
+                ✕
               </button>
             </div>
           </div>}
