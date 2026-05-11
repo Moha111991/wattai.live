@@ -45,6 +45,7 @@ export default function App() {
   const [planLabel, setPlanLabel] = useState('Free');
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
   const appContentRef = useRef<HTMLDivElement | null>(null);
 
   // Detect mobile screen size with finer granularity
@@ -138,36 +139,39 @@ export default function App() {
 
   const appHintBannerStyle: CSSProperties = {
     width: '100%',
-    marginBottom: 10,
-    borderRadius: 16,
+    marginBottom: 8,
+    borderRadius: isMobile ? 10 : 16,
     border: '1px solid rgba(125, 211, 252, 0.35)',
     background: 'linear-gradient(110deg, rgba(14,165,233,0.16) 0%, rgba(20,184,166,0.14) 100%)',
     color: '#e0f2fe',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 'clamp(8px, 1.6vw, 12px)',
-    flexWrap: 'wrap',
-    padding: 'clamp(0.62rem, 1.4vw, 0.78rem) clamp(0.78rem, 1.8vw, 1rem)',
+    gap: isMobile ? 6 : 12,
+    flexWrap: isMobile ? 'nowrap' : 'wrap',
+    padding: isMobile ? '6px 10px' : 'clamp(0.62rem, 1.4vw, 0.78rem) clamp(0.78rem, 1.8vw, 1rem)',
     boxSizing: 'border-box',
-    boxShadow: '0 10px 24px rgba(2,6,23,0.25)',
+    boxShadow: '0 4px 12px rgba(2,6,23,0.2)',
   };
 
   const appHintTextStyle: CSSProperties = {
-    fontSize: 13,
+    fontSize: isMobile ? 11 : 13,
     lineHeight: 1.35,
     color: '#dbeafe',
     fontWeight: 600,
-    flex: '1 1 240px',
-    minWidth: 'var(--tab-grid-compact-min)',
+    flex: '1 1 auto',
+    minWidth: 0,
+    overflow: 'hidden',
+    whiteSpace: isMobile ? 'nowrap' : 'normal',
+    textOverflow: isMobile ? 'ellipsis' : 'unset',
   };
 
   const appHintActionsStyle: CSSProperties = {
     display: 'flex',
-    gap: 8,
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
-    flex: '1 1 260px',
+    gap: isMobile ? 5 : 8,
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    flexShrink: 0,
   };
 
   const appStoreButtonStyle: CSSProperties = {
@@ -178,14 +182,14 @@ export default function App() {
     background: 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)',
     color: '#f8fafc',
     borderRadius: 999,
-    padding: '0.52rem 1rem',
+    padding: isMobile ? '4px 10px' : '0.52rem 1rem',
     fontWeight: 700,
-    fontSize: 13,
+    fontSize: isMobile ? 11 : 13,
     letterSpacing: '0.02em',
     border: '1px solid rgba(165,243,252,0.45)',
-    boxShadow: '0 8px 18px rgba(20,184,166,0.25)',
+    boxShadow: '0 4px 10px rgba(20,184,166,0.2)',
     whiteSpace: 'nowrap',
-    minHeight: 40,
+    minHeight: isMobile ? 28 : 40,
   };
 
   const playStoreButtonStyle: CSSProperties = {
@@ -297,8 +301,10 @@ export default function App() {
           boxSizing: 'border-box',
         }}>
           <nav style={navStyle}>
-          <div style={appHintBannerStyle}>
-            <span style={appHintTextStyle}>📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.</span>
+          {showBanner && <div style={appHintBannerStyle}>
+            <span style={appHintTextStyle}>
+              {isMobile ? '📱 App für iOS & Android' : '📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.'}
+            </span>
             <div style={appHintActionsStyle}>
               <a
                 href={appStoreUrl}
@@ -308,7 +314,7 @@ export default function App() {
                 style={appStoreButtonStyle}
                 aria-label="WattAI im Apple App Store herunterladen"
               >
-                iOS · App Store
+                {isMobile ? '🍎 iOS' : 'iOS · App Store'}
               </a>
               <a
                 href={playStoreUrl}
@@ -318,10 +324,24 @@ export default function App() {
                 style={playStoreButtonStyle}
                 aria-label="WattAI im Google Play Store herunterladen"
               >
-                Android · Google Play
+                {isMobile ? '🤖 Android' : 'Android · Google Play'}
               </a>
+              <button
+                onClick={() => setShowBanner(false)}
+                aria-label="Banner schließen"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? 14 : 16,
+                  padding: '2px 4px',
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              </button>
             </div>
-          </div>
+          </div>}
           <div style={tabsWrapStyle}>
           {tabs.map(t => (
             <button
