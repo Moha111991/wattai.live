@@ -45,6 +45,7 @@ export default function App() {
   const [planLabel, setPlanLabel] = useState('Free');
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
   const appContentRef = useRef<HTMLDivElement | null>(null);
 
   // Detect mobile screen size with finer granularity
@@ -170,8 +171,8 @@ export default function App() {
     display: 'flex',
     gap: isMobile ? 4 : 6,
     flexWrap: 'nowrap' as const,
-    justifyContent: 'flex-end',
-    flex: '0 0 auto',
+    alignItems: 'center',
+    flexShrink: 0,
   };
 
   const appStoreButtonStyle: CSSProperties = {
@@ -301,11 +302,9 @@ export default function App() {
           boxSizing: 'border-box',
         }}>
           <nav style={navStyle}>
-          <div style={appHintBannerStyle}>
+          {showBanner && <div style={appHintBannerStyle}>
             <span style={appHintTextStyle}>
-              {isMobile
-                ? '📱 App für iOS & Android'
-                : '📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.'}
+              {isMobile ? '📱 App für iOS & Android' : '📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.'}
             </span>
             <div style={appHintActionsStyle}>
               <a
@@ -316,7 +315,7 @@ export default function App() {
                 style={appStoreButtonStyle}
                 aria-label="WattAI im Apple App Store herunterladen"
               >
-                {isMobile ? 'iOS' : 'iOS · App Store'}
+                {isMobile ? '🍎 iOS' : 'iOS · App Store'}
               </a>
               <a
                 href={playStoreUrl}
@@ -326,10 +325,23 @@ export default function App() {
                 style={playStoreButtonStyle}
                 aria-label="WattAI im Google Play Store herunterladen"
               >
-                {isMobile ? 'Android' : 'Android · Google Play'}
-              </a>
+                {isMobile ? '🤖 Android' : 'Android · Google Play'}</a>
+              <button
+                onClick={() => setShowBanner(false)}
+                aria-label="Banner schließen"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? 14 : 16,
+                  padding: '2px 4px',
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              </button>
             </div>
-          </div>
+          </div>}
           <div style={tabsWrapStyle}>
           {tabs.map(t => (
             <button
