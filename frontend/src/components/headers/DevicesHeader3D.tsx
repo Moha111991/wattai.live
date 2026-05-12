@@ -1,6 +1,6 @@
 export default function DevicesHeader3D() {
   return (
-    <svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
+    <svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
       <defs>
         {/* Gradients */}
         <linearGradient id="devGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -181,12 +181,12 @@ export default function DevicesHeader3D() {
         </rect>
       </g>
 
-      {/* Title */}
-      <text x="600" y="380" fontSize="48" fontWeight="bold" fill="#67e8f9" textAnchor="middle" filter="url(#devGlow)">
+      {/* Title – Bottom Left */}
+      <text x="48" y="355" fontSize="48" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#devGlow)">
         Geräte
       </text>
-      <text x="720" y="380" fontSize="20" fill="#34d399" opacity="0.8">
-        Netzwerk
+      <text x="48" y="385" fontSize="18" fill="#34d399" textAnchor="start" opacity="0.85">
+        Geräteverwaltung &amp; Netzwerk
       </text>
     </svg>
   );

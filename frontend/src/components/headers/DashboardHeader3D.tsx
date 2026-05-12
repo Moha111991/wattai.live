@@ -1,6 +1,6 @@
 export default function DashboardHeader3D() {
   return (
-    <svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
+    <svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
       <defs>
         {/* Gradients */}
         <linearGradient id="dashGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -113,11 +113,11 @@ export default function DashboardHeader3D() {
         </path>
       </g>
 
-      {/* Title Text */}
-      <text x="600" y="250" fontSize="48" fontWeight="bold" fill="url(#animGrad)" textAnchor="middle" filter="url(#dashGlow)">
+      {/* Title Text – Bottom Left */}
+      <text x="48" y="355" fontSize="48" fontWeight="bold" fill="url(#animGrad)" textAnchor="start" filter="url(#dashGlow)">
         Dashboard
       </text>
-      <text x="600" y="280" fontSize="18" fill="#67e8f9" textAnchor="middle" opacity="0.8">
+      <text x="48" y="385" fontSize="18" fill="#67e8f9" textAnchor="start" opacity="0.85">
         Echtzeit-Energiemanagement
       </text>
     </svg>

@@ -1,6 +1,6 @@
 export default function AIHeader3D() {
   return (
-    <svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
+    <svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
       <defs>
         {/* Gradients */}
         <linearGradient id="aiGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -276,12 +276,12 @@ export default function AIHeader3D() {
         <animate attributeName="y" values="-6;400" dur="4s" repeatCount="indefinite"/>
       </rect>
 
-      {/* Title */}
-      <text x="600" y="380" fontSize="52" fontWeight="bold" fill="#67e8f9" textAnchor="middle" filter="url(#aiStrongGlow)">
+      {/* Title – Bottom Left */}
+      <text x="48" y="355" fontSize="48" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
         KI-Empfehlung
       </text>
-      <text x="760" y="380" fontSize="20" fill="#a78bfa" opacity="0.9">
-        powered by AI
+      <text x="48" y="385" fontSize="18" fill="#a78bfa" textAnchor="start" opacity="0.9">
+        Intelligente Energieoptimierung
       </text>
     </svg>
   );
