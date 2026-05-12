@@ -581,3 +581,31 @@ body {
     content: " (" attr(href) ")";
   }
 }
+
+/* ============================================================================
+   Energy Flow Grid – Mobile Responsive
+   ============================================================================ */
+
+/* Mobile: Stack nodes in a single centered column */
+@media (max-width: 640px) {
+  .energy-flow-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    min-height: unset !important;
+  }
+
+  .energy-node-cell {
+    grid-column: unset !important;
+    grid-row: unset !important;
+    width: 100% !important;
+    max-width: 260px !important;
+  }
+
+  /* Hide flow arrows on mobile – they don't position correctly in flex */
+  .energy-flow-arrow {
+    display: none !important;
+  }
+}
