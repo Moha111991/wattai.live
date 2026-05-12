@@ -182,10 +182,10 @@ export default function DevicesHeader3D() {
       </g>
 
       {/* Title – Bottom Left */}
-      <text x="60" y="340" fontSize="52" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#devGlow)">
+      <text x="48" y="355" fontSize="48" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#devGlow)">
         Geräte
       </text>
-      <text x="62" y="376" fontSize="17" fill="#34d399" textAnchor="start" opacity="0.8" letterSpacing="2">
+      <text x="48" y="385" fontSize="18" fill="#34d399" textAnchor="start" opacity="0.85">
         Geräteverwaltung &amp; Netzwerk
       </text>
     </svg>

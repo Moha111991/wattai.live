@@ -277,10 +277,10 @@ export default function AIHeader3D() {
       </rect>
 
       {/* Title – Bottom Left */}
-      <text x="60" y="340" fontSize="52" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
+      <text x="48" y="355" fontSize="48" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
         KI-Empfehlung
       </text>
-      <text x="62" y="376" fontSize="17" fill="#a78bfa" textAnchor="start" opacity="0.85" letterSpacing="2">
+      <text x="48" y="385" fontSize="18" fill="#a78bfa" textAnchor="start" opacity="0.9">
         Intelligente Energieoptimierung
       </text>
     </svg>

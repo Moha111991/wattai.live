@@ -114,10 +114,10 @@ export default function DashboardHeader3D() {
       </g>
 
       {/* Title Text – Bottom Left */}
-      <text x="60" y="340" fontSize="52" fontWeight="bold" fill="url(#animGrad)" textAnchor="start" filter="url(#dashGlow)">
+      <text x="48" y="355" fontSize="48" fontWeight="bold" fill="url(#animGrad)" textAnchor="start" filter="url(#dashGlow)">
         Dashboard
       </text>
-      <text x="62" y="376" fontSize="17" fill="#67e8f9" textAnchor="start" opacity="0.75" letterSpacing="2">
+      <text x="48" y="385" fontSize="18" fill="#67e8f9" textAnchor="start" opacity="0.85">
         Echtzeit-Energiemanagement
       </text>
     </svg>

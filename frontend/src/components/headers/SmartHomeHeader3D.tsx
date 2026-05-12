@@ -213,11 +213,11 @@ export default function SmartHomeHeader3D() {
         <rect x="890" y="360" width="6" height="8" fill="#fbbf24"/>
       </g>
 
-      {/* Title */}
-      <text x="600" y="100" fontSize="52" fontWeight="bold" fill="#f472b6" textAnchor="middle" filter="url(#homeGlow)">
+      {/* Title – Bottom Left */}
+      <text x="48" y="355" fontSize="52" fontWeight="bold" fill="#f472b6" textAnchor="start" filter="url(#homeGlow)">
         Smart Home
       </text>
-      <text x="600" y="135" fontSize="20" fill="#67e8f9" textAnchor="middle" opacity="0.9">
+      <text x="48" y="385" fontSize="18" fill="#67e8f9" textAnchor="start" opacity="0.9">
         Intelligente Haussteuerung
       </text>
     </svg>

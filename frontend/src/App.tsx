@@ -267,7 +267,7 @@ export default function App() {
   <div className="main-app" style={appShellStyle}>
     <div ref={appContentRef} style={appContentStyle}>
       <header style={headerStyle}>
-        <div style={{ position: 'relative', width: '100%' }}>
+        <div style={{ position: 'relative', width: '100%', height: 'clamp(220px, 40vw, 420px)' }}>
           {/* WattAI Logo Overlay - Top Left - Transparent, no box */}
           <div 
             className="logo-overlay-card"
@@ -276,6 +276,11 @@ export default function App() {
               top: 'clamp(10px, 2vw, 20px)',
               left: 'clamp(10px, 2vw, 20px)',
               zIndex: 10,
+              background: 'transparent',
+              borderRadius: 0,
+              padding: 'clamp(8px, 1.5vw, 16px) clamp(12px, 2vw, 24px)',
+              border: 'none',
+              boxShadow: 'none'
             } as CSSProperties}>
             <WattAILogo 
               size={getLogoSize()} 
@@ -284,15 +289,8 @@ export default function App() {
             />
           </div>
           
-          {/* Full-Width Header – responsive height */}
-          <div style={{
-            width: '100%',
-            height: 'clamp(220px, 33vw, 400px)',
-            overflow: 'hidden',
-            lineHeight: 0,
-          }}>
-            {renderHeaderComponent()}
-          </div>
+          {/* Full-Width Header - No Frame */}
+          {renderHeaderComponent()}
         </div>
       </header>
         
