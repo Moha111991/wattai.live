@@ -24,24 +24,16 @@ jobs:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🚀 Deploy to Railway via REST API
+      - name: 🚀 Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          curl -s -X POST "https://backboard.railway.app/graphql/v2" \
-            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"query\":\"mutation { serviceInstanceRedeploy(environmentId: \\\"${{ secrets.RAILWAY_ENVIRONMENT_ID }}\\\", serviceId: \\\"${{ secrets.RAILWAY_SERVICE_ID }}\\\") }\"}" \
-            | tee /tmp/railway_response.json
-          if grep -q '"errors"' /tmp/railway_response.json; then
-            echo "❌ Railway deploy failed:"
-            cat /tmp/railway_response.json
-            exit 1
-          fi
-          echo "✅ Redeploy ausgelöst"
+          npm install -g @railway/cli@latest
+          railway up --detach
 
       - name: ✅ Deployment erfolgreich
         run: |
           echo "============================================"
-          echo "✅ Railway Redeploy wurde ausgelöst!"
+          echo "✅ Service wurde erfolgreich deployed!"
           echo "🌐 https://www.wattai.live"
-          echo "⏳ Build läuft auf Railway (ca. 2-3 min)"
           echo "============================================"
