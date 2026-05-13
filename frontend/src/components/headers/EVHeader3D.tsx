@@ -222,13 +222,17 @@ export default function EVHeader3D() {
       {/* Title – Top Left with backdrop (car starts at x≈400, top-left is clear) */}
       <rect x="0" y="0" width="380" height="108" rx="0" fill="rgba(2,6,23,0.55)"/>
       <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#a78bfa" textAnchor="start" filter="url(#evGlow)">
-        <animate attributeName="opacity" values="0;1" dur="1.6s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="74;58" dur="1.6s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="74;58" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="58;53;58" dur="4s" begin="1.2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+        <animate attributeName="opacity" values="1;0.82;1" dur="3.5s" begin="1.2s" repeatCount="indefinite"/>
         Elektroauto
       </text>
       <text x="48" y="90" fontSize="17" fill="#67e8f9" textAnchor="start" opacity="0.9">
-        <animate attributeName="opacity" values="0;1" dur="1.8s" begin="0.4s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="106;90" dur="1.8s" begin="0.4s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="106;90" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="90;86;90" dur="4s" begin="1.75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+        <animate attributeName="opacity" values="0.9;0.55;0.9" dur="3.5s" begin="1.75s" repeatCount="indefinite"/>
         Intelligentes Lademanagement
       </text>
     </svg>
