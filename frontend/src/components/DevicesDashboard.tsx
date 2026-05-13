@@ -98,13 +98,15 @@ export default function DevicesDashboard() {
         <DeviceManager />
       </div>
 
-      {/* Geräte verbinden – moderne Karten */}
+      {/* Geräte verbinden – 2-spaltig, horizontale Karten */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-        gap: '16px',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '14px',
         marginTop: '24px',
-      }}>
+      }}
+        className="devices-connect-grid"
+      >
         {DEVICE_CARDS.map((card, idx) => {
           const isConnected = devices.some(d =>
             (d.type || '').toLowerCase().includes(card.typeKey)
@@ -112,105 +114,99 @@ export default function DevicesDashboard() {
           return (
             <div
               key={card.label}
-              className={`tab-modern-card glass-effect animate-page-enter animate-stagger-${idx + 2}`}
+              className={`animate-page-enter animate-stagger-${idx + 2}`}
               style={{
-                border: `1px solid ${card.borderColor}`,
-                background: `linear-gradient(135deg, ${card.glowColor} 0%, rgba(2,6,23,0.6) 100%)`,
-                borderRadius: '16px',
-                padding: '20px',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                position: 'relative',
+                flexDirection: 'row',
+                border: `1px solid ${card.borderColor}`,
+                borderRadius: '14px',
                 overflow: 'hidden',
-                transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                background: 'rgba(2,6,23,0.65)',
+                backdropFilter: 'blur(12px)',
+                transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+                position: 'relative',
               }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 32px ${card.borderColor}`;
+                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 10px 36px ${card.borderColor}`;
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
                 (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
               }}
             >
-              {/* Subtle top accent line */}
+              {/* Left color strip + icon */}
               <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-                background: `linear-gradient(90deg, transparent, ${card.color}, transparent)`,
-                borderRadius: '16px 16px 0 0',
-              }}/>
+                width: '72px',
+                flexShrink: 0,
+                background: `linear-gradient(180deg, ${card.glowColor.replace('0.08', '0.22')} 0%, ${card.glowColor} 100%)`,
+                borderRight: `1px solid ${card.borderColor}`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '16px 0',
+              }}>
+                <span style={{ fontSize: '30px', lineHeight: 1 }}>{card.icon}</span>
+                {/* Live pulse dot if connected */}
+                {isConnected && (
+                  <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: '#34d399', boxShadow: '0 0 8px #34d399',
+                    display: 'inline-block', animation: 'pulse-ring 2s infinite',
+                  }}/>
+                )}
+              </div>
 
-              {/* Header row */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '28px', lineHeight: 1 }}>{card.icon}</span>
-                  <span style={{ fontWeight: 700, fontSize: '1rem', color: card.color }}>{card.label}</span>
+              {/* Right content */}
+              <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+                {/* Title row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.95rem', color: card.color, whiteSpace: 'nowrap' }}>
+                    {card.label}
+                  </span>
+                  <span style={{
+                    fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px',
+                    border: `1px solid ${isConnected ? 'rgba(52,211,153,0.4)' : card.borderColor}`,
+                    color: isConnected ? '#34d399' : 'rgba(203,213,225,0.45)',
+                    background: isConnected ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.03)',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                  }}>
+                    {isConnected ? '✓ Online' : 'Offline'}
+                  </span>
                 </div>
-                <span style={{
-                  fontSize: '11px', fontWeight: 600, letterSpacing: '0.04em',
-                  padding: '3px 10px', borderRadius: '20px',
-                  border: `1px solid ${isConnected ? 'rgba(52,211,153,0.4)' : card.borderColor}`,
-                  color: isConnected ? '#34d399' : 'rgba(203,213,225,0.5)',
-                  background: isConnected ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.03)',
-                  display: 'flex', alignItems: 'center', gap: '5px',
-                }}>
-                  {isConnected && (
-                    <span style={{
-                      display: 'inline-block', width: '6px', height: '6px',
-                      borderRadius: '50%', background: '#34d399',
-                      boxShadow: '0 0 6px #34d399', animation: 'pulse-ring 2s infinite',
-                    }}/>
-                  )}
-                  {isConnected ? 'Verbunden' : 'Nicht verbunden'}
-                </span>
-              </div>
 
-              {/* Description */}
-              <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(203,213,225,0.75)', lineHeight: 1.5 }}>
-                {card.description}
-              </p>
+                {/* Description */}
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(203,213,225,0.65)', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
+                  {card.description}
+                </p>
 
-              {/* Protocol badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  fontSize: '11px', padding: '2px 9px', borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.06)', color: 'rgba(203,213,225,0.6)',
-                  border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'monospace',
-                }}>
-                  {card.protocol}
-                </span>
-              </div>
-
-              {/* Step indicators */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                {card.steps.map((step, si) => (
-                  <div key={si} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '5px',
-                    }}>
-                      <div style={{
-                        width: '20px', height: '20px', borderRadius: '50%',
-                        background: isConnected
-                          ? 'rgba(52,211,153,0.2)'
-                          : si === 0 ? `rgba(${card.color.replace(/[^\d,]/g,'')},0.15)` : 'rgba(255,255,255,0.05)',
-                        border: `1px solid ${isConnected ? 'rgba(52,211,153,0.5)' : card.borderColor}`,
+                {/* Bottom row: protocol + steps */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
+                  <span style={{
+                    fontSize: '10px', padding: '1px 7px', borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.05)', color: 'rgba(203,213,225,0.5)',
+                    border: '1px solid rgba(255,255,255,0.07)', fontFamily: 'monospace', flexShrink: 0,
+                  }}>
+                    {card.protocol}
+                  </span>
+                  {/* Step bubbles */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {card.steps.map((_, si) => (
+                      <div key={si} style={{
+                        width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
+                        background: isConnected ? 'rgba(52,211,153,0.15)' : si === 0 ? `${card.glowColor}` : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${isConnected ? 'rgba(52,211,153,0.4)' : card.borderColor}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 700,
+                        fontSize: '9px', fontWeight: 700,
                         color: isConnected ? '#34d399' : card.color,
-                        flexShrink: 0,
                       }}>
                         {isConnected ? '✓' : si + 1}
                       </div>
-                      <span style={{ fontSize: '10px', color: 'rgba(203,213,225,0.45)', whiteSpace: 'nowrap' }}>
-                        {step}
-                      </span>
-                    </div>
-                    {si < card.steps.length - 1 && (
-                      <div style={{ width: '12px', height: '1px', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }}/>
-                    )}
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           );

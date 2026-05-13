@@ -609,3 +609,14 @@ body {
     display: none !important;
   }
 }
+
+/* Device connect cards: 2-col on desktop, 1-col on mobile */
+.devices-connect-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 600px) {
+  .devices-connect-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
