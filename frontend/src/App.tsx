@@ -409,6 +409,10 @@ export default function App() {
       )}
 
       <UpgradeModal
+        open={isUpgradeModalOpen}
+        currentPlan={planLabel}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
     </div>
   );
 }
