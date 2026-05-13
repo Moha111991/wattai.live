@@ -219,11 +219,12 @@ export default function EVHeader3D() {
         ))}
       </g>
 
-      {/* Title – Bottom Left */}
-      <text x="48" y="355" fontSize="52" fontWeight="bold" fill="#a78bfa" textAnchor="start" filter="url(#evGlow)">
+      {/* Title – Top Left with backdrop (car starts at x≈400, top-left is clear) */}
+      <rect x="0" y="0" width="380" height="108" rx="0" fill="rgba(2,6,23,0.55)"/>
+      <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#a78bfa" textAnchor="start" filter="url(#evGlow)">
         Elektroauto
       </text>
-      <text x="48" y="385" fontSize="18" fill="#67e8f9" textAnchor="start" opacity="0.9">
+      <text x="48" y="90" fontSize="17" fill="#67e8f9" textAnchor="start" opacity="0.9">
         Intelligentes Lademanagement
       </text>
     </svg>

@@ -300,48 +300,6 @@ export default function App() {
           boxSizing: 'border-box',
         }}>
           <nav style={navStyle}>
-          {showBanner && <div style={appHintBannerStyle}>
-            <span style={appHintTextStyle}>
-              {isMobile ? '📱 App für iOS & Android' : '📱 Für das beste Erlebnis im Browser: Lade die App-Version für iOS oder Android herunter.'}
-            </span>
-            <div style={appHintActionsStyle}>
-              <a
-                href={appStoreUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ui-focusable"
-                style={appStoreButtonStyle}
-                aria-label="WattAI im Apple App Store herunterladen"
-              >
-                {isMobile ? '🍎 iOS' : 'iOS · App Store'}
-              </a>
-              <a
-                href={playStoreUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ui-focusable"
-                style={playStoreButtonStyle}
-                aria-label="WattAI im Google Play Store herunterladen"
-              >
-                {isMobile ? '🤖 Android' : 'Android · Google Play'}</a>
-              <button
-                onClick={() => setShowBanner(false)}
-                aria-label="Banner schließen"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  fontSize: isMobile ? 14 : 16,
-                  padding: '2px 4px',
-                  lineHeight: 1,
-                  flexShrink: 0,
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          </div>}
           <div style={tabsWrapStyle}>
           {tabs.map(t => (
             <button
@@ -368,27 +326,6 @@ export default function App() {
           ))}
           </div>
           <div style={actionRowStyle}>
-            {!fleetEnabled && (
-              <button
-                onClick={() => setIsUpgradeModalOpen(true)}
-                className="ui-focusable"
-                style={{
-                  textDecoration: 'none',
-                  background: 'linear-gradient(90deg, #0f766e 0%, #14b8a6 100%)',
-                  color: '#f8fafc',
-                  borderRadius: 999,
-                  padding: '0.52rem 1rem',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  minHeight: 40,
-                  border: '1px solid rgba(167,243,208,0.42)',
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 18px rgba(15,118,110,0.35)',
-                }}
-              >
-                Upgrade: Flottenmanagement freischalten
-              </button>
-            )}
             <span style={{ color: '#cbd5e1', fontSize: 13, padding: '0.35rem 0.8rem', borderRadius: 999, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.5)' }}>
               Aktueller Plan: <b style={{ color: '#67e8f9' }}>{planLabel}</b>
             </span>
@@ -403,6 +340,74 @@ export default function App() {
         </div>
         {/* End Main Content Container */}
     </div>
+      {/* Floating Bottom-Right Widget: Upgrade + App Store */}
+      {(showBanner || !fleetEnabled) && (
+        <div style={{
+          position: 'fixed',
+          bottom: isMobile ? 16 : 24,
+          right: isMobile ? 12 : 24,
+          zIndex: 900,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: 8,
+        }}>
+          {!fleetEnabled && (
+            <button
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="ui-focusable"
+              style={{
+                background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)',
+                color: '#fff',
+                borderRadius: 999,
+                border: '1px solid rgba(103,232,249,0.45)',
+                padding: isMobile ? '0.45rem 0.9rem' : '0.52rem 1.1rem',
+                fontWeight: 700,
+                fontSize: isMobile ? 12 : 13,
+                cursor: 'pointer',
+                boxShadow: '0 6px 24px rgba(6,182,212,0.4)',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span>⚡</span>
+              {isMobile ? 'Upgrade' : 'Flottenmanagement freischalten'}
+            </button>
+          )}
+          {showBanner && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(15,23,42,0.88)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(103,232,249,0.2)',
+              borderRadius: 12,
+              padding: isMobile ? '0.3rem 0.6rem' : '0.4rem 0.8rem',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            }}>
+              <span style={{ fontSize: isMobile ? 10 : 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                📱 App
+              </span>
+              <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" style={appStoreButtonStyle} aria-label="iOS App Store">
+                🍎{!isMobile && ' iOS'}
+              </a>
+              <a href={playStoreUrl} target="_blank" rel="noopener noreferrer" style={playStoreButtonStyle} aria-label="Google Play Store">
+                🤖{!isMobile && ' Android'}
+              </a>
+              <button
+                onClick={() => setShowBanner(false)}
+                aria-label="Schließen"
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 13, padding: '1px 3px', lineHeight: 1 }}
+              >✕</button>
+            </div>
+          )}
+        </div>
+      )}
+
       <UpgradeModal
         open={isUpgradeModalOpen}
         currentPlan={planLabel}

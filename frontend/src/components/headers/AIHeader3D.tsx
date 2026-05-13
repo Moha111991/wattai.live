@@ -276,11 +276,12 @@ export default function AIHeader3D() {
         <animate attributeName="y" values="-6;400" dur="4s" repeatCount="indefinite"/>
       </rect>
 
-      {/* Title – Bottom Left */}
-      <text x="48" y="355" fontSize="48" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
+      {/* Title – Top Left with backdrop (code symbol at 150,80 – title placed above it) */}
+      <rect x="0" y="0" width="480" height="108" rx="0" fill="rgba(2,6,23,0.60)"/>
+      <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
         KI-Empfehlung
       </text>
-      <text x="48" y="385" fontSize="18" fill="#a78bfa" textAnchor="start" opacity="0.9">
+      <text x="48" y="90" fontSize="17" fill="#a78bfa" textAnchor="start" opacity="0.9">
         Intelligente Energieoptimierung
       </text>
     </svg>
