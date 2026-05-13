@@ -24,16 +24,20 @@ jobs:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🚀 Deploy to Railway
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: 🚀 Deploy to Railway via Deploy Hook
         run: |
-          npm install -g @railway/cli
-          railway up
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}")
+          echo "HTTP Status: $RESPONSE"
+          if [ "$RESPONSE" != "200" ] && [ "$RESPONSE" != "202" ]; then
+            echo "❌ Deploy Hook failed with status $RESPONSE"
+            exit 1
+          fi
+          echo "✅ Deploy Hook triggered successfully"
 
       - name: ✅ Deployment erfolgreich
         run: |
           echo "============================================"
-          echo "✅ Service wurde erfolgreich deployed!"
+          echo "✅ Deploy wurde ausgelöst!"
           echo "🌐 https://www.wattai.live"
+          echo "⏳ Build läuft auf Railway (ca. 2-3 min)"
           echo "============================================"
