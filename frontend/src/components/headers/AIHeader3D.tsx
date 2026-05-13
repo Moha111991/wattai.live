@@ -279,9 +279,13 @@ export default function AIHeader3D() {
       {/* Title – Top Left with backdrop (code symbol at 150,80 – title placed above it) */}
       <rect x="0" y="0" width="480" height="108" rx="0" fill="rgba(2,6,23,0.60)"/>
       <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
+        <animate attributeName="opacity" values="0;1" dur="1.6s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="74;58" dur="1.6s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
         KI-Empfehlung
       </text>
       <text x="48" y="90" fontSize="17" fill="#a78bfa" textAnchor="start" opacity="0.9">
+        <animate attributeName="opacity" values="0;1" dur="1.8s" begin="0.4s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="106;90" dur="1.8s" begin="0.4s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
         Intelligente Energieoptimierung
       </text>
     </svg>

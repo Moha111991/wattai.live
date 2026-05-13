@@ -216,9 +216,13 @@ export default function SmartHomeHeader3D() {
       {/* Title – Top Left with backdrop (house starts at x≈380, left strip is clear) */}
       <rect x="0" y="0" width="360" height="108" rx="0" fill="rgba(2,6,23,0.55)"/>
       <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#f472b6" textAnchor="start" filter="url(#homeGlow)">
+        <animate attributeName="opacity" values="0;1" dur="1.6s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="74;58" dur="1.6s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
         Smart Home
       </text>
       <text x="48" y="90" fontSize="17" fill="#67e8f9" textAnchor="start" opacity="0.9">
+        <animate attributeName="opacity" values="0;1" dur="1.8s" begin="0.4s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+        <animate attributeName="y" values="106;90" dur="1.8s" begin="0.4s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
         Intelligente Haussteuerung
       </text>
     </svg>
