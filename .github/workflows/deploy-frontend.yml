@@ -29,7 +29,7 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm install -g @railway/cli@latest
-          railway up --detach
+          railway up --detach --service "${{ secrets.RAILWAY_SERVICE_NAME }}"
 
       - name: ✅ Deployment erfolgreich
         run: |
