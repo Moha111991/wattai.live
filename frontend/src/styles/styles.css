@@ -301,6 +301,12 @@ nav {
   }
 }
 
+/* Logo overlay card – base styles (all viewports) */
+.logo-overlay-card {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 @media (max-width: 768px) {
   :root {
     --tab-grid-main-min: 260px;
