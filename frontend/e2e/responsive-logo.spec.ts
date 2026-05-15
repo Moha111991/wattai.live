@@ -62,9 +62,10 @@ test.describe('Responsive Logo Tests', () => {
     await expect(logoCard).toBeVisible({ timeout: 10000 });
     
     // Prüfe CSS-Eigenschaften
-    const backdropFilter = await logoCard.evaluate(el => 
-      window.getComputedStyle(el).backdropFilter
-    );
+    const backdropFilter = await logoCard.evaluate(el => {
+      const style = window.getComputedStyle(el);
+      return style.backdropFilter || style.getPropertyValue('-webkit-backdrop-filter');
+    });
     
     // Backdrop-Filter sollte blur enthalten
     expect(backdropFilter).toContain('blur');
