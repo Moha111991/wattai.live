@@ -276,22 +276,26 @@ export default function AIHeader3D() {
         <animate attributeName="y" values="-6;400" dur="4s" repeatCount="indefinite"/>
       </rect>
 
-      {/* Title – Top Left with backdrop (code symbol at 150,80 – title placed above it) */}
-      <rect x="0" y="0" width="480" height="108" rx="0" fill="rgba(2,6,23,0.60)"/>
-      <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
-        <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="74;58" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="58;53;58" dur="4s" begin="1.2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
-        <animate attributeName="opacity" values="1;0.82;1" dur="3.5s" begin="1.2s" repeatCount="indefinite"/>
-        KI-Empfehlung
-      </text>
-      <text x="48" y="90" fontSize="17" fill="#a78bfa" textAnchor="start" opacity="0.9">
-        <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="106;90" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="90;86;90" dur="4s" begin="1.75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
-        <animate attributeName="opacity" values="0.9;0.55;0.9" dur="3.5s" begin="1.75s" repeatCount="indefinite"/>
-        Intelligente Energieoptimierung
-      </text>
+      {/* Freely floating title block */}
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          values="20,18; 170,48; 320,12; 480,78; 600,158; 420,218; 200,165; 60,88; 20,18"
+          keyTimes="0;0.12;0.25;0.38;0.52;0.65;0.78;0.90;1"
+          dur="30s" begin="1.2s" repeatCount="indefinite"
+          calcMode="spline"
+          keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+        <rect x="0" y="0" width="420" height="100" rx="10" fill="rgba(2,6,23,0.65)"/>
+        <text x="28" y="52" fontSize="44" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
+          <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          <animate attributeName="y" values="70;52" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          KI-Empfehlung
+        </text>
+        <text x="28" y="82" fontSize="16" fill="#a78bfa" textAnchor="start" opacity="0.9">
+          <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          <animate attributeName="y" values="100;82" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          Intelligente Energieoptimierung
+        </text>
+      </g>
     </svg>
   );
 }

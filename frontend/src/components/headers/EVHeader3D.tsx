@@ -219,22 +219,26 @@ export default function EVHeader3D() {
         ))}
       </g>
 
-      {/* Title – Top Left with backdrop (car starts at x≈400, top-left is clear) */}
-      <rect x="0" y="0" width="380" height="108" rx="0" fill="rgba(2,6,23,0.55)"/>
-      <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#a78bfa" textAnchor="start" filter="url(#evGlow)">
-        <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="74;58" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="58;53;58" dur="4s" begin="1.2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
-        <animate attributeName="opacity" values="1;0.82;1" dur="3.5s" begin="1.2s" repeatCount="indefinite"/>
-        Elektroauto
-      </text>
-      <text x="48" y="90" fontSize="17" fill="#67e8f9" textAnchor="start" opacity="0.9">
-        <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="106;90" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="90;86;90" dur="4s" begin="1.75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
-        <animate attributeName="opacity" values="0.9;0.55;0.9" dur="3.5s" begin="1.75s" repeatCount="indefinite"/>
-        Intelligentes Lademanagement
-      </text>
+      {/* Freely floating title block */}
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          values="15,25; 160,60; 300,18; 480,100; 620,175; 440,240; 210,180; 55,105; 15,25"
+          keyTimes="0;0.12;0.25;0.38;0.52;0.65;0.78;0.90;1"
+          dur="28s" begin="1.2s" repeatCount="indefinite"
+          calcMode="spline"
+          keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+        <rect x="0" y="0" width="370" height="100" rx="10" fill="rgba(2,6,23,0.62)"/>
+        <text x="28" y="52" fontSize="44" fontWeight="bold" fill="#a78bfa" textAnchor="start" filter="url(#evGlow)">
+          <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          <animate attributeName="y" values="70;52" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          Elektroauto
+        </text>
+        <text x="28" y="82" fontSize="16" fill="#67e8f9" textAnchor="start" opacity="0.9">
+          <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          <animate attributeName="y" values="100;82" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          Intelligentes Lademanagement
+        </text>
+      </g>
     </svg>
   );
 }
