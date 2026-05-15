@@ -213,22 +213,26 @@ export default function SmartHomeHeader3D() {
         <rect x="890" y="360" width="6" height="8" fill="#fbbf24"/>
       </g>
 
-      {/* Title – Top Left with backdrop (house starts at x≈380, left strip is clear) */}
-      <rect x="0" y="0" width="360" height="108" rx="0" fill="rgba(2,6,23,0.55)"/>
-      <text x="48" y="58" fontSize="44" fontWeight="bold" fill="#f472b6" textAnchor="start" filter="url(#homeGlow)">
-        <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="74;58" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="58;53;58" dur="4s" begin="1.2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
-        <animate attributeName="opacity" values="1;0.82;1" dur="3.5s" begin="1.2s" repeatCount="indefinite"/>
-        Smart Home
-      </text>
-      <text x="48" y="90" fontSize="17" fill="#67e8f9" textAnchor="start" opacity="0.9">
-        <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="106;90" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
-        <animate attributeName="y" values="90;86;90" dur="4s" begin="1.75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
-        <animate attributeName="opacity" values="0.9;0.55;0.9" dur="3.5s" begin="1.75s" repeatCount="indefinite"/>
-        Intelligente Haussteuerung
-      </text>
+      {/* Freely floating title block */}
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          values="25,20; 200,50; 380,10; 540,85; 660,165; 460,225; 220,168; 70,92; 25,20"
+          keyTimes="0;0.12;0.25;0.38;0.52;0.65;0.78;0.90;1"
+          dur="24s" begin="1.2s" repeatCount="indefinite"
+          calcMode="spline"
+          keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+        <rect x="0" y="0" width="355" height="100" rx="10" fill="rgba(2,6,23,0.62)"/>
+        <text x="28" y="52" fontSize="44" fontWeight="bold" fill="#f472b6" textAnchor="start" filter="url(#homeGlow)">
+          <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          <animate attributeName="y" values="70;52" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          Smart Home
+        </text>
+        <text x="28" y="82" fontSize="16" fill="#67e8f9" textAnchor="start" opacity="0.9">
+          <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          <animate attributeName="y" values="100;82" dur="1.4s" begin="0.35s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
+          Intelligente Haussteuerung
+        </text>
+      </g>
     </svg>
   );
 }
