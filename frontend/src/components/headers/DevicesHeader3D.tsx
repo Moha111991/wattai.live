@@ -181,14 +181,14 @@ export default function DevicesHeader3D() {
         </rect>
       </g>
 
-      {/* Freely floating title block */}
+      {/* Freely floating title block – starts right */}
       <g>
         <animateTransform attributeName="transform" type="translate"
-          values="30,15; 180,55; 350,20; 520,90; 650,170; 480,230; 240,175; 80,95; 30,15"
-          keyTimes="0;0.12;0.25;0.38;0.52;0.65;0.78;0.90;1"
-          dur="22s" begin="1.2s" repeatCount="indefinite"
+          values="820,80; 620,180; 380,260; 140,200; 60,90; 250,30; 500,130; 740,50; 820,80"
+          keyTimes="0;0.13;0.26;0.38;0.52;0.64;0.76;0.90;1"
+          dur="22s" repeatCount="indefinite"
           calcMode="spline"
-          keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+          keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1"/>
         <rect x="0" y="0" width="340" height="100" rx="10" fill="rgba(2,6,23,0.62)"/>
         <text x="28" y="52" fontSize="44" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#devGlow)">
           <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>

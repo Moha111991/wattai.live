@@ -276,14 +276,14 @@ export default function AIHeader3D() {
         <animate attributeName="y" values="-6;400" dur="4s" repeatCount="indefinite"/>
       </rect>
 
-      {/* Freely floating title block */}
+      {/* Freely floating title block – starts right */}
       <g>
         <animateTransform attributeName="transform" type="translate"
-          values="20,18; 170,48; 320,12; 480,78; 600,158; 420,218; 200,165; 60,88; 20,18"
-          keyTimes="0;0.12;0.25;0.38;0.52;0.65;0.78;0.90;1"
-          dur="30s" begin="1.2s" repeatCount="indefinite"
+          values="850,20; 640,110; 390,210; 150,270; 35,155; 220,45; 480,160; 700,60; 850,20"
+          keyTimes="0;0.13;0.26;0.38;0.52;0.64;0.76;0.90;1"
+          dur="30s" repeatCount="indefinite"
           calcMode="spline"
-          keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+          keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1"/>
         <rect x="0" y="0" width="420" height="100" rx="10" fill="rgba(2,6,23,0.65)"/>
         <text x="28" y="52" fontSize="44" fontWeight="bold" fill="#67e8f9" textAnchor="start" filter="url(#aiStrongGlow)">
           <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>

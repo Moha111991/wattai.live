@@ -213,14 +213,14 @@ export default function SmartHomeHeader3D() {
         <rect x="890" y="360" width="6" height="8" fill="#fbbf24"/>
       </g>
 
-      {/* Freely floating title block */}
+      {/* Freely floating title block – starts right */}
       <g>
         <animateTransform attributeName="transform" type="translate"
-          values="25,20; 200,50; 380,10; 540,85; 660,165; 460,225; 220,168; 70,92; 25,20"
-          keyTimes="0;0.12;0.25;0.38;0.52;0.65;0.78;0.90;1"
-          dur="24s" begin="1.2s" repeatCount="indefinite"
+          values="800,50; 600,160; 360,240; 120,180; 30,70; 220,20; 480,110; 720,30; 800,50"
+          keyTimes="0;0.13;0.26;0.38;0.52;0.64;0.76;0.90;1"
+          dur="24s" repeatCount="indefinite"
           calcMode="spline"
-          keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+          keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1"/>
         <rect x="0" y="0" width="355" height="100" rx="10" fill="rgba(2,6,23,0.62)"/>
         <text x="28" y="52" fontSize="44" fontWeight="bold" fill="#f472b6" textAnchor="start" filter="url(#homeGlow)">
           <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>
