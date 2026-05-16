@@ -219,14 +219,14 @@ export default function EVHeader3D() {
         ))}
       </g>
 
-      {/* Freely floating title block */}
+      {/* Freely floating title block – starts right */}
       <g>
         <animateTransform attributeName="transform" type="translate"
-          values="15,25; 160,60; 300,18; 480,100; 620,175; 440,240; 210,180; 55,105; 15,25"
-          keyTimes="0;0.12;0.25;0.38;0.52;0.65;0.78;0.90;1"
-          dur="28s" begin="1.2s" repeatCount="indefinite"
+          values="750,15; 540,100; 280,220; 80,280; 20,160; 180,60; 420,190; 660,100; 750,15"
+          keyTimes="0;0.13;0.26;0.38;0.52;0.64;0.76;0.90;1"
+          dur="28s" repeatCount="indefinite"
           calcMode="spline"
-          keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+          keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1"/>
         <rect x="0" y="0" width="370" height="100" rx="10" fill="rgba(2,6,23,0.62)"/>
         <text x="28" y="52" fontSize="44" fontWeight="bold" fill="#a78bfa" textAnchor="start" filter="url(#evGlow)">
           <animate attributeName="opacity" values="0;1" dur="1.2s" calcMode="spline" keySplines="0.4 0 0.2 1" fill="freeze"/>

@@ -267,30 +267,29 @@ export default function App() {
   <div className="main-app" style={appShellStyle}>
     <div ref={appContentRef} style={appContentStyle}>
       <header style={headerStyle}>
-        <div style={{ position: 'relative', width: '100%', height: 'clamp(220px, 40vw, 420px)' }}>
-          {/* WattAI Logo Overlay - Top Left - Transparent, no box */}
-          <div 
-            className="logo-overlay-card"
-            style={{
-              position: 'absolute',
-              top: 'clamp(10px, 2vw, 20px)',
-              left: 'clamp(10px, 2vw, 20px)',
-              zIndex: 10,
-              background: 'transparent',
-              borderRadius: 0,
-              padding: 'clamp(8px, 1.5vw, 16px) clamp(12px, 2vw, 24px)',
-              border: 'none',
-              boxShadow: 'none'
-            } as CSSProperties}>
+        <div style={{ width: '100%' }}>
+          {/* Logo bar – above the header image, right-aligned */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            padding: 'clamp(6px, 1.2vw, 14px) clamp(14px, 2.5vw, 32px)',
+            background: 'rgba(2,6,23,0.72)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(103,232,249,0.12)',
+          } as CSSProperties}>
             <WattAILogo 
               size={getLogoSize()} 
               animated={!isMobile} 
               variant="full" 
             />
           </div>
-          
-          {/* Full-Width Header - No Frame */}
-          {renderHeaderComponent()}
+
+          {/* Full-Width Header Image – larger height */}
+          <div style={{ width: '100%', height: 'clamp(300px, 50vw, 560px)' }}>
+            {renderHeaderComponent()}
+          </div>
         </div>
       </header>
         
