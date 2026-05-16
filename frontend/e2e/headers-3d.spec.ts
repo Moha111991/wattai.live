@@ -9,8 +9,8 @@ import { test, expect } from '@playwright/test';
 test.describe('3D Header Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    // Warte auf Logo als Indikator dass die App geladen ist
-    await expect(page.locator('.logo-overlay-card')).toBeVisible({ timeout: 10000 });
+    // Warte auf Tab-Navigation als stabiler App-Ready-Indikator
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
     await page.waitForTimeout(1000);
   });
 

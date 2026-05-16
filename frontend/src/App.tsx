@@ -5,9 +5,10 @@ import DevicesDashboard from "./components/DevicesDashboard";
 import HouseholdDashboard from "./components/HouseholdDashboard";
 import KIDashboard from "./components/KIDashboard";
 import FleetManagementTab from "./components/FleetManagementTab";
-import LegalFooter from "./components/LegalFooter";
+import AppFooter from "./components/AppFooter";
+import TopNav from "./components/TopNav";
+import AuthModal from "./components/AuthModal";
 import UpgradeModal from "./components/UpgradeModal";
-import WattAILogo from "./components/WattAILogo";
 import DashboardHeader3D from "./components/headers/DashboardHeader3D";
 import EVHeader3D from "./components/headers/EVHeader3D";
 import DevicesHeader3D from "./components/headers/DevicesHeader3D";
@@ -24,6 +25,8 @@ type TabDefinition = {
   label: string;
   component: ReactElement;
 };
+
+type NavPage = 'home' | 'produkte' | 'about' | 'kontakt';
 
 const BASE_TABS: TabDefinition[] = [
   { key: 'main', label: 'Dashboard', component: <Dashboard /> },
@@ -46,6 +49,10 @@ export default function App() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
+  const [navPage, setNavPage] = useState<NavPage>('home');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string | undefined>(undefined);
   const appContentRef = useRef<HTMLDivElement | null>(null);
 
   // Detect mobile screen size with finer granularity
@@ -77,7 +84,6 @@ export default function App() {
 
   const appStoreUrl = import.meta.env.VITE_APP_STORE_URL || 'https://apps.apple.com/';
   const playStoreUrl = import.meta.env.VITE_PLAY_STORE_URL || 'https://play.google.com/store/apps';
-  
   // Render 3D Header Component based on tab
   const renderHeaderComponent = () => {
     switch (tab) {
@@ -137,44 +143,6 @@ export default function App() {
     position: 'relative',
   };
 
-  const appHintBannerStyle: CSSProperties = {
-    width: '100%',
-    marginBottom: 6,
-    borderRadius: 10,
-    border: '1px solid rgba(125, 211, 252, 0.28)',
-    background: 'linear-gradient(110deg, rgba(14,165,233,0.12) 0%, rgba(20,184,166,0.10) 100%)',
-    color: '#e0f2fe',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: isMobile ? 4 : 'clamp(4px, 1vw, 8px)',
-    flexWrap: 'nowrap' as const,
-    padding: isMobile ? '0.22rem 0.5rem' : '0.32rem clamp(0.5rem, 1.2vw, 0.7rem)',
-    boxSizing: 'border-box',
-    boxShadow: '0 4px 12px rgba(2,6,23,0.18)',
-    overflow: 'hidden',
-  };
-
-  const appHintTextStyle: CSSProperties = {
-    fontSize: isMobile ? 10 : 11,
-    lineHeight: 1.3,
-    color: '#bae6fd',
-    fontWeight: 500,
-    flex: '1 1 0',
-    minWidth: 0,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: isMobile ? 'nowrap' : 'normal',
-  };
-
-  const appHintActionsStyle: CSSProperties = {
-    display: 'flex',
-    gap: isMobile ? 4 : 6,
-    flexWrap: 'nowrap' as const,
-    alignItems: 'center',
-    flexShrink: 0,
-  };
-
   const appStoreButtonStyle: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -198,36 +166,6 @@ export default function App() {
     background: 'linear-gradient(90deg, #22c55e 0%, #14b8a6 100%)',
     border: '1px solid rgba(167,243,208,0.35)',
     boxShadow: '0 3px 8px rgba(34,197,94,0.15)',
-  };
-
-  const tabsWrapStyle: CSSProperties = {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 'clamp(8px, 1.4vw, 12px)',
-  };
-
-  const actionRowStyle: CSSProperties = {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 'clamp(8px, 1.4vw, 12px)',
-    flexWrap: 'wrap',
-  };
-
-  const sectionStyle: CSSProperties = {
-    minHeight: 'max(420px, calc(100dvh - 260px))',
-    width: '100%',
-    maxWidth: '100%',
-    margin: 0,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'stretch',
-    flexDirection: 'column',
-    gap: 10,
   };
 
   // Feature-Gate zentral über config/featureFlags.ts
@@ -265,153 +203,195 @@ export default function App() {
 
   return (
   <div className="main-app" style={appShellStyle}>
-    <div ref={appContentRef} style={appContentStyle}>
-      <header style={headerStyle}>
-        <div style={{ width: '100%' }}>
-          {/* Logo bar – above the header image, right-aligned */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            padding: 'clamp(6px, 1.2vw, 14px) clamp(14px, 2.5vw, 32px)',
-            background: 'rgba(2,6,23,0.72)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderBottom: '1px solid rgba(103,232,249,0.12)',
-          } as CSSProperties}>
-            <WattAILogo 
-              size={getLogoSize()} 
-              animated={!isMobile} 
-              variant="full" 
-            />
-          </div>
+    {/* Top Navigation with Logo */}
+    <TopNav
+      isMobile={isMobile}
+      logoSize={getLogoSize()}
+      currentPage={navPage}
+      onNavigate={setNavPage}
+      isLoggedIn={isLoggedIn}
+      userName={userName}
+      onAuthClick={() => setIsAuthModalOpen(true)}
+      onLogout={() => { setIsLoggedIn(false); setUserName(undefined); }}
+    />
 
-          {/* Full-Width Header Image – larger height */}
-          <div style={{ width: '100%', height: 'clamp(300px, 50vw, 560px)' }}>
-            {renderHeaderComponent()}
-          </div>
+    <div ref={appContentRef} style={appContentStyle}>
+      {/* Header Image */}
+      <header style={headerStyle}>
+        <div style={{ width: '100%', height: 'clamp(300px, 50vw, 560px)' }}>
+          {renderHeaderComponent()}
         </div>
       </header>
-        
-        {/* Main Content Container with Padding */}
-        <div style={{
-          padding: 'clamp(10px, 1.6vw, 20px) clamp(10px, 2.4vw, 30px)',
-          boxSizing: 'border-box',
-        }}>
-          <nav style={navStyle}>
-          <div style={tabsWrapStyle}>
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className="ui-focusable"
-              style={{
-                padding: '0.52rem 1rem',
-                borderRadius: 999,
-                border: tab === t.key ? '1px solid rgba(103,232,249,0.72)' : '1px solid rgba(148,163,184,0.35)',
-                background: tab === t.key ? 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)' : 'rgba(15,23,42,0.56)',
-                color: '#f8fafc',
-                cursor: 'pointer',
-                fontWeight: tab === t.key ? 700 : 600,
-                fontSize: 13,
-                minHeight: 40,
-                letterSpacing: '0.02em',
-                boxShadow: tab === t.key ? '0 8px 20px rgba(14,165,233,0.35)' : '0 4px 10px rgba(2,6,23,0.35)',
-                transition: 'all 180ms ease',
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+
+      {/* Main Content Container with Padding */}
+      <div style={{
+        padding: 'clamp(10px, 1.6vw, 20px) clamp(10px, 2.4vw, 30px)',
+        boxSizing: 'border-box',
+      }}>
+        <nav style={navStyle}>
+          <div style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 'clamp(8px, 1.4vw, 12px)',
+          }}>
+            {tabs.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className="ui-focusable"
+                style={{
+                  padding: '0.52rem 1rem',
+                  borderRadius: 999,
+                  border: tab === t.key ? '1px solid rgba(103,232,249,0.72)' : '1px solid rgba(148,163,184,0.35)',
+                  background: tab === t.key ? 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)' : 'rgba(15,23,42,0.56)',
+                  color: '#f8fafc',
+                  cursor: 'pointer',
+                  fontWeight: tab === t.key ? 700 : 600,
+                  fontSize: 13,
+                  minHeight: 40,
+                  letterSpacing: '0.02em',
+                  boxShadow: tab === t.key ? '0 8px 20px rgba(14,165,233,0.35)' : '0 4px 10px rgba(2,6,23,0.35)',
+                  transition: 'all 180ms ease',
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-          <div style={actionRowStyle}>
+          <div style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 'clamp(8px, 1.4vw, 12px)',
+            flexWrap: 'wrap',
+          }}>
             <span style={{ color: '#cbd5e1', fontSize: 13, padding: '0.35rem 0.8rem', borderRadius: 999, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.5)' }}>
               Aktueller Plan: <b style={{ color: '#67e8f9' }}>{planLabel}</b>
             </span>
+            {!isLoggedIn && (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                style={{
+                  background: 'rgba(103,232,249,0.1)',
+                  border: '1px solid rgba(103,232,249,0.35)',
+                  color: '#67e8f9',
+                  borderRadius: 999,
+                  padding: '0.35rem 0.9rem',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                🔐 Anmelden für mehr Funktionen
+              </button>
+            )}
           </div>
         </nav>
-        <section style={sectionStyle}>
+        <section style={{
+          minHeight: 'max(420px, calc(100dvh - 260px))',
+          width: '100%',
+          maxWidth: '100%',
+          margin: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'stretch',
+          flexDirection: 'column',
+          gap: 10,
+        }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
             {tabs.find(t => t.key === tab)?.component}
           </div>
-          <LegalFooter />
         </section>
-        </div>
-        {/* End Main Content Container */}
+      </div>
+      {/* End Main Content Container */}
+
+      {/* Footer */}
+      <AppFooter />
     </div>
-      {/* Floating Bottom-Right Widget: Upgrade + App Store */}
-      {(showBanner || !fleetEnabled) && (
-        <div style={{
-          position: 'fixed',
-          bottom: isMobile ? 16 : 24,
-          right: isMobile ? 12 : 24,
-          zIndex: 900,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: 8,
-        }}>
-          {!fleetEnabled && (
-            <button
-              onClick={() => setIsUpgradeModalOpen(true)}
-              className="ui-focusable"
-              style={{
-                background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)',
-                color: '#fff',
-                borderRadius: 999,
-                border: '1px solid rgba(103,232,249,0.45)',
-                padding: isMobile ? '0.45rem 0.9rem' : '0.52rem 1.1rem',
-                fontWeight: 700,
-                fontSize: isMobile ? 12 : 13,
-                cursor: 'pointer',
-                boxShadow: '0 6px 24px rgba(6,182,212,0.4)',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <span>⚡</span>
-              {isMobile ? 'Upgrade' : 'Flottenmanagement freischalten'}
-            </button>
-          )}
-          {showBanner && (
-            <div style={{
+
+    {/* Floating Bottom-Right Widget: Upgrade + App Store */}
+    {(showBanner || !fleetEnabled) && (
+      <div style={{
+        position: 'fixed',
+        bottom: isMobile ? 16 : 24,
+        right: isMobile ? 12 : 24,
+        zIndex: 900,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: 8,
+      }}>
+        {!fleetEnabled && (
+          <button
+            onClick={() => setIsUpgradeModalOpen(true)}
+            className="ui-focusable"
+            style={{
+              background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)',
+              color: '#fff',
+              borderRadius: 999,
+              border: '1px solid rgba(103,232,249,0.45)',
+              padding: isMobile ? '0.45rem 0.9rem' : '0.52rem 1.1rem',
+              fontWeight: 700,
+              fontSize: isMobile ? 12 : 13,
+              cursor: 'pointer',
+              boxShadow: '0 6px 24px rgba(6,182,212,0.4)',
+              whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              background: 'rgba(15,23,42,0.88)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(103,232,249,0.2)',
-              borderRadius: 12,
-              padding: isMobile ? '0.3rem 0.6rem' : '0.4rem 0.8rem',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-            }}>
-              <span style={{ fontSize: isMobile ? 10 : 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                📱 App
-              </span>
-              <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" style={appStoreButtonStyle} aria-label="iOS App Store">
-                🍎{!isMobile && ' iOS'}
-              </a>
-              <a href={playStoreUrl} target="_blank" rel="noopener noreferrer" style={playStoreButtonStyle} aria-label="Google Play Store">
-                🤖{!isMobile && ' Android'}
-              </a>
-              <button
-                onClick={() => setShowBanner(false)}
-                aria-label="Schließen"
-                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 13, padding: '1px 3px', lineHeight: 1 }}
-              >✕</button>
-            </div>
-          )}
-        </div>
-      )}
+            }}
+          >
+            <span>⚡</span>
+            {isMobile ? 'Upgrade' : 'Flottenmanagement freischalten'}
+          </button>
+        )}
+        {showBanner && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'rgba(15,23,42,0.88)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(103,232,249,0.2)',
+            borderRadius: 12,
+            padding: isMobile ? '0.3rem 0.6rem' : '0.4rem 0.8rem',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          }}>
+            <span style={{ fontSize: isMobile ? 10 : 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+              📱 App
+            </span>
+            <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" style={appStoreButtonStyle} aria-label="iOS App Store">
+              🍎{!isMobile && ' iOS'}
+            </a>
+            <a href={playStoreUrl} target="_blank" rel="noopener noreferrer" style={playStoreButtonStyle} aria-label="Google Play Store">
+              🤖{!isMobile && ' Android'}
+            </a>
+            <button
+              onClick={() => setShowBanner(false)}
+              aria-label="Schließen"
+              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 13, padding: '1px 3px', lineHeight: 1 }}
+            >✕</button>
+          </div>
+        )}
+      </div>
+    )}
 
-      <UpgradeModal
-        open={isUpgradeModalOpen}
-        currentPlan={planLabel}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
-    </div>
+    <AuthModal
+      open={isAuthModalOpen}
+      onClose={() => setIsAuthModalOpen(false)}
+      onLogin={(_email, name) => { setIsLoggedIn(true); setUserName(name); }}
+    />
+
+    <UpgradeModal
+      open={isUpgradeModalOpen}
+      currentPlan={planLabel}
+      onClose={() => setIsUpgradeModalOpen(false)}
+    />
+  </div>
   );
 }

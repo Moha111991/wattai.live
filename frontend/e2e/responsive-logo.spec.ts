@@ -23,11 +23,11 @@ test.describe('Responsive Logo Tests', () => {
       // Gehe zur Seite
       await page.goto('/', { waitUntil: 'networkidle' });
       
-      // Warte auf Logo
-      const logoCard = page.locator('.logo-overlay-card');
-      await expect(logoCard).toBeVisible({ timeout: 10000 });
+      // Warte auf Logo via data-testid
+      const logoBar = page.getByTestId('logo-bar');
+      await expect(logoBar).toBeVisible({ timeout: 10000 });
       
-      const logo = logoCard.locator('svg');
+      const logo = logoBar.locator('svg').first();
       await expect(logo).toBeVisible();
       
       // Prüfe Logo-Größe liegt im erwarteten Bereich
@@ -40,29 +40,28 @@ test.describe('Responsive Logo Tests', () => {
     });
   }
 
-  test('Logo sollte auf Mobile oben links positioniert sein', async ({ page }) => {
+  test('Logo-Leiste sollte sichtbar und oben positioniert sein', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto('/', { waitUntil: 'networkidle' });
     
-    const logoCard = page.locator('.logo-overlay-card');
-    await expect(logoCard).toBeVisible({ timeout: 10000 });
+    const logoBar = page.getByTestId('logo-bar');
+    await expect(logoBar).toBeVisible({ timeout: 10000 });
     
-    const box = await logoCard.boundingBox();
+    const box = await logoBar.boundingBox();
     expect(box).toBeTruthy();
     
-    // Logo sollte nahe am oberen linken Rand sein
-    expect(box!.x).toBeLessThan(30);
-    expect(box!.y).toBeLessThan(30);
+    // Logo-Leiste sollte am oberen Rand der Seite sein
+    expect(box!.y).toBeLessThan(100);
   });
 
-  test('Logo sollte Glassmorphism-Effekt haben', async ({ page }) => {
+  test('Logo-Bereich sollte Glassmorphism-Effekt haben', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
     
-    const logoCard = page.locator('.logo-overlay-card');
-    await expect(logoCard).toBeVisible({ timeout: 10000 });
+    const logoBar = page.getByTestId('logo-bar');
+    await expect(logoBar).toBeVisible({ timeout: 10000 });
     
     // Prüfe CSS-Eigenschaften
-    const backdropFilter = await logoCard.evaluate(el => {
+    const backdropFilter = await logoBar.evaluate(el => {
       const style = window.getComputedStyle(el);
       return style.backdropFilter || style.getPropertyValue('-webkit-backdrop-filter');
     });
