@@ -13,18 +13,18 @@ mobileTest.use({ ...devices['iPhone 12'] });
 test.describe('Mobile Optimization Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    await expect(page.locator('.logo-overlay-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
     await page.waitForTimeout(1000);
   });
 
   mobileTest('sollte auf Mobile responsive sein', async ({ page }) => {
-    // Logo sollte vorhanden und nicht zu groß sein
-    const logoCard = page.locator('.logo-overlay-card');
-    await expect(logoCard).toBeVisible();
-    
-    const logo = logoCard.locator('svg');
+    // Logo-Leiste sollte vorhanden und sichtbar sein
+    const logoBar = page.getByTestId('logo-bar');
+    await expect(logoBar).toBeVisible();
+
+    const logo = logoBar.locator('svg').first();
     const box = await logo.boundingBox();
-    
+
     // Logo sollte für Mobile-Geräte angemessen sein (nicht größer als Desktop)
     expect(box!.width).toBeGreaterThan(30); // Mindestens 30px
     expect(box!.width).toBeLessThanOrEqual(150); // Maximal 150px auf Mobile
@@ -99,8 +99,8 @@ test.describe('Cross-Browser Tests', () => {
       
       await page.goto('/', { waitUntil: 'networkidle' });
       
-      // Logo vorhanden
-      await expect(page.locator('.logo-overlay-card')).toBeVisible({ timeout: 10000 });
+      // Dashboard-Tab als stabiler App-Ready-Indikator
+      await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
       
       // Tabs vorhanden
       await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible();
