@@ -5,8 +5,8 @@ test.describe('WattAI.live - Kompletter User Flow', () => {
     // Gehe zur Seite und warte bis vollständig geladen
     await page.goto('https://www.wattai.live/', { waitUntil: 'networkidle' });
     
-    // Warte auf Logo als Indikator dass die App bereit ist
-    await expect(page.locator('.logo-overlay-card')).toBeVisible({ timeout: 10000 });
+    // Warte auf Dashboard-Tab als stabiler App-Ready-Indikator
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
     
     // Warte kurz für Animationen
     await page.waitForTimeout(1000);
