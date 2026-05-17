@@ -11,44 +11,44 @@ const DEVICE_CARDS = [
   {
     icon: '📡',
     label: 'Smart Meter',
-    color: '#67e8f9',
-    borderColor: 'rgba(103,232,249,0.25)',
-    glowColor: 'rgba(103,232,249,0.08)',
+    accent: '#67e8f9',
+    accentBg: 'rgba(103,232,249,0.10)',
+    accentBorder: 'rgba(103,232,249,0.28)',
     protocol: 'Modbus / REST',
-    description: 'Echtzeit-Zählerstand, Verbrauch & Einspeisung',
+    description: 'Echtzeit-Zählerstand, Verbrauch & Einspeisung in Watt und kWh',
     steps: ['Zähler-IP eingeben', 'Protokoll wählen', 'Verbinden'],
     typeKey: 'smart meter',
   },
   {
     icon: '☀️',
     label: 'PV-Wechselrichter',
-    color: '#34d399',
-    borderColor: 'rgba(52,211,153,0.25)',
-    glowColor: 'rgba(52,211,153,0.08)',
+    accent: '#67e8f9',
+    accentBg: 'rgba(103,232,249,0.10)',
+    accentBorder: 'rgba(103,232,249,0.28)',
     protocol: 'Modbus / Cloud',
-    description: 'Solarertrag, Einspeiseleistung & Eigenverbrauch',
+    description: 'Solarertrag, Einspeiseleistung & Eigenverbrauchsquote',
     steps: ['Inverter-IP eingeben', 'Protokoll wählen', 'Verbinden'],
     typeKey: 'inverter',
   },
   {
     icon: '🔋',
     label: 'Heimspeicher',
-    color: '#fbbf24',
-    borderColor: 'rgba(251,191,36,0.25)',
-    glowColor: 'rgba(251,191,36,0.08)',
+    accent: '#67e8f9',
+    accentBg: 'rgba(103,232,249,0.10)',
+    accentBorder: 'rgba(103,232,249,0.28)',
     protocol: 'Modbus / Cloud API',
-    description: 'SoC, Lade-/Entladeleistung & Batteriestatus',
+    description: 'SoC, Lade-/Entladeleistung & Batteriestatus in Echtzeit',
     steps: ['Speicher-IP eingeben', 'Protokoll wählen', 'Verbinden'],
     typeKey: 'battery',
   },
   {
     icon: '⚡',
     label: 'Wallbox',
-    color: '#a78bfa',
-    borderColor: 'rgba(167,139,250,0.25)',
-    glowColor: 'rgba(167,139,250,0.08)',
+    accent: '#67e8f9',
+    accentBg: 'rgba(103,232,249,0.10)',
+    accentBorder: 'rgba(103,232,249,0.28)',
     protocol: 'OCPP / Cloud',
-    description: 'Ladeleistung, V2H/V2G & PV-Überschussladen',
+    description: 'Ladeleistung, V2H/V2G & PV-Überschussladen steuern',
     steps: ['Wallbox-ID eingeben', 'Protokoll wählen', 'Verbinden'],
     typeKey: 'wallbox',
   },
@@ -98,15 +98,8 @@ export default function DevicesDashboard() {
         <DeviceManager />
       </div>
 
-      {/* Geräte verbinden – 2-spaltig, horizontale Karten */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '14px',
-        marginTop: '24px',
-      }}
-        className="devices-connect-grid"
-      >
+      {/* Geräte verbinden – 2-spaltig, einheitliches Design */}
+      <div className="devices-connect-grid">
         {DEVICE_CARDS.map((card, idx) => {
           const isConnected = devices.some(d =>
             (d.type || '').toLowerCase().includes(card.typeKey)
@@ -114,94 +107,36 @@ export default function DevicesDashboard() {
           return (
             <div
               key={card.label}
-              className={`animate-page-enter animate-stagger-${idx + 2}`}
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                border: `1px solid ${card.borderColor}`,
-                borderRadius: '14px',
-                overflow: 'hidden',
-                background: 'rgba(2,6,23,0.65)',
-                backdropFilter: 'blur(12px)',
-                transition: 'transform 0.22s ease, box-shadow 0.22s ease',
-                position: 'relative',
-              }}
+              className={`device-connect-card animate-page-enter animate-stagger-${idx + 2}`}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 10px 36px ${card.borderColor}`;
+                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 40px rgba(103,232,249,0.14)';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
                 (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
               }}
             >
-              {/* Left color strip + icon */}
-              <div style={{
-                width: '72px',
-                flexShrink: 0,
-                background: `linear-gradient(180deg, ${card.glowColor.replace('0.08', '0.22')} 0%, ${card.glowColor} 100%)`,
-                borderRight: `1px solid ${card.borderColor}`,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                padding: '16px 0',
-              }}>
-                <span style={{ fontSize: '30px', lineHeight: 1 }}>{card.icon}</span>
-                {/* Live pulse dot if connected */}
-                {isConnected && (
-                  <span style={{
-                    width: '8px', height: '8px', borderRadius: '50%',
-                    background: '#34d399', boxShadow: '0 0 8px #34d399',
-                    display: 'inline-block', animation: 'pulse-ring 2s infinite',
-                  }}/>
-                )}
+              {/* Icon column */}
+              <div className="device-card-icon-col">
+                <span style={{ fontSize: '28px', lineHeight: 1 }}>{card.icon}</span>
+                <span className={`device-card-dot ${isConnected ? 'device-card-dot--online' : 'device-card-dot--offline'}`} />
               </div>
 
-              {/* Right content */}
-              <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
-                {/* Title row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.95rem', color: card.color, whiteSpace: 'nowrap' }}>
-                    {card.label}
-                  </span>
-                  <span style={{
-                    fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px',
-                    border: `1px solid ${isConnected ? 'rgba(52,211,153,0.4)' : card.borderColor}`,
-                    color: isConnected ? '#34d399' : 'rgba(203,213,225,0.45)',
-                    background: isConnected ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.03)',
-                    whiteSpace: 'nowrap', flexShrink: 0,
-                  }}>
+              {/* Content column */}
+              <div className="device-card-content">
+                <div className="device-card-header">
+                  <span className="device-card-label">{card.label}</span>
+                  <span className={`device-card-badge ${isConnected ? 'device-card-badge--online' : ''}`}>
                     {isConnected ? '✓ Online' : 'Offline'}
                   </span>
                 </div>
-
-                {/* Description */}
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(203,213,225,0.65)', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
-                  {card.description}
-                </p>
-
-                {/* Bottom row: protocol + steps */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
-                  <span style={{
-                    fontSize: '10px', padding: '1px 7px', borderRadius: '10px',
-                    background: 'rgba(255,255,255,0.05)', color: 'rgba(203,213,225,0.5)',
-                    border: '1px solid rgba(255,255,255,0.07)', fontFamily: 'monospace', flexShrink: 0,
-                  }}>
-                    {card.protocol}
-                  </span>
-                  {/* Step bubbles */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <p className="device-card-desc">{card.description}</p>
+                <div className="device-card-footer">
+                  <span className="device-card-protocol">{card.protocol}</span>
+                  <div className="device-card-steps">
                     {card.steps.map((_, si) => (
-                      <div key={si} style={{
-                        width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
-                        background: isConnected ? 'rgba(52,211,153,0.15)' : si === 0 ? `${card.glowColor}` : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${isConnected ? 'rgba(52,211,153,0.4)' : card.borderColor}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '9px', fontWeight: 700,
-                        color: isConnected ? '#34d399' : card.color,
-                      }}>
+                      <div key={si} className={`device-step-bubble ${isConnected ? 'device-step-bubble--done' : si === 0 ? 'device-step-bubble--active' : ''}`}>
                         {isConnected ? '✓' : si + 1}
                       </div>
                     ))}
