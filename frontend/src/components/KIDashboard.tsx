@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_URL } from '../lib/api';
+import PlanGate from './PlanGate';
 
 const RECOMMENDATION_URL = `${API_URL}/airecommendation`;
 
@@ -67,7 +68,8 @@ const KIDashboard = () => {
         <h2 className="tab-page-title" style={{ margin: '0 0 16px 0' }}>KI-Empfehlung</h2>
         <p className="tab-page-subtitle">Intelligente Handlungsempfehlungen aus Live-Daten, Lastprofilen und aktuellen Systemzuständen.</p>
       </div>
-      
+
+      <PlanGate feature="insights.advanced" featureName="KI-Empfehlung & Prognosen" requiredPlan="pro">
       {loading && (
         <div className="animate-fade-in flex items-center gap-3" style={{ color: '#cbd5e1', margin: '20px 0' }}>
           <div className="spinner" style={{ width: '24px', height: '24px', borderWidth: '2px' }}></div>
@@ -134,6 +136,7 @@ const KIDashboard = () => {
           </div>
         </div>
       )}
+      </PlanGate>
     </div>
   );
 };

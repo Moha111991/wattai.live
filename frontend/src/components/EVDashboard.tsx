@@ -1,6 +1,7 @@
 import '../styles/ev-dashboard.css';
 import ElektroautoV2H from './ElektroautoV2H';
 import EVChargeControl from './EVChargeControl';
+import PlanGate from './PlanGate';
 
 const EVDashboard = () => {
   return (
@@ -16,9 +17,11 @@ const EVDashboard = () => {
         <EVChargeControl />
       </div>
       
-      {/* V2H Integration */}
+      {/* V2H Integration — Pro feature */}
       <div className="animate-stagger-2 animate-page-enter">
-        <ElektroautoV2H />
+        <PlanGate feature="v2h_v2g.strategies" featureName="V2H / V2G-Strategien" requiredPlan="pro">
+          <ElektroautoV2H />
+        </PlanGate>
       </div>
     </div>
   );

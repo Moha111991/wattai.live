@@ -1,10 +1,13 @@
 import { useEffect, useId, useRef } from 'react';
-import { SALES_UPGRADE_LINK } from '../config/featureFlags';
+import { SALES_UPGRADE_LINK, type PlanId } from '../config/featureFlags';
+import { usePlan } from '../context/PlanContext';
 
 type UpgradeModalProps = {
   open: boolean;
   currentPlan: string;
   onClose: () => void;
+  /** Called when user selects a plan in the modal */
+  onSelectPlan?: (planId: PlanId) => void;
 };
 
 const PLANS = [
@@ -88,7 +91,9 @@ export default function UpgradeModal({
   open,
   currentPlan,
   onClose,
+  onSelectPlan,
 }: UpgradeModalProps) {
+  const { setPlan, planId: activePlanId } = usePlan();
   const titleId = useId();
   const keyboardHintId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -213,7 +218,7 @@ export default function UpgradeModal({
           marginBottom: 24,
         }}>
           {PLANS.map((plan) => {
-            const isCurrent = currentPlan.toLowerCase() === plan.label.toLowerCase();
+            const isCurrent = activePlanId === plan.id;
             return (
               <div
                 key={plan.id}
@@ -294,20 +299,21 @@ export default function UpgradeModal({
                 </ul>
 
                 {/* CTA Button */}
-                {plan.ctaDisabled || isCurrent ? (
+                {isCurrent ? (
                   <div style={{
                     textAlign: 'center',
                     padding: '0.55rem',
                     borderRadius: 10,
                     border: '1px solid rgba(148,163,184,0.2)',
                     background: 'rgba(15,23,42,0.5)',
-                    color: '#64748b',
+                    color: '#4ade80',
                     fontSize: 13,
                     fontWeight: 600,
                   }}>
-                    {isCurrent ? '✓ Dein aktueller Plan' : plan.cta}
+                    ✓ Dein aktueller Plan
                   </div>
-                ) : (
+                ) : plan.id === 'business' ? (
+                  // Business: open sales contact
                   <a
                     href={SALES_UPGRADE_LINK}
                     target="_blank"
@@ -319,6 +325,29 @@ export default function UpgradeModal({
                       padding: '0.6rem',
                       borderRadius: 10,
                       border: `1px solid ${plan.color}`,
+                      background: 'transparent',
+                      color: plan.color,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    {plan.cta} →
+                  </a>
+                ) : (
+                  // Free / Pro: switch plan instantly (demo)
+                  <button
+                    onClick={() => {
+                      setPlan(plan.id as PlanId);
+                      onSelectPlan?.(plan.id as PlanId);
+                      onClose();
+                    }}
+                    style={{
+                      width: '100%',
+                      textAlign: 'center',
+                      padding: '0.6rem',
+                      borderRadius: 10,
+                      border: `1px solid ${plan.color}`,
                       background: plan.recommended
                         ? 'linear-gradient(90deg,#0ea5e9,#06b6d4)'
                         : 'transparent',
@@ -326,11 +355,12 @@ export default function UpgradeModal({
                       fontSize: 13,
                       fontWeight: 700,
                       letterSpacing: '0.02em',
+                      cursor: 'pointer',
                       boxShadow: plan.recommended ? `0 4px 20px rgba(6,182,212,0.3)` : 'none',
                     }}
                   >
                     {plan.cta} →
-                  </a>
+                  </button>
                 )}
               </div>
             );
