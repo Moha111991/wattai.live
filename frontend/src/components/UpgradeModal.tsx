@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef } from 'react';
-import { CHECKOUT_URLS, SALES_UPGRADE_LINK, type PlanId } from '../config/featureFlags';
+import { useEffect, useId, useRef, useState } from 'react';
+import { type PlanId } from '../config/featureFlags';
 import { usePlan } from '../context/PlanContext';
+import { PaymentModal } from './PaymentModal';
 
 type UpgradeModalProps = {
   open: boolean;
@@ -97,6 +98,15 @@ export default function UpgradeModal({
   const titleId = useId();
   const keyboardHintId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Payment modal state ──────────────────────────────────────────────────
+  const [paymentPlan, setPaymentPlan] = useState<{
+    id: 'pro' | 'business';
+    label: string;
+    price: string;
+    priceNote: string;
+    color: string;
+  } | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
@@ -137,6 +147,24 @@ export default function UpgradeModal({
   }, [open, onClose]);
 
   if (!open) return null;
+
+  // ── Render PaymentModal on top when a paid plan's CTA is clicked ──────────
+  if (paymentPlan) {
+    return (
+      <PaymentModal
+        open={true}
+        planId={paymentPlan.id}
+        planLabel={paymentPlan.label}
+        planPrice={paymentPlan.price}
+        planPriceNote={paymentPlan.priceNote}
+        planColor={paymentPlan.color}
+        onClose={() => {
+          setPaymentPlan(null);
+          onClose();
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -336,16 +364,20 @@ export default function UpgradeModal({
                     {plan.cta} →
                   </button>
                 ) : plan.id === 'business' ? (
-                  // Business → sales contact
-                  <a
-                    href={SALES_UPGRADE_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={onClose}
+                  // Business → PaymentModal (shows payment methods + sales contact for business)
+                  <button
+                    onClick={() =>
+                      setPaymentPlan({
+                        id: 'business',
+                        label: plan.label,
+                        price: plan.price!,
+                        priceNote: plan.priceNote,
+                        color: plan.color,
+                      })
+                    }
                     style={{
+                      width: '100%',
                       textAlign: 'center',
-                      textDecoration: 'none',
-                      display: 'block',
                       padding: '0.6rem',
                       borderRadius: 10,
                       border: `1px solid ${plan.color}`,
@@ -353,21 +385,26 @@ export default function UpgradeModal({
                       color: plan.color,
                       fontSize: 13,
                       fontWeight: 700,
+                      cursor: 'pointer',
                     }}
                   >
                     {plan.cta} →
-                  </a>
+                  </button>
                 ) : (
-                  // Pro → Stripe checkout (or mailto fallback — never target="_blank" for mailto)
-                  <a
-                    href={CHECKOUT_URLS[plan.id as 'pro']}
-                    target={CHECKOUT_URLS[plan.id as 'pro'].startsWith('mailto:') ? '_self' : '_blank'}
-                    rel="noopener noreferrer"
-                    onClick={onClose}
+                  // Pro → open PaymentModal with method selection
+                  <button
+                    onClick={() =>
+                      setPaymentPlan({
+                        id: plan.id as 'pro' | 'business',
+                        label: plan.label,
+                        price: plan.price!,
+                        priceNote: plan.priceNote,
+                        color: plan.color,
+                      })
+                    }
                     style={{
+                      width: '100%',
                       textAlign: 'center',
-                      textDecoration: 'none',
-                      display: 'block',
                       padding: '0.6rem',
                       borderRadius: 10,
                       border: `1px solid ${plan.color}`,
@@ -383,7 +420,7 @@ export default function UpgradeModal({
                     }}
                   >
                     🛒 Jetzt kaufen & freischalten →
-                  </a>
+                  </button>
                 )}
               </div>
             );

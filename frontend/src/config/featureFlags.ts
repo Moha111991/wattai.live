@@ -45,6 +45,28 @@ export const FLEET_OVERRIDE_STORAGE_KEY = 'feature_fleet_tab';
 export const SALES_UPGRADE_LINK =
   'mailto:kontakt@wattai.live?subject=Upgrade%20auf%20Business';
 
+// ─── Payment Method URLs ───────────────────────────────────────────────────
+// Set via Railway / .env.local env vars. Falls back to pre-filled mailto.
+// Apple Pay & Google Pay are handled natively inside Stripe Checkout.
+const _env = (typeof import.meta !== 'undefined'
+  ? (import.meta as { env?: Record<string, string> }).env
+  : undefined) ?? {};
+
+export type PaymentMethod = 'stripe' | 'paypal' | 'sepa';
+
+export const PAYMENT_URLS: Record<'pro' | 'business', Record<PaymentMethod, string>> = {
+  pro: {
+    stripe:   _env.VITE_PRO_STRIPE_URL   || 'mailto:kontakt@wattai.live?subject=WattAI%20Pro%20-%20Kreditkarte%20(19%20%E2%82%AC%2FMon.)',
+    paypal:   _env.VITE_PRO_PAYPAL_URL   || 'mailto:kontakt@wattai.live?subject=WattAI%20Pro%20-%20PayPal%20(19%20%E2%82%AC%2FMon.)',
+    sepa:     _env.VITE_PRO_SEPA_URL     || 'mailto:kontakt@wattai.live?subject=WattAI%20Pro%20-%20SEPA-Lastschrift%20(19%20%E2%82%AC%2FMon.)',
+  },
+  business: {
+    stripe:   _env.VITE_BUSINESS_STRIPE_URL || 'mailto:kontakt@wattai.live?subject=WattAI%20Business%20-%20Kreditkarte%20(49%20%E2%82%AC%2FStandort)',
+    paypal:   _env.VITE_BUSINESS_PAYPAL_URL || 'mailto:kontakt@wattai.live?subject=WattAI%20Business%20-%20PayPal%20(49%20%E2%82%AC%2FStandort)',
+    sepa:     _env.VITE_BUSINESS_SEPA_URL   || 'mailto:kontakt@wattai.live?subject=WattAI%20Business%20-%20SEPA-Lastschrift%20(49%20%E2%82%AC%2FStandort)',
+  },
+};
+
 /**
  * Checkout-URLs per Plan.
  * In Produktion: echte Stripe Payment-Links hinterlegen.
