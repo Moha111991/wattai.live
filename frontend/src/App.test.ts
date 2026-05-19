@@ -3,7 +3,7 @@ import { getHeaderImageHeight } from './utils/headerImageHeight';
 
 describe('getHeaderImageHeight', () => {
   it('uses compact mobile header height for requested tabs', () => {
-    const compactHeight = 'clamp(220px, 56vw, 280px)';
+    const compactHeight = 'clamp(140px, 40vw, 200px)';
     expect(getHeaderImageHeight('main', true)).toBe(compactHeight);
     expect(getHeaderImageHeight('ev', true)).toBe(compactHeight);
     expect(getHeaderImageHeight('house', true)).toBe(compactHeight);
