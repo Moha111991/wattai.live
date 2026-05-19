@@ -17,6 +17,7 @@ import AIHeader3D from "./components/headers/AIHeader3D";
 import {
   resolveFeatureFlags,
 } from "./config/featureFlags";
+import { getHeaderImageHeight } from "./utils/headerImageHeight";
 import "./styles/styles.css";
 import "./styles/animations.css";
 
@@ -133,10 +134,7 @@ export default function App() {
     boxShadow: 'none',
   };
 
-  const headerImageHeight =
-    tab === 'devices' && isMobile
-      ? 'clamp(220px, 56vw, 280px)'
-      : 'var(--tab-header-image-height, clamp(300px, 50vw, 560px))';
+  const headerImageHeight = getHeaderImageHeight(tab, isMobile);
 
   const navStyle: CSSProperties = {
     marginBottom: 'clamp(1rem, 1.8vw, 1.4rem)',
