@@ -15,6 +15,7 @@ import DevicesHeader3D from "./components/headers/DevicesHeader3D";
 import SmartHomeHeader3D from "./components/headers/SmartHomeHeader3D";
 import AIHeader3D from "./components/headers/AIHeader3D";
 import { PlanProvider, usePlan } from "./context/PlanContext";
+import { getHeaderImageHeight } from "./utils/headerImageHeight";
 import "./styles/styles.css";
 import "./styles/animations.css";
 
@@ -140,6 +141,8 @@ function AppShell() {
     boxShadow: 'none',
   };
 
+  const headerImageHeight = getHeaderImageHeight(tab, isMobile);
+
   const navStyle: CSSProperties = {
     marginBottom: 'clamp(1rem, 1.8vw, 1.4rem)',
     marginTop: 'clamp(1.5rem, 2.5vw, 2rem)',
@@ -219,7 +222,7 @@ function AppShell() {
     <div ref={appContentRef} style={appContentStyle}>
       {/* Header Image */}
       <header style={headerStyle}>
-        <div style={{ width: '100%', height: 'clamp(300px, 50vw, 560px)' }}>
+        <div style={{ width: '100%', height: headerImageHeight }}>
           {renderHeaderComponent()}
         </div>
       </header>

@@ -68,6 +68,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePlan(): PlanContextValue {
   const ctx = useContext(PlanContext);
   if (!ctx) {
