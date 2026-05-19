@@ -1,15 +1,14 @@
-export type PlanId =
-  | 'free'
-  | 'plus'
-  | 'pro'
-  | 'fleet_starter'
-  | 'fleet_pro'
-  | 'enterprise';
+// ─── Plan IDs ───────────────────────────────────────────────────────────────
+// Three commercial tiers: Free B2C → Pro B2C → Business B2B
+export type PlanId = 'free' | 'pro' | 'business';
 
+// ─── Feature Keys ────────────────────────────────────────────────────────────
 export type FeatureKey =
+  // Free
   | 'dashboard.basic'
   | 'consumption.live'
   | 'ev.single_profile'
+  // Pro B2C
   | 'smarthome.automation'
   | 'optimization.time_window'
   | 'forecast.advanced'
@@ -17,6 +16,7 @@ export type FeatureKey =
   | 'ev.multi'
   | 'tariff.dynamic'
   | 'insights.advanced'
+  // Business B2B
   | 'fleet.tab'
   | 'fleet.monitoring'
   | 'fleet.dispatch_ai'
@@ -31,8 +31,11 @@ export type FeatureKey =
 export type PlanDefinition = {
   id: PlanId;
   title: string;
+  subtitle: string;
   segment: 'b2c' | 'b2b';
   pricing: string;
+  color: string;
+  badgeColor: string;
   features: FeatureKey[];
 };
 
@@ -40,35 +43,28 @@ export const PLAN_STORAGE_KEY = 'ems_plan';
 export const FLEET_OVERRIDE_STORAGE_KEY = 'feature_fleet_tab';
 
 export const SALES_UPGRADE_LINK =
-  'mailto:sales@wattai.energy?subject=Upgrade%20auf%20Flottenmanagement';
+  'mailto:sales@wattai.energy?subject=Upgrade%20auf%20Business';
 
+// ─── Plan Definitions ────────────────────────────────────────────────────────
 export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
   free: {
     id: 'free',
     title: 'Free',
+    subtitle: 'B2C · Kostenlos',
     segment: 'b2c',
-    pricing: 'Basis',
+    pricing: 'Kostenlos',
+    color: '#67e8f9',
+    badgeColor: 'rgba(103,232,249,0.18)',
     features: ['dashboard.basic', 'consumption.live', 'ev.single_profile'],
-  },
-  plus: {
-    id: 'plus',
-    title: 'Plus',
-    segment: 'b2c',
-    pricing: '7–12 €/Monat',
-    features: [
-      'dashboard.basic',
-      'consumption.live',
-      'ev.single_profile',
-      'smarthome.automation',
-      'optimization.time_window',
-      'forecast.advanced',
-    ],
   },
   pro: {
     id: 'pro',
     title: 'Pro',
+    subtitle: 'B2C · 19 €/Monat',
     segment: 'b2c',
-    pricing: '15–29 €/Monat',
+    pricing: '19 €/Monat',
+    color: '#06b6d4',
+    badgeColor: 'rgba(6,182,212,0.22)',
     features: [
       'dashboard.basic',
       'consumption.live',
@@ -82,39 +78,25 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       'insights.advanced',
     ],
   },
-  fleet_starter: {
-    id: 'fleet_starter',
-    title: 'Fleet Starter',
+  business: {
+    id: 'business',
+    title: 'Business',
+    subtitle: 'B2B · 49 €/Standort/Monat',
     segment: 'b2b',
-    pricing: 'pro Standort / Monat',
+    pricing: '49 €/Standort/Monat',
+    color: '#a78bfa',
+    badgeColor: 'rgba(167,139,250,0.22)',
     features: [
-      'fleet.tab',
-      'fleet.monitoring',
+      'dashboard.basic',
+      'consumption.live',
+      'ev.single_profile',
+      'smarthome.automation',
       'optimization.time_window',
-      'tariff.dynamic',
-    ],
-  },
-  fleet_pro: {
-    id: 'fleet_pro',
-    title: 'Fleet Pro',
-    segment: 'b2b',
-    pricing: 'pro Fahrzeug / Monat',
-    features: [
-      'fleet.tab',
-      'fleet.monitoring',
-      'fleet.dispatch_ai',
-      'fleet.peak_shaving',
-      'fleet.sla_alerting',
+      'forecast.advanced',
+      'v2h_v2g.strategies',
+      'ev.multi',
       'tariff.dynamic',
       'insights.advanced',
-    ],
-  },
-  enterprise: {
-    id: 'enterprise',
-    title: 'Enterprise',
-    segment: 'b2b',
-    pricing: 'individuell',
-    features: [
       'fleet.tab',
       'fleet.monitoring',
       'fleet.dispatch_ai',
@@ -131,15 +113,15 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
 
 const PLAN_ALIASES: Record<string, PlanId> = {
   free: 'free',
-  plus: 'plus',
+  basis: 'free',
   pro: 'pro',
-  b2b: 'fleet_starter',
-  fleet: 'fleet_starter',
-  fleet_starter: 'fleet_starter',
-  fleetstarter: 'fleet_starter',
-  fleet_pro: 'fleet_pro',
-  fleetpro: 'fleet_pro',
-  enterprise: 'enterprise',
+  plus: 'pro',
+  business: 'business',
+  b2b: 'business',
+  fleet: 'business',
+  fleet_starter: 'business',
+  fleet_pro: 'business',
+  enterprise: 'business',
 };
 
 export const COMMERCIAL_MODEL = {
@@ -149,49 +131,19 @@ export const COMMERCIAL_MODEL = {
       offer: 'Basis-Visualisierung, Live-Verbrauch, 1 EV-Profil',
     },
     {
-      name: 'Plus',
-      offer:
-        'Smart-Home-Automationen, Zeitfenster-Optimierung, bessere Prognosen',
-      price: '7–12 €/Monat',
-    },
-    {
       name: 'Pro',
       offer:
-        'V2H/V2G-Strategien, Multi-EV, dynamische Tarife, erweiterte Insights',
-      price: '15–29 €/Monat',
+        'Smart-Home-Automationen, KI-Optimierung, V2H/V2G-Strategien, Multi-EV, dynamische Tarife',
+      price: '19 €/Monat',
     },
   ],
   b2b: [
     {
-      name: 'Fleet Starter',
-      offer: 'Monitoring + einfache Lade-/Lastregeln',
-      price: 'pro Standort / Monat',
-    },
-    {
-      name: 'Fleet Pro',
-      offer: 'KI-Dispatch, Lastspitzen-Management, SLA/Alerting',
-      price: 'pro Fahrzeug / Monat',
-    },
-    {
-      name: 'Enterprise',
+      name: 'Business',
       offer:
-        'API, SSO, Mandantenfähigkeit, Compliance-/Audit-Reporting, dedizierter Support',
+        'Flottenmanagement, KI-Dispatch, Lastspitzen, API, SSO, Compliance-Reporting',
+      price: '49 €/Standort/Monat',
     },
-  ],
-} as const;
-
-export const GTM_DISTRIBUTION = {
-  b2c: [
-    'App-Store',
-    'Energieversorger-Kooperationen',
-    'Wallbox-Bundles',
-  ],
-  b2b: [
-    'Partnerkanal (Installateure/OEMs)',
-    'Direkte Pilotprojekte mit 8–12 Wochen ROI-Nachweis',
-  ],
-  strategy: [
-    'Land-and-expand: Erst Haushalt/Standort, dann Upgrade auf Fleet/Enterprise-Module',
   ],
 } as const;
 

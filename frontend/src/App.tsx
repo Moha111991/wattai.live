@@ -14,9 +14,7 @@ import EVHeader3D from "./components/headers/EVHeader3D";
 import DevicesHeader3D from "./components/headers/DevicesHeader3D";
 import SmartHomeHeader3D from "./components/headers/SmartHomeHeader3D";
 import AIHeader3D from "./components/headers/AIHeader3D";
-import {
-  resolveFeatureFlags,
-} from "./config/featureFlags";
+import { PlanProvider, usePlan } from "./context/PlanContext";
 import { getHeaderImageHeight } from "./utils/headerImageHeight";
 import "./styles/styles.css";
 import "./styles/animations.css";
@@ -44,9 +42,16 @@ const FLEET_TAB: TabDefinition = {
 };
 
 export default function App() {
+  return (
+    <PlanProvider>
+      <AppShell />
+    </PlanProvider>
+  );
+}
+
+function AppShell() {
+  const { plan, fleetUnlocked } = usePlan();
   const [tab, setTab] = useState('main');
-  const [fleetEnabled, setFleetEnabled] = useState(false);
-  const [planLabel, setPlanLabel] = useState('Free');
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
@@ -73,18 +78,20 @@ export default function App() {
   const getLogoSize = () => {
     if (typeof window === 'undefined') return 80;
     const width = window.innerWidth;
-    if (width < 360) return 40; // Extra small phones
-    if (width < 480) return 50; // Small phones
-    if (width < 768) return 60; // Tablets portrait
-    return 80; // Desktop
+    if (width < 360) return 40;
+    if (width < 480) return 50;
+    if (width < 768) return 60;
+    return 80;
   };
 
-  const tabs = fleetEnabled
+  // Build tabs from plan — fleet tab only for Business
+  const tabs = fleetUnlocked
     ? [...BASE_TABS.slice(0, 2), FLEET_TAB, ...BASE_TABS.slice(2)]
     : BASE_TABS;
 
   const appStoreUrl = import.meta.env.VITE_APP_STORE_URL || 'https://apps.apple.com/';
   const playStoreUrl = import.meta.env.VITE_PLAY_STORE_URL || 'https://play.google.com/store/apps';
+
   // Render 3D Header Component based on tab
   const renderHeaderComponent = () => {
     switch (tab) {
@@ -171,18 +178,12 @@ export default function App() {
     boxShadow: '0 3px 8px rgba(34,197,94,0.15)',
   };
 
-  // Feature-Gate zentral über config/featureFlags.ts
+  // If fleet tab was unlocked and the fleet tab is removed, go back to main
   useEffect(() => {
-    const flags = resolveFeatureFlags();
-    setFleetEnabled(flags.showFleetTab);
-    setPlanLabel(flags.plan.title);
-  }, []);
-
-  useEffect(() => {
-    if (!fleetEnabled && tab === 'fleet') {
+    if (!fleetUnlocked && tab === 'fleet') {
       setTab('main');
     }
-  }, [fleetEnabled, tab]);
+  }, [fleetUnlocked, tab]);
 
   useEffect(() => {
     const appContent = appContentRef.current;
@@ -272,8 +273,9 @@ export default function App() {
             gap: 'clamp(8px, 1.4vw, 12px)',
             flexWrap: 'wrap',
           }}>
-            <span style={{ color: '#cbd5e1', fontSize: 13, padding: '0.35rem 0.8rem', borderRadius: 999, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.5)' }}>
-              Aktueller Plan: <b style={{ color: '#67e8f9' }}>{planLabel}</b>
+            <span style={{ color: '#cbd5e1', fontSize: 13, padding: '0.35rem 0.8rem', borderRadius: 999, border: `1px solid ${plan.badgeColor}`, background: plan.badgeColor }}>
+              Aktueller Plan: <b style={{ color: plan.color }}>{plan.title}</b>
+              {plan.segment === 'b2b' && <span style={{ marginLeft: 6, fontSize: 10, color: plan.color, opacity: 0.8 }}>B2B</span>}
             </span>
             {!isLoggedIn && (
               <button
@@ -317,7 +319,7 @@ export default function App() {
     </div>
 
     {/* Floating Bottom-Right Widget: Upgrade + App Store */}
-    {(showBanner || !fleetEnabled) && (
+    {(showBanner || plan.id !== 'business') && (
       <div style={{
         position: 'fixed',
         bottom: isMobile ? 16 : 24,
@@ -328,20 +330,24 @@ export default function App() {
         alignItems: 'flex-end',
         gap: 8,
       }}>
-        {!fleetEnabled && (
+        {plan.id !== 'business' && (
           <button
             onClick={() => setIsUpgradeModalOpen(true)}
             className="ui-focusable"
             style={{
-              background: 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)',
+              background: plan.id === 'free'
+                ? 'linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%)'
+                : 'linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%)',
               color: '#fff',
               borderRadius: 999,
-              border: '1px solid rgba(103,232,249,0.45)',
+              border: `1px solid ${plan.id === 'free' ? 'rgba(103,232,249,0.45)' : 'rgba(167,139,250,0.45)'}`,
               padding: isMobile ? '0.45rem 0.9rem' : '0.52rem 1.1rem',
               fontWeight: 700,
               fontSize: isMobile ? 12 : 13,
               cursor: 'pointer',
-              boxShadow: '0 6px 24px rgba(6,182,212,0.4)',
+              boxShadow: plan.id === 'free'
+                ? '0 6px 24px rgba(6,182,212,0.4)'
+                : '0 6px 24px rgba(139,92,246,0.4)',
               whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
@@ -349,7 +355,11 @@ export default function App() {
             }}
           >
             <span>⚡</span>
-            {isMobile ? 'Upgrade' : 'Flottenmanagement freischalten'}
+            {isMobile
+              ? 'Upgrade'
+              : plan.id === 'free'
+                ? 'Auf Pro upgraden'
+                : 'Auf Business upgraden'}
           </button>
         )}
         {showBanner && (
@@ -392,8 +402,9 @@ export default function App() {
 
     <UpgradeModal
       open={isUpgradeModalOpen}
-      currentPlan={planLabel}
+      currentPlan={plan.title}
       onClose={() => setIsUpgradeModalOpen(false)}
+      onSelectPlan={() => setIsUpgradeModalOpen(false)}
     />
   </div>
   );

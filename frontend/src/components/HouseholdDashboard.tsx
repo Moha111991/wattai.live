@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 import BatteryWidget from './BatteryWidget';
+import PlanGate from './PlanGate';
 import { API_URL, WS_URL } from '../lib/api';
 
 type State = {
@@ -182,7 +183,8 @@ const HouseholdDashboard = () => {
         </div>
       </div>
 
-      {/* Smarthome Section */}
+      {/* Smarthome Section — automation features gated behind Pro */}
+      <PlanGate feature="smarthome.automation" featureName="Smart-Home-Automatisierungen" requiredPlan="pro">
       <div className="glass-effect animate-stagger-2 animate-page-enter" style={{ background: 'rgba(15,23,42,0.78)', borderRadius: 12, padding: 20, marginTop: 16, border: '1px solid rgba(148,163,184,0.22)' }}>
         <h3 className="tab-section-title neon-glow">IoT & Smarthome-Orchestrierung</h3>
         
@@ -241,6 +243,7 @@ const HouseholdDashboard = () => {
           ))}
         </div>
       </div>
+      </PlanGate>
     </div>
   );
 };
