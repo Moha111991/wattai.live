@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import WattAILogo from './WattAILogo';
 
-type NavPage = 'home' | 'produkte' | 'about' | 'kontakt';
+type NavPage = 'home' | 'startseite' | 'produkte' | 'about' | 'kontakt';
 
 type TopNavProps = {
   isMobile: boolean;
@@ -15,7 +15,7 @@ type TopNavProps = {
 };
 
 const NAV_LINKS: { key: NavPage; label: string }[] = [
-  { key: 'home', label: 'Startseite' },
+  { key: 'startseite', label: 'Startseite' },
   { key: 'produkte', label: 'Produkte & Leistungen' },
   { key: 'about', label: 'Über uns' },
   { key: 'kontakt', label: 'Kontakt' },
@@ -119,11 +119,11 @@ export default function TopNav({
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
           }}
-          onClick={() => onNavigate('home')}
+          onClick={() => onNavigate('startseite')}
           role="button"
           tabIndex={0}
           aria-label="Zur Startseite"
-          onKeyDown={e => e.key === 'Enter' && onNavigate('home')}
+          onKeyDown={e => e.key === 'Enter' && onNavigate('startseite')}
         >
           <WattAILogo size={logoSize} animated={!isMobile} variant="full" />
         </div>

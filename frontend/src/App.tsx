@@ -16,6 +16,10 @@ import SmartHomeHeader3D from "./components/headers/SmartHomeHeader3D";
 import AIHeader3D from "./components/headers/AIHeader3D";
 import { PlanProvider, usePlan } from "./context/PlanContext";
 import { getHeaderImageHeight } from "./utils/headerImageHeight";
+import StartPage from "./pages/StartPage";
+import ProduktePage from "./pages/ProduktePage";
+import AboutPage from "./pages/AboutPage";
+import KontaktPage from "./pages/KontaktPage";
 import "./styles/styles.css";
 import "./styles/animations.css";
 
@@ -25,7 +29,7 @@ type TabDefinition = {
   component: ReactElement;
 };
 
-type NavPage = 'home' | 'produkte' | 'about' | 'kontakt';
+type NavPage = 'home' | 'startseite' | 'produkte' | 'about' | 'kontakt';
 
 const BASE_TABS: TabDefinition[] = [
   { key: 'main', label: 'Dashboard', component: <Dashboard /> },
@@ -55,7 +59,7 @@ function AppShell() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
-  const [navPage, setNavPage] = useState<NavPage>('home');
+  const [navPage, setNavPage] = useState<NavPage>('startseite');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string | undefined>(undefined);
@@ -227,6 +231,23 @@ function AppShell() {
     />
 
     <div ref={appContentRef} style={appContentStyle}>
+      {/* For non-dashboard pages: render the page, hide header/tabs */}
+      {navPage !== 'home' ? (
+        <>
+          {navPage === 'startseite' && (
+            <StartPage
+              onNavigate={(p) => setNavPage(p)}
+              onAuthClick={() => setIsAuthModalOpen(true)}
+              onUpgradeClick={() => setIsUpgradeModalOpen(true)}
+            />
+          )}
+          {navPage === 'produkte' && <ProduktePage onUpgradeClick={() => setIsUpgradeModalOpen(true)} />}
+          {navPage === 'about' && <AboutPage />}
+          {navPage === 'kontakt' && <KontaktPage />}
+          <AppFooter />
+        </>
+      ) : (
+        <>
       {/* Header Image */}
       <header style={headerStyle}>
         <div style={{ width: '100%', height: headerImageHeight }}>
@@ -323,6 +344,8 @@ function AppShell() {
 
       {/* Footer */}
       <AppFooter />
+      </>
+      )}
     </div>
 
     {/* Floating Bottom-Right Widget: Upgrade + App Store */}
