@@ -133,6 +133,11 @@ export default function App() {
     boxShadow: 'none',
   };
 
+  const headerImageHeight =
+    tab === 'devices' && isMobile
+      ? 'clamp(220px, 56vw, 280px)'
+      : 'var(--tab-header-image-height, clamp(300px, 50vw, 560px))';
+
   const navStyle: CSSProperties = {
     marginBottom: 'clamp(1rem, 1.8vw, 1.4rem)',
     marginTop: 'clamp(1.5rem, 2.5vw, 2rem)',
@@ -218,7 +223,7 @@ export default function App() {
     <div ref={appContentRef} style={appContentStyle}>
       {/* Header Image */}
       <header style={headerStyle}>
-        <div style={{ width: '100%', height: 'clamp(300px, 50vw, 560px)' }}>
+        <div style={{ width: '100%', height: headerImageHeight }}>
           {renderHeaderComponent()}
         </div>
       </header>
