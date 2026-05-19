@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
-import { SALES_UPGRADE_LINK, type PlanId } from '../config/featureFlags';
+import { CHECKOUT_URLS, SALES_UPGRADE_LINK, type PlanId } from '../config/featureFlags';
 import { usePlan } from '../context/PlanContext';
 
 type UpgradeModalProps = {
@@ -312,12 +312,36 @@ export default function UpgradeModal({
                   }}>
                     ✓ Dein aktueller Plan
                   </div>
+                ) : plan.id === 'free' ? (
+                  // Downgrade to Free — instant, no payment required
+                  <button
+                    onClick={() => {
+                      setPlan('free' as PlanId);
+                      onSelectPlan?.('free' as PlanId);
+                      onClose();
+                    }}
+                    style={{
+                      width: '100%',
+                      textAlign: 'center',
+                      padding: '0.6rem',
+                      borderRadius: 10,
+                      border: `1px solid ${plan.color}`,
+                      background: 'transparent',
+                      color: plan.color,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {plan.cta} →
+                  </button>
                 ) : plan.id === 'business' ? (
-                  // Business: open sales contact
+                  // Business → sales contact
                   <a
                     href={SALES_UPGRADE_LINK}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={onClose}
                     style={{
                       textAlign: 'center',
                       textDecoration: 'none',
@@ -329,22 +353,21 @@ export default function UpgradeModal({
                       color: plan.color,
                       fontSize: 13,
                       fontWeight: 700,
-                      letterSpacing: '0.02em',
                     }}
                   >
                     {plan.cta} →
                   </a>
                 ) : (
-                  // Free / Pro: switch plan instantly (demo)
-                  <button
-                    onClick={() => {
-                      setPlan(plan.id as PlanId);
-                      onSelectPlan?.(plan.id as PlanId);
-                      onClose();
-                    }}
+                  // Pro → Stripe / payment checkout
+                  <a
+                    href={CHECKOUT_URLS[plan.id as 'pro']}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onClose}
                     style={{
-                      width: '100%',
                       textAlign: 'center',
+                      textDecoration: 'none',
+                      display: 'block',
                       padding: '0.6rem',
                       borderRadius: 10,
                       border: `1px solid ${plan.color}`,
@@ -359,8 +382,8 @@ export default function UpgradeModal({
                       boxShadow: plan.recommended ? `0 4px 20px rgba(6,182,212,0.3)` : 'none',
                     }}
                   >
-                    {plan.cta} →
-                  </button>
+                    🛒 Jetzt kaufen & freischalten →
+                  </a>
                 )}
               </div>
             );

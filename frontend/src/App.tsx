@@ -185,6 +185,13 @@ function AppShell() {
     }
   }, [fleetUnlocked, tab]);
 
+  // PlanGate dispatches this event to open the UpgradeModal without prop drilling
+  useEffect(() => {
+    const handler = () => setIsUpgradeModalOpen(true);
+    window.addEventListener('wattai:open-upgrade', handler);
+    return () => window.removeEventListener('wattai:open-upgrade', handler);
+  }, []);
+
   useEffect(() => {
     const appContent = appContentRef.current;
     if (!appContent) {

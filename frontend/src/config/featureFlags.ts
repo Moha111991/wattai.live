@@ -45,6 +45,24 @@ export const FLEET_OVERRIDE_STORAGE_KEY = 'feature_fleet_tab';
 export const SALES_UPGRADE_LINK =
   'mailto:sales@wattai.energy?subject=Upgrade%20auf%20Business';
 
+/**
+ * Checkout-URLs per Plan.
+ * In Produktion: echte Stripe Payment-Links hinterlegen.
+ * Kann via Umgebungsvariablen überschrieben werden.
+ */
+export const CHECKOUT_URLS: Record<'pro' | 'business', string> = {
+  pro:
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as { env?: Record<string, string> }).env
+        ?.VITE_PRO_CHECKOUT_URL) ||
+    'mailto:sales@wattai.energy?subject=WattAI%20Pro%20Upgrade%20(19%20%E2%82%AC%2FMon.)',
+  business:
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as { env?: Record<string, string> }).env
+        ?.VITE_BUSINESS_CHECKOUT_URL) ||
+    'mailto:sales@wattai.energy?subject=WattAI%20Business%20Upgrade%20(49%20%E2%82%AC%2FStandort)',
+};
+
 // ─── Plan Definitions ────────────────────────────────────────────────────────
 export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
   free: {

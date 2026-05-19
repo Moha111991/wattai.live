@@ -49,6 +49,27 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
+  /**
+   * Activate a plan after successful payment.
+   * Called by the payment-callback route (e.g. ?plan=pro&payment=success).
+   * NOT called directly on button clicks — payment must happen first.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+    const planParam = params.get('plan') as PlanId | null;
+    if (paymentStatus === 'success' && planParam && PLAN_DEFINITIONS[planParam]) {
+      setPlan(planParam);
+      // Clean up the URL so the param isn't applied again on reload
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete('payment');
+      clean.searchParams.delete('plan');
+      window.history.replaceState({}, '', clean.toString());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const plan = PLAN_DEFINITIONS[planId];
   const enabledFeatures = useMemo(() => new Set(plan.features), [plan]);
 
