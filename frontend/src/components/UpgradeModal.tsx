@@ -358,10 +358,10 @@ export default function UpgradeModal({
                     {plan.cta} →
                   </a>
                 ) : (
-                  // Pro → Stripe / payment checkout
+                  // Pro → Stripe checkout (or mailto fallback — never target="_blank" for mailto)
                   <a
                     href={CHECKOUT_URLS[plan.id as 'pro']}
-                    target="_blank"
+                    target={CHECKOUT_URLS[plan.id as 'pro'].startsWith('mailto:') ? '_self' : '_blank'}
                     rel="noopener noreferrer"
                     onClick={onClose}
                     style={{

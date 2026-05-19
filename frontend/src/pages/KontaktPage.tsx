@@ -10,9 +10,9 @@ const sectionStyle: CSSProperties = {
 };
 
 const CONTACT_OPTIONS = [
-  { icon: '📧', label: 'E-Mail', value: 'kontakt@wattai.energy', href: 'mailto:kontakt@wattai.energy' },
-  { icon: '💼', label: 'Business & Vertrieb', value: 'sales@wattai.energy', href: SALES_UPGRADE_LINK },
-  { icon: '🛠', label: 'Technischer Support', value: 'support@wattai.energy', href: 'mailto:support@wattai.energy' },
+  { icon: '📧', label: 'E-Mail', value: 'kontakt@wattai.live', href: 'mailto:kontakt@wattai.live' },
+  { icon: '💼', label: 'Business & Vertrieb', value: 'kontakt@wattai.live', href: SALES_UPGRADE_LINK },
+  { icon: '🛠', label: 'Technischer Support', value: 'support@wattai.live', href: 'mailto:support@wattai.live' },
 ];
 
 export default function KontaktPage() {
@@ -31,7 +31,7 @@ export default function KontaktPage() {
       return;
     }
     // mailto: fallback (replace with real backend API call)
-    const mailto = `mailto:kontakt@wattai.energy?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(
+    const mailto = `mailto:kontakt@wattai.live?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(
       `Name: ${form.name}\nE-Mail: ${form.email}\n\n${form.message}`
     )}`;
     window.location.href = mailto;
@@ -233,8 +233,8 @@ export default function KontaktPage() {
       {/* ── Impressum Kurzinfo ── */}
       <section style={{ ...sectionStyle, paddingTop: 0 }}>
         <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(148,163,184,0.1)', borderRadius: 14, padding: '20px 24px', fontSize: 12, color: '#475569', lineHeight: 1.8 }}>
-          <strong style={{ color: '#64748b' }}>Impressum (§ 5 TMG):</strong> WattAI · Mohammad Hameed ·
-          Verantwortlich für den Inhalt: Mohammad Hameed · E-Mail: kontakt@wattai.energy ·
+          <strong style={{ color: '#64748b' }}>Impressum (§ 5 TMG):</strong> WattAI.live · Mohammad Hameed ·
+          Verantwortlich für den Inhalt: Mohammad Hameed · E-Mail: kontakt@wattai.live · Tel.: +49 151 28163757 ·
           Plattform der EU-Kommission zur Online-Streitbeilegung: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" style={{ color: '#64748b' }}>ec.europa.eu/consumers/odr</a>
         </div>
       </section>
