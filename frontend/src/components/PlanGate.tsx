@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { usePlan } from '../context/PlanContext';
-import type { FeatureKey } from '../config/featureFlags';
+import type { FeatureKey, PlanId } from '../config/featureFlags';
 
 type PlanGateProps = {
   /** The feature that must be unlocked to see children */
@@ -14,6 +14,16 @@ type PlanGateProps = {
   compact?: boolean;
 };
 
+/**
+ * Fires a custom DOM event so App.tsx can open the UpgradeModal.
+ * This avoids prop-drilling an `openUpgradeModal` callback all the way down.
+ */
+function requestUpgrade(planId: PlanId) {
+  window.dispatchEvent(
+    new CustomEvent('wattai:open-upgrade', { detail: { planId } }),
+  );
+}
+
 export default function PlanGate({
   feature,
   featureName,
@@ -21,7 +31,7 @@ export default function PlanGate({
   children,
   compact = false,
 }: PlanGateProps) {
-  const { hasFeature, setPlan, planId } = usePlan();
+  const { hasFeature } = usePlan();
 
   if (hasFeature(feature)) {
     return <>{children}</>;
@@ -31,10 +41,7 @@ export default function PlanGate({
   const planColor = requiredPlan === 'business' ? '#a78bfa' : '#06b6d4';
   const planPrice = requiredPlan === 'business' ? '49 €/Standort/Mon.' : '19 €/Mon.';
 
-  const handleUpgrade = () => {
-    // Immediately demo-switch the plan (replace with real checkout later)
-    setPlan(requiredPlan);
-  };
+  const handleUpgrade = () => requestUpgrade(requiredPlan);
 
   if (compact) {
     return (
@@ -77,16 +84,16 @@ export default function PlanGate({
             className="plan-gate-cta"
             style={{ background: planColor }}
             onClick={handleUpgrade}
-            aria-label={`${featureName} jetzt freischalten`}
+            aria-label={`${featureName} — ${planLabel}-Plan wählen`}
           >
-            ⚡ {planLabel} freischalten
+            ⚡ {planLabel} wählen
           </button>
-          {planId === 'free' && requiredPlan === 'business' && (
+          {requiredPlan === 'business' && (
             <p className="plan-gate-hint">
               Oder erst auf{' '}
               <button
                 className="plan-gate-link"
-                onClick={() => setPlan('pro')}
+                onClick={() => requestUpgrade('pro')}
               >
                 Pro (19 €/Mon.)
               </button>{' '}
