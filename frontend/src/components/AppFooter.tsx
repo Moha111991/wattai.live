@@ -86,9 +86,9 @@ export default function AppFooter() {
   };
 
   const FAQS = [
-    { q: 'Was ist WattAI?', a: 'WattAI ist eine KI-gestützte Energiemanagementsoftware für Privathaushalte und Unternehmen. Sie optimiert den Energieverbrauch von Elektrofahrzeugen, Heimspeichern, PV-Anlagen und Smart-Home-Geräten.' },
+    { q: 'Was ist WattAI.live?', a: 'WattAI.live ist eine KI-gestützte Energiemanagementsoftware für Privathaushalte und Unternehmen. Sie optimiert den Energieverbrauch von Elektrofahrzeugen, Heimspeichern, PV-Anlagen und Smart-Home-Geräten.' },
     { q: 'Ist die App kostenlos?', a: 'Ja, der Free-Plan ist dauerhaft kostenlos und beinhaltet Echtzeit-Energiedaten und Basisvisualisierung. Für erweiterte KI-Funktionen bieten wir Pro (19 €/Monat) und Business-Pläne an.' },
-    { q: 'Welche Geräte werden unterstützt?', a: 'WattAI unterstützt alle gängigen Wallboxen, PV-Wechselrichter, Heimspeichersysteme und Smart-Home-Plattformen. Die Liste der kompatiblen Geräte wird laufend erweitert.' },
+    { q: 'Welche Geräte werden unterstützt?', a: 'WattAI.live unterstützt alle gängigen Wallboxen, PV-Wechselrichter, Heimspeichersysteme und Smart-Home-Plattformen. Die Liste der kompatiblen Geräte wird laufend erweitert.' },
     { q: 'Sind meine Daten sicher?', a: 'Alle Daten werden verschlüsselt übertragen (TLS 1.3) und auf deutschen Servern gespeichert. Wir verkaufen keine Daten an Dritte. Details finden Sie in unserer Datenschutzerklärung.' },
     { q: 'Kann ich den Plan jederzeit kündigen?', a: 'Ja, bezahlte Pläne sind monatlich kündbar, ohne Mindestlaufzeit.' },
   ];
@@ -96,7 +96,7 @@ export default function AppFooter() {
   const IMPRESSUM_TEXT = `
 **Angaben gemäß § 5 TMG**
 
-WattAI GmbH
+WattAI.live
 Musterstraße 1
 12345 Musterstadt
 Deutschland
@@ -131,7 +131,7 @@ Die Inhalte dieser Seiten wurden mit größter Sorgfalt erstellt. Für die Richt
 **Datenschutzerklärung gemäß DSGVO**
 
 **1. Verantwortlicher**
-WattAI GmbH, Musterstraße 1, 12345 Musterstadt, kontakt@wattai.live
+WattAI.live, Musterstraße 1, 12345 Musterstadt, kontakt@wattai.live
 
 **2. Erhebung und Speicherung personenbezogener Daten**
 Wir erheben bei der Nutzung unserer Plattform folgende Daten: E-Mail-Adresse, Name, Gerätedaten (Energieverbrauch, Ladestatus) sowie technische Zugriffsdaten (IP, Browser, Zeitstempel).
@@ -162,13 +162,13 @@ Wir verwenden ausschließlich technisch notwendige Cookies. Marketingcookies wer
 **Allgemeine Geschäftsbedingungen (AGB)**
 
 **§ 1 Geltungsbereich**
-Diese AGB gelten für alle Verträge zwischen WattAI GmbH und Nutzern der WattAI-Plattform.
+Diese AGB gelten für alle Verträge zwischen WattAI.live und Nutzern der WattAI.live-Plattform.
 
 **§ 2 Vertragsschluss**
 Der Vertrag kommt durch Registrierung auf der Plattform und Bestätigung per E-Mail zustande.
 
 **§ 3 Leistungsumfang**
-WattAI stellt eine Softwareplattform zur Energieoptimierung bereit. Der Funktionsumfang richtet sich nach dem gewählten Tarif (Free, Pro, Business).
+WattAI.live stellt eine Softwareplattform zur Energieoptimierung bereit. Der Funktionsumfang richtet sich nach dem gewählten Tarif (Free, Pro, Business).
 
 **§ 4 Preise und Zahlung**
 Pro- und Business-Pläne werden monatlich per Kreditkarte oder SEPA-Lastschrift abgerechnet. Alle Preise verstehen sich zzgl. der gesetzlichen Mehrwertsteuer (19 % MwSt.).
@@ -177,7 +177,7 @@ Pro- und Business-Pläne werden monatlich per Kreditkarte oder SEPA-Lastschrift 
 Bezahlte Pläne sind monatlich kündbar. Die Kündigung erfolgt schriftlich per E-Mail an kontakt@wattai.live. Nach Kündigung wird auf den Free-Plan zurückgestuft.
 
 **§ 6 Haftungsbeschränkung**
-WattAI haftet nicht für Ausfälle externer Dienste (z.B. Smart-Meter-Gateways, Wechselrichter-APIs) sowie für indirekte Schäden, die durch Optimierungsempfehlungen entstehen.
+WattAI.live haftet nicht für Ausfälle externer Dienste (z.B. Smart-Meter-Gateways, Wechselrichter-APIs) sowie für indirekte Schäden, die durch Optimierungsempfehlungen entstehen.
 
 **§ 7 Datenschutz**
 Die Verarbeitung personenbezogener Daten erfolgt gemäß unserer Datenschutzerklärung und der DSGVO.
@@ -233,11 +233,11 @@ Stand: Mai 2026
           <div style={gridStyle}>
             {/* Produkt */}
             <div>
-              <p style={colTitleStyle}>WattAI</p>
+              <p style={colTitleStyle}>WattAI.live</p>
               <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6, margin: '0 0 0.8rem' }}>
                 KI-gestütztes Energiemanagement für EVs, PV, Speicher und Smart Home.
               </p>
-              <span style={{ fontSize: 12, color: '#475569' }}>© {new Date().getFullYear()} WattAI GmbH</span>
+              <span style={{ fontSize: 12, color: '#475569' }}>© {new Date().getFullYear()} WattAI.live</span>
             </div>
 
             {/* Produkte */}
@@ -269,7 +269,7 @@ Stand: Mai 2026
               <a href="mailto:kontakt@wattai.live" style={{ ...linkStyle, color: '#67e8f9' }}>📧 kontakt@wattai.live</a>
               <a href="tel:+4912345678" style={linkStyle}>📞 +49 (0)123 456 789</a>
               <span style={{ ...linkStyle, marginTop: 8, color: '#64748b', fontSize: 11 }}>Mo–Fr, 9–18 Uhr</span>
-              <span style={{ ...linkStyle, color: '#64748b', fontSize: 11 }}>WattAI GmbH, Musterstr. 1</span>
+              <span style={{ ...linkStyle, color: '#64748b', fontSize: 11 }}>WattAI.live, Musterstr. 1</span>
               <span style={{ ...linkStyle, color: '#64748b', fontSize: 11 }}>12345 Musterstadt, DE</span>
             </div>
           </div>

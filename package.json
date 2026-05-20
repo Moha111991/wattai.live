@@ -6,6 +6,8 @@
     "lucide-react": "^1.7.0"
   },
   "devDependencies": {
-    "baseline-browser-mapping": "^2.10.13"
+    "baseline-browser-mapping": "^2.10.13",
+    "puppeteer": "^25.0.4",
+    "sharp": "^0.34.5"
   }
 }

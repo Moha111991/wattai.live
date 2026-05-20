@@ -125,25 +125,34 @@ async def verify_adapter_or_admin(api_key: Optional[str] = Depends(api_key_heade
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiger Adapter/API-Key")
 
 
+_EXTRA_ORIGINS = [o.strip() for o in os.getenv("EXTRA_CORS_ORIGINS", "").split(",") if o.strip()]
+_CORS_ORIGINS = [
+    # Lokale Entwicklung
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    # Produktion
+    "https://wattai.live",
+    "https://www.wattai.live",
+    "https://api.wattai.live",
+    "https://wattailive-production.up.railway.app",
+] + _EXTRA_ORIGINS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "https://wattai.live",
-        "https://www.wattai.live",
-        "https://api.wattai.live",
-        "https://wattailive-production.up.railway.app",
-    ],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Nur benötigte HTTP-Methoden erlauben (kein TRACE/CONNECT/OPTIONS-Wildcard)
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    # Nur benötigte Header — kein Wildcard
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Request-ID", "Accept"],
+    expose_headers=["X-Request-ID"],
+    max_age=600,
 )
 
 frontend_public = os.path.join(os.path.dirname(__file__), "../frontend/public")
@@ -205,10 +214,38 @@ async def security_middleware(request: Request, call_next: Callable[..., Any]):
             return JSONResponse(status_code=403, content={"error": "IP not allowed"})
 
     response = await call_next(request)
-    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    # HSTS — erzwingt HTTPS für 1 Jahr inkl. Subdomains
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+    # Verhindert MIME-Sniffing
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    # Kein Einbetten in iframes (Clickjacking-Schutz)
     response.headers.setdefault("X-Frame-Options", "DENY")
-    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    # Referrer nur bei Same-Origin senden — DSGVO-konform
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    # Content-Security-Policy — verhindert XSS, Inline-Scripts, externe Ressourcen
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https://wattai.live; "
+        "connect-src 'self' wss://wattai.live wss://wattailive-production.up.railway.app https://wattai.live; "
+        "font-src 'self'; "
+        "object-src 'none'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self' https://buy.stripe.com;"
+    )
+    # Permissions-Policy — deaktiviert Browser-Features die nicht benötigt werden
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
+        "accelerometer=(), gyroscope=(), magnetometer=()"
+    )
+    # Verhindert Caching sensibler API-Antworten
+    if request.url.path.startswith("/api") or request.url.path.startswith("/devices"):
+        response.headers.setdefault("Cache-Control", "no-store, no-cache, must-revalidate")
+        response.headers.setdefault("Pragma", "no-cache")
 
     try:
         await _audit_request(request)
