@@ -9,6 +9,7 @@ import AppFooter from "./components/AppFooter";
 import TopNav from "./components/TopNav";
 import AuthModal from "./components/AuthModal";
 import UpgradeModal from "./components/UpgradeModal";
+import CookieConsent from "./components/CookieConsent";
 import DashboardHeader3D from "./components/headers/DashboardHeader3D";
 import EVHeader3D from "./components/headers/EVHeader3D";
 import DevicesHeader3D from "./components/headers/DevicesHeader3D";
@@ -436,6 +437,9 @@ function AppShell() {
       onClose={() => setIsUpgradeModalOpen(false)}
       onSelectPlan={() => setIsUpgradeModalOpen(false)}
     />
+
+    {/* DSGVO-konformer Cookie-Hinweis */}
+    <CookieConsent />
   </div>
   );
 }

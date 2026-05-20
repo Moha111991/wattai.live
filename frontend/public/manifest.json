@@ -1,20 +1,24 @@
 {
-  "name": "EV Mobile Relay",
-  "short_name": "EV Relay",
-  "start_url": "./",
+  "name": "WattAI.live – Intelligentes Energiemanagement",
+  "short_name": "WattAI.live",
+  "description": "KI-gestütztes Energiemanagement für EV, PV und Heimspeicher",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2196F3",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "lang": "de",
   "icons": [
     {
-      "src": "./icon-192.png",
+      "src": "/icons/wattai_icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "./icon-512.png",
+      "src": "/wattai-logo-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
