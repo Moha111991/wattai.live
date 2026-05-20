@@ -7,6 +7,7 @@ import MobileRelay from './pages/MobileRelay'
 import Impressum from './pages/Impressum'
 import Datenschutz from './pages/Datenschutz'
 import Terms from './pages/Terms'
+import ApplicationDetailPage from './pages/ApplicationDetailPage'
 import { registerSW } from 'virtual:pwa-register'
 
 /*
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/impressum" element={<Impressum />} />
         <Route path="/datenschutz" element={<Datenschutz />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/anwendungen/:slug" element={<ApplicationDetailPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

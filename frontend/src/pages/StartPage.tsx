@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { APPLICATIONS } from '../data/applications';
 
 type StartPageProps = {
   onNavigate: (page: 'home' | 'startseite' | 'produkte' | 'about' | 'kontakt') => void;
@@ -90,23 +91,46 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
           Alles in einem System
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20 }}>
-          {[
-            { icon: '☀️', title: 'PV-Optimierung', desc: 'Echtzeit-Ertragsprognosen, Eigenverbrauchsmaximierung und Netzeinspeisung intelligent steuern.' },
-            { icon: '🔋', title: 'Batteriemanagement', desc: 'Lade- und Entladezyklen nach Tarifen, SOC-Grenzen und Haushaltslast automatisch regeln.' },
-            { icon: '🚗', title: 'EV & V2H / V2G', desc: 'Intelligentes Laden, bidirektionale Stromnutzung und Multi-EV-Profile (ab Pro).' },
-            { icon: '🏠', title: 'Smart Home', desc: 'Wärmepumpe, Waschmaschine & Co. automatisch in günstige Zeitfenster verschieben (ab Pro).' },
-            { icon: '🤖', title: 'KI-Empfehlung', desc: 'Deep-Q-Network analysiert Live-Daten und gibt konkrete Handlungsempfehlungen (ab Pro).' },
-            { icon: '🏭', title: 'Flottenmanagement', desc: 'KI-Dispatch, Lastspitzen-Management, SLA-Alerting für gewerbliche Standorte (Business).' },
-          ].map(f => (
-            <div key={f.title} style={{
-              background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(103,232,249,0.12)',
-              borderRadius: 16, padding: '24px 20px',
-              transition: 'border-color 0.2s',
-            }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>{f.icon}</div>
+          {APPLICATIONS.map(f => (
+            <a
+              key={f.title}
+              href={`/anwendungen/${f.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${f.title} im neuen Tab öffnen`}
+              style={{
+                background: f.cardBackground,
+                border: '1px solid rgba(103,232,249,0.24)',
+                borderRadius: 16,
+                padding: '24px 20px',
+                textDecoration: 'none',
+                display: 'block',
+                minHeight: 206,
+                boxShadow: '0 12px 30px rgba(2,6,23,0.42)',
+                transition: 'transform 0.2s ease, border-color 0.2s ease',
+              }}
+            >
+              <div style={{
+                width: 46,
+                height: 46,
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                marginBottom: 14,
+                background: 'rgba(2,6,23,0.45)',
+                border: '1px solid rgba(125,211,252,0.35)',
+                backdropFilter: 'blur(2px)',
+              }}>
+                {f.icon}
+              </div>
               <h3 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{f.title}</h3>
-              <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', lineHeight: 1.65 }}>{f.desc}</p>
-            </div>
+              <p style={{ margin: 0, fontSize: 13, color: '#dbeafe', lineHeight: 1.65 }}>{f.desc}</p>
+              <p style={{ margin: '14px 0 0', fontSize: 12, color: '#7dd3fc', fontWeight: 600 }}>
+                Technische Details im neuen Tab →
+              </p>
+            </a>
           ))}
         </div>
       </section>
