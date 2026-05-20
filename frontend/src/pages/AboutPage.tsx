@@ -30,7 +30,7 @@ const TEAM = [
 ];
 
 const VALUES = [
-  { icon: '🌱', title: 'Nachhaltigkeit', desc: 'Jede kWh Eigenverbrauch schont das Klima. WattAI macht erneuerbare Energie effizienter nutzbar.' },
+  { icon: '🌱', title: 'Nachhaltigkeit', desc: 'Jede kWh Eigenverbrauch schont das Klima. WattAI.live macht erneuerbare Energie effizienter nutzbar.' },
   { icon: '🔒', title: 'Datenschutz', desc: 'DSGVO Art. 6/13/15–22 — Deine Daten bleiben in der EU, werden nicht weiterverkauft.' },
   { icon: '⚡', title: 'Echtzeit', desc: 'Entscheidungen in Millisekunden, nicht Minuten. KI-Modelle laufen direkt am Edge.' },
   { icon: '🤝', title: 'Transparenz', desc: 'Open API, nachvollziehbare KI-Empfehlungen und Audit-Logs für jeden Schritt.' },
@@ -43,10 +43,10 @@ export default function AboutPage() {
       {/* ── Hero ── */}
       <section style={{ ...sectionStyle, textAlign: 'center' }}>
         <h1 style={{ fontSize: 'clamp(24px,4vw,44px)', fontWeight: 900, color: '#f1f5f9', margin: '0 0 16px' }}>
-          Über WattAI
+          Über WattAI.live
         </h1>
         <p style={{ color: '#94a3b8', fontSize: 'clamp(14px,2vw,17px)', maxWidth: 700, margin: '0 auto', lineHeight: 1.75 }}>
-          WattAI entstand aus der Überzeugung, dass Energie nicht verschwendet werden muss —
+          WattAI.live entstand aus der Überzeugung, dass Energie nicht verschwendet werden muss —
           sie muss nur besser koordiniert werden. Wir bauen die intelligente Plattform,
           die Haushalt, E-Mobilität und Gewerbe zusammenbringt.
         </p>
@@ -61,7 +61,7 @@ export default function AboutPage() {
             </h2>
             <p style={{ color: '#94a3b8', lineHeight: 1.75, fontSize: 15, margin: 0 }}>
               Wir glauben, dass jeder Haushalt und jedes Unternehmen das Potenzial hat,
-              energieautarker zu werden. WattAI liefert dafür die KI-Intelligenz —
+              energieautarker zu werden. WattAI.live liefert dafür die KI-Intelligenz —
               von der PV-Anlage über den Heimspeicher bis zur Fahrzeugflotte.
             </p>
             <p style={{ color: '#94a3b8', lineHeight: 1.75, fontSize: 15, marginTop: 14 }}>

@@ -36,7 +36,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
           Deine Energie.<br />Intelligent gesteuert.
         </h1>
         <p style={{ fontSize: 'clamp(15px,2vw,19px)', color: '#94a3b8', maxWidth: 680, margin: '0 auto 36px', lineHeight: 1.7 }}>
-          WattAI verbindet PV-Anlage, Batteriespeicher, Wärmepumpe und Elektroauto zu einem
+          WattAI.live verbindet PV-Anlage, Batteriespeicher, Wärmepumpe und Elektroauto zu einem
           intelligenten Ökosystem — in Echtzeit, DSGVO-konform und planbasiert.
         </p>
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>

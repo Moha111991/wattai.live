@@ -209,7 +209,7 @@ export default function UpgradeModal({
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <span style={{ fontSize: 28 }}>⚡</span>
               <h2 id={titleId} style={{ margin: 0, fontSize: 'clamp(18px,2.5vw,24px)', fontWeight: 700, color: '#f1f5f9' }}>
-                WattAI Tarife
+                WattAI.live Tarife
               </h2>
             </div>
             <p style={{ margin: 0, color: '#94a3b8', fontSize: 14 }}>
