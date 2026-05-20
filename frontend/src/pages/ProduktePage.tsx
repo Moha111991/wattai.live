@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react';
-import { CHECKOUT_URLS, SALES_UPGRADE_LINK } from '../config/featureFlags';
+import { useState, type CSSProperties } from 'react';
+import { PaymentModal } from '../components/PaymentModal';
 
 type ProduktePageProps = {
   onUpgradeClick: () => void;
@@ -56,7 +56,7 @@ const PLANS = [
     ],
     locked: [],
     cta: '🛒 Jetzt kaufen & freischalten',
-    ctaHref: CHECKOUT_URLS.pro,
+    ctaHref: null,
   },
   {
     id: 'business',
@@ -81,7 +81,7 @@ const PLANS = [
     ],
     locked: [],
     cta: '📧 Kontakt aufnehmen',
-    ctaHref: SALES_UPGRADE_LINK,
+    ctaHref: null,
   },
 ];
 
@@ -109,6 +109,14 @@ const FAQS = [
 ];
 
 export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
+  const [paymentPlan, setPaymentPlan] = useState<{
+    id: 'pro' | 'business';
+    label: string;
+    price: string;
+    priceNote: string;
+    color: string;
+  } | null>(null);
+
   const sectionStyle: CSSProperties = {
     width: '100%',
     maxWidth: 1100,
@@ -119,6 +127,19 @@ export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
 
   return (
     <div style={{ color: '#e2e8f0', width: '100%' }}>
+
+      {/* ── Payment Modal ── */}
+      {paymentPlan && (
+        <PaymentModal
+          open={true}
+          planId={paymentPlan.id}
+          planLabel={paymentPlan.label}
+          planPrice={paymentPlan.price}
+          planPriceNote={paymentPlan.priceNote}
+          planColor={paymentPlan.color}
+          onClose={() => setPaymentPlan(null)}
+        />
+      )}
 
       {/* ── Header ── */}
       <section style={{ ...sectionStyle, textAlign: 'center', paddingBottom: 0 }}>
@@ -192,30 +213,37 @@ export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
                 ))}
               </ul>
 
-              {plan.ctaHref ? (
-                <a
-                  href={plan.ctaHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    textAlign: 'center', textDecoration: 'none', display: 'block',
-                    padding: '0.65rem', borderRadius: 10,
-                    background: plan.recommended ? 'linear-gradient(90deg,#0ea5e9,#06b6d4)' : 'transparent',
-                    border: `1px solid ${plan.color}`,
-                    color: plan.recommended ? '#fff' : plan.color,
-                    fontSize: 13, fontWeight: 700,
-                    boxShadow: plan.recommended ? '0 4px 20px rgba(6,182,212,0.3)' : 'none',
-                  }}
-                >
-                  {plan.cta}
-                </a>
-              ) : (
+              {plan.id === 'free' ? (
                 <button
                   onClick={onUpgradeClick}
                   style={{
                     width: '100%', padding: '0.65rem', borderRadius: 10,
                     border: `1px solid ${plan.color}`, background: 'transparent',
                     color: plan.color, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  {plan.cta}
+                </button>
+              ) : (
+                <button
+                  onClick={() =>
+                    setPaymentPlan({
+                      id: plan.id as 'pro' | 'business',
+                      label: plan.label,
+                      price: plan.price!,
+                      priceNote: plan.priceNote,
+                      color: plan.color,
+                    })
+                  }
+                  style={{
+                    width: '100%', padding: '0.65rem', borderRadius: 10,
+                    border: `1px solid ${plan.color}`,
+                    background: plan.recommended
+                      ? 'linear-gradient(90deg,#0ea5e9,#06b6d4)'
+                      : 'transparent',
+                    color: plan.recommended ? '#fff' : plan.color,
+                    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    boxShadow: plan.recommended ? '0 4px 20px rgba(6,182,212,0.3)' : 'none',
                   }}
                 >
                   {plan.cta}
