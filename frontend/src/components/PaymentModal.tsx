@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { PAYMENT_URLS, SALES_UPGRADE_LINK, type PaymentMethod } from '../config/featureFlags';
 
+function useWindowWidth() {
+  const [width, setWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 768);
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return width;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type PaidPlanId = 'pro' | 'business';
 
@@ -87,6 +97,8 @@ export function PaymentModal({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const firstBtnRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const windowWidth = useWindowWidth();
+  const isMobile = windowWidth < 480;
 
   // Reset selection when modal opens
   useEffect(() => {
@@ -127,17 +139,21 @@ export function PaymentModal({
     background: 'rgba(0,0,0,0.75)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '16px',
+    display: 'flex',
+    alignItems: isMobile ? 'flex-end' : 'center',
+    justifyContent: 'center',
+    padding: isMobile ? '0' : '16px',
   };
 
   const modal: React.CSSProperties = {
-    background: 'linear-gradient(160deg,rgba(15,23,42,0.98) 0%,rgba(2,6,23,0.98) 100%)',
+    background: 'linear-gradient(160deg,rgba(15,23,42,0.99) 0%,rgba(2,6,23,0.99) 100%)',
     border: `1px solid ${planColor}44`,
-    borderRadius: 20,
-    padding: '28px 24px 24px',
+    borderRadius: isMobile ? '20px 20px 0 0' : 20,
+    padding: isMobile ? '20px 16px 28px' : '28px 24px 24px',
     width: '100%',
-    maxWidth: 480,
+    maxWidth: isMobile ? '100%' : 480,
+    maxHeight: isMobile ? '92dvh' : '90vh',
+    overflowY: 'auto',
     boxShadow: `0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px ${planColor}22`,
     position: 'relative',
   };
@@ -167,24 +183,24 @@ export function PaymentModal({
         </button>
 
         {/* ── Header ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: planColor, textTransform: 'uppercase', marginBottom: 6 }}>
+        <div style={{ marginBottom: isMobile ? 14 : 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: planColor, textTransform: 'uppercase', marginBottom: 4 }}>
             Zahlungsmethode wählen
           </div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#f1f5f9' }}>
+          <h2 style={{ margin: 0, fontSize: isMobile ? 16 : 20, fontWeight: 800, color: '#f1f5f9' }}>
             WattAI.live <span style={{ color: planColor }}>{planLabel}</span>
           </h2>
-          <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9' }}>€ {planPrice}</span>
-            <span style={{ fontSize: 13, color: '#94a3b8' }}>{planPriceNote}</span>
+          <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: '#f1f5f9' }}>€ {planPrice}</span>
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>{planPriceNote}</span>
           </div>
         </div>
 
         {/* ── Divider ── */}
-        <div style={{ height: 1, background: `linear-gradient(90deg,${planColor}44,transparent)`, marginBottom: 18 }} />
+        <div style={{ height: 1, background: `linear-gradient(90deg,${planColor}44,transparent)`, marginBottom: isMobile ? 12 : 18 }} />
 
         {/* ── Method list ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 8 : 10 }}>
           {METHODS.map((m, idx) => {
             const isSelected = selected === m.id;
             const isHovered = hoveredId === m.id;
@@ -201,8 +217,8 @@ export function PaymentModal({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
+                  gap: isMobile ? 10 : 14,
+                  padding: isMobile ? '11px 12px' : '14px 16px',
                   borderRadius: 12,
                   border: isSelected
                     ? `1.5px solid ${planColor}`
@@ -222,18 +238,19 @@ export function PaymentModal({
                 }}
               >
                 {/* Icon */}
-                <span style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{m.icon}</span>
+                <span style={{ fontSize: isMobile ? 20 : 26, flexShrink: 0, lineHeight: 1 }}>{m.icon}</span>
 
                 {/* Labels */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>{m.label}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#f1f5f9' }}>{m.label}</span>
                     {m.badge && (
                       <span style={{
                         fontSize: 10, fontWeight: 800, color: planColor,
                         background: `${planColor}22`, borderRadius: 6,
-                        padding: '2px 7px', letterSpacing: '0.06em',
+                        padding: '2px 6px', letterSpacing: '0.05em',
                         border: `1px solid ${planColor}44`,
+                        flexShrink: 0,
                       }}>
                         {m.badge}
                       </span>
@@ -242,20 +259,22 @@ export function PaymentModal({
                       <span style={{
                         fontSize: 10, color: '#64748b',
                         background: 'rgba(100,116,139,0.12)', borderRadius: 6,
-                        padding: '2px 7px', border: '1px solid rgba(100,116,139,0.2)',
+                        padding: '2px 6px', border: '1px solid rgba(100,116,139,0.2)',
+                        flexShrink: 0,
                       }}>
                         E-Mail-Anfrage
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{m.sublabel}</div>
+                  <div style={{ fontSize: isMobile ? 11 : 12, color: '#64748b', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.sublabel}</div>
                 </div>
 
                 {/* Arrow */}
                 <span style={{
-                  fontSize: 16, color: isSelected ? planColor : '#475569',
+                  fontSize: 15, color: isSelected ? planColor : '#475569',
                   transition: 'transform 0.15s',
                   transform: isSelected ? 'translateX(3px)' : 'none',
+                  flexShrink: 0,
                 }}>
                   →
                 </span>
@@ -266,18 +285,18 @@ export function PaymentModal({
 
         {/* ── Trust badges ── */}
         <div style={{
-          marginTop: 20,
+          marginTop: isMobile ? 14 : 20,
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 8,
+          gap: 6,
           justifyContent: 'center',
         }}>
           {TRUST_BADGES.map(b => (
             <span key={b} style={{
-              fontSize: 11, color: '#475569',
+              fontSize: 10, color: '#475569',
               background: 'rgba(15,23,42,0.6)',
               border: '1px solid rgba(148,163,184,0.1)',
-              borderRadius: 8, padding: '3px 10px',
+              borderRadius: 8, padding: '3px 8px',
             }}>
               {b}
             </span>
@@ -285,9 +304,8 @@ export function PaymentModal({
         </div>
 
         {/* ── Footer note ── */}
-        <p style={{ margin: '14px 0 0', fontSize: 11, color: '#334155', textAlign: 'center' }}>
-          Zahlung wird sicher über unsere Partner (Stripe / PayPal) abgewickelt.{' '}
-          Kein Risiko — jederzeit kündbar.
+        <p style={{ margin: isMobile ? '10px 0 0' : '14px 0 0', fontSize: 11, color: '#334155', textAlign: 'center' }}>
+          Zahlung wird sicher über Stripe / PayPal abgewickelt. Jederzeit kündbar.
         </p>
       </div>
     </div>
