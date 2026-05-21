@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { APPLICATION_MAP } from '../data/applications';
 
 export default function ApplicationDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug } = useParams<'slug'>();
   const application = slug ? APPLICATION_MAP[slug] : undefined;
 
   if (!application) {
