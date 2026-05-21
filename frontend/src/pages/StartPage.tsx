@@ -39,7 +39,7 @@ const MODULES = [
   {
     title: 'PV-Optimierung',
     icon: '☀️',
-    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=1200&auto=format&fit=crop',
+    image: '/wattai.live-dashboard.png',
     description: 'Echtzeit-Ertragsprognosen, Eigenverbrauchsmaximierung und intelligente Netzeinspeisung.',
     details: 'Die KI analysiert Wettermodelle, Verbrauchsmuster und Strompreise in Echtzeit. Automatische PV-Strategien maximieren Eigenverbrauch, reduzieren Netzkosten und optimieren dynamische Einspeisung ins Smart Grid.',
     tech: 'Forecast AI • Smart Grid Sync • Dynamic Feed-In • Realtime Solar Analytics',
@@ -48,7 +48,7 @@ const MODULES = [
   {
     title: 'Batteriemanagement',
     icon: '🔋',
-    image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=1200&auto=format&fit=crop',
+    image: '/wattai.live-dashboard.png',
     description: 'Dynamische Lade- und Entladezyklen nach Tarif, SOC und Haushaltslast.',
     details: 'WattAI.live steuert Batteriespeicher intelligent nach Stromtarifen, Verbrauchsspitzen und Netzsignalen. Das System verlängert die Batterielebensdauer und maximiert Wirtschaftlichkeit.',
     tech: 'SOC AI Control • Dynamic Tariffs • Peak Shaving • Smart Storage Logic',
@@ -57,7 +57,7 @@ const MODULES = [
   {
     title: 'EV & V2H / V2G',
     icon: '🚗',
-    image: 'https://images.unsplash.com/photo-1593941707882-a5bac6861d75?q=80&w=1200&auto=format&fit=crop',
+    image: '/v2h-hero.png',
     description: 'Bidirektionales Laden, intelligente Multi-EV-Profile und Echtzeitsteuerung.',
     details: 'Intelligente Ladealgorithmen koordinieren Elektrofahrzeuge, Wallboxen und bidirektionale Energieflüsse. Multi-EV-Profiles und V2G-Funktionen optimieren Lastmanagement autonom.',
     tech: 'Bidirectional Charging • Multi-EV AI • V2G Network • Smart Charging',
@@ -66,7 +66,7 @@ const MODULES = [
   {
     title: 'Smart Home',
     icon: '🏠',
-    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=1200&auto=format&fit=crop',
+    image: '/wattai.live-smarthome.png',
     description: 'Wärmepumpe, Waschmaschine und Haushaltsgeräte automatisch optimieren.',
     details: 'Die Plattform verschiebt energieintensive Prozesse automatisch in günstige Zeitfenster und verbindet Smart-Home-Systeme mit Echtzeit-Energieprognosen.',
     tech: 'Home Automation • Smart Devices • Heat Pump AI • Energy Scheduling',
@@ -75,7 +75,7 @@ const MODULES = [
   {
     title: 'KI-Empfehlung',
     icon: '🤖',
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1200&auto=format&fit=crop',
+    image: '/wattai.live-KI.png',
     description: 'Deep-Q-Network analysiert Live-Daten und liefert autonome Empfehlungen.',
     details: 'Neuronale Modelle analysieren Millionen Datenpunkte aus Wetter, Marktpreisen, Lastprofilen und Geräten. WattAI.live erzeugt intelligente Optimierungsvorschläge in Echtzeit.',
     tech: 'Deep-Q Network • Live Analytics • Autonomous Decisions • AI Optimization',
@@ -84,7 +84,7 @@ const MODULES = [
   {
     title: 'Flottenmanagement',
     icon: '🏭',
-    image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1200&auto=format&fit=crop',
+    image: '/wattai.ive-eauto.png',
     description: 'KI-Dispatch, Lastspitzen-Management und SLA-Alerting für Business-Standorte.',
     details: 'Für Unternehmen und Ladeparks orchestriert die KI Ladepunkte, Fahrzeugflotten und Netzkapazitäten. SLA-Monitoring und Predictive Dispatching sorgen für maximale Verfügbarkeit.',
     tech: 'Fleet Dispatch AI • SLA Monitoring • Commercial Grid AI • Peak Management',
@@ -210,7 +210,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
   const { ref: heroRef, pos, onMove: onHeroMove, onLeave: onHeroLeave } = useMouseParallax();
 
   return (
-    <div className="relative min-h-screen bg-black text-white overflow-x-hidden font-sans">
+    <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-[#0a1d3f] to-[#081324] text-white overflow-x-hidden font-sans">
 
       {/* ── Ambient background ── */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
@@ -369,17 +369,17 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
               {/* Main card */}
               <div className="absolute inset-0 rounded-[3rem] border border-white/10 bg-white/5 backdrop-blur-3xl overflow-hidden shadow-[0_0_120px_rgba(34,211,238,0.3)]">
                 <img
-                  src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop"
+                  src="/wattai.live-dashboard.png"
                   alt="KI-gesteuertes Energie-Dashboard"
                   className="w-full h-full object-cover opacity-60 scale-110"
                   loading="eager"
                   decoding="async"
                 />
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/75" />
+                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-transparent to-slate-950/80" />
 
                 {/* Live energy badge – floats 3D */}
                 <div
-                  className="absolute top-8 left-8 px-5 py-4 rounded-2xl bg-black/50 backdrop-blur-xl border border-cyan-400/20"
+                  className="absolute top-8 left-8 px-5 py-4 rounded-2xl bg-slate-900/45 backdrop-blur-xl border border-cyan-300/40"
                   style={{ transform: 'translateZ(40px)' }}
                 >
                   <p className="text-xs text-cyan-300 uppercase tracking-widest">Live Energy Flow</p>
@@ -388,7 +388,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
 
                 {/* Progress card – floats deeper */}
                 <div
-                  className="absolute bottom-8 right-8 w-72 rounded-3xl border border-white/10 bg-black/50 backdrop-blur-xl p-6"
+                  className="absolute bottom-8 right-8 w-72 rounded-3xl border border-cyan-200/20 bg-slate-900/55 backdrop-blur-xl p-6"
                   style={{ transform: 'translateZ(60px)' }}
                 >
                   <div className="flex justify-between items-center mb-5">
@@ -530,7 +530,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
           <RevealSection delay={0}>
             <div className="relative rounded-[3rem] overflow-hidden border border-white/10 bg-white/5 backdrop-blur-2xl min-h-[540px]"
               style={{ perspective: 1000 }}>
-              <img src="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop"
+              <img src="/wattai.live-KI.png"
                 alt="Neuronales KI-Netz Visualisierung"
                 className="absolute inset-0 w-full h-full object-cover opacity-50" loading="lazy" decoding="async" />
               <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-black/40 to-violet-600/30" />
@@ -689,4 +689,3 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
     </div>
   );
 }
-
