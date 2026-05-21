@@ -93,7 +93,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20 }}>
           {APPLICATIONS.map(f => (
             <a
-              key={f.title}
+              key={f.slug}
               href={`/anwendungen/${f.slug}`}
               target="_blank"
               rel="noopener noreferrer"
