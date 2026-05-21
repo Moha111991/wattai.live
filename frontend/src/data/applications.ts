@@ -40,7 +40,7 @@ export const APPLICATIONS: ApplicationItem[] = [
   {
     slug: 'ev-v2h-v2g',
     icon: '🚗',
-    title: 'EV & V2H / V2G',
+    title: 'Electric Vehicle & Vehicle to Home/Grid',
     desc: 'Intelligentes Laden, bidirektionale Stromnutzung und Multi-EV-Profile (ab Pro).',
     cardBackground: 'radial-gradient(circle at 18% 85%, rgba(129,140,248,0.35), transparent 48%), linear-gradient(140deg, rgba(6,182,212,0.3), rgba(15,23,42,0.95) 70%), linear-gradient(20deg, rgba(99,102,241,0.22), rgba(20,184,166,0.06))',
     technicalOverview: 'Das EV-Modul orchestriert Ladeplanung, Abfahrtszeiten und bidirektionale Energieströme für V2H/V2G-fähige Fahrzeuge. Multi-EV-Profile und Connector-Prioritäten stellen sicher, dass Reichweite, Netzlast und Kosten gleichzeitig optimiert werden.',
