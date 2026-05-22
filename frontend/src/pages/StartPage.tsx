@@ -328,270 +328,808 @@ function Tilt({ children, style = {} }: { children: React.ReactNode; style?: CSS
   );
 }
 
-// ── SVG Visuals per Application ───────────────────────────────────────────────
+// ── Technical Details Data ──────────────────────────────────────────────────────
+
+const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; protocols: string[]; plan: string }> = {
+  'pv-optimierung': {
+    specs: [
+      { label: 'Algorithmus', value: 'MPPT + ML-Ertragsprognose' },
+      { label: 'Prognose-Horizont', value: '72 h (OpenMeteo-Wetterdaten)' },
+      { label: 'Eigenverbrauchsquote', value: 'Ø +28 % gegenüber unkontrolliert' },
+      { label: 'Einspeisung', value: '§ 9 EEG-konform, dyn. Abregelung' },
+      { label: 'Auflösung', value: '1-Minuten-Intervall, Echtzeit-API' },
+      { label: 'Wechselrichter', value: 'SMA, Fronius, Huawei, Enphase, Kostal' },
+    ],
+    protocols: ['Modbus TCP', 'SunSpec', 'REST API', 'MQTT'],
+    plan: 'Free',
+  },
+  'batteriemanagement': {
+    specs: [
+      { label: 'SOC-Grenzen', value: '15 – 95 % (konfig.), SOH-Schutz aktiv' },
+      { label: 'Tarifintegration', value: 'Tibber, aWATTar, EPEX Spot' },
+      { label: 'Lastprognose', value: '15-Min-Intervall, LSTM-Modell' },
+      { label: 'Zyklen-Optimierung', value: 'Kalend. + Lebensdauer-Prädiktor' },
+      { label: 'Reaktionszeit', value: '< 500 ms Steuerbefehl' },
+      { label: 'Kompatibilität', value: 'LG RESU, BYD Box, Sonnen, Sungrow' },
+    ],
+    protocols: ['CAN Bus', 'Modbus RTU', 'REST API', 'MQTT'],
+    plan: 'Free',
+  },
+  'ev-v2h-v2g': {
+    specs: [
+      { label: 'Ladestandard', value: 'ISO 15118 Plug & Charge, OCPP 2.0.1' },
+      { label: 'V2H-Leistung', value: 'bis 11 kW bidirektional' },
+      { label: 'V2G-Support', value: 'Netzdienst, Regelenergie (ab Pro)' },
+      { label: 'Multi-EV', value: 'bis 5 Fahrzeugprofile (ab Pro)' },
+      { label: 'Wallboxen', value: 'Wallbe, ABB Terra, KEBA, Easee' },
+      { label: 'Tarif-Laden', value: 'Spot-Preis-Laden, PV-Überschuss' },
+    ],
+    protocols: ['OCPP 1.6/2.0.1', 'ISO 15118', 'MQTT', 'Modbus TCP'],
+    plan: 'Pro (Multi-EV)',
+  },
+  'smart-home': {
+    specs: [
+      { label: 'Zeitfenster', value: 'Dynamisch, tarifbasiert + PV-Prognose' },
+      { label: 'Wärmepumpe', value: 'SG-Ready Schnittstelle, COP-Optimierung' },
+      { label: 'Standard', value: 'HEMS nach EN 50631-1' },
+      { label: 'Schnittstellen', value: 'KNX, Home Assistant, openHAB, Loxone' },
+      { label: 'Lastspitzen', value: 'Peak-Shaving, kW-Begrenzung konfig.' },
+      { label: 'Geräte', value: 'Waschmaschine, Trockner, Spülmaschine, HP' },
+    ],
+    protocols: ['KNX', 'Z-Wave', 'Zigbee', 'REST/MQTT'],
+    plan: 'Pro',
+  },
+  'ki-empfehlung': {
+    specs: [
+      { label: 'Modell', value: 'Deep-Q-Network (DQN), 128-Node Hidden' },
+      { label: 'Trainingsdaten', value: '3 Jahre historische Energiedaten' },
+      { label: 'Inference', value: '< 50 ms Latenz, Edge-AI fähig' },
+      { label: 'Runtime', value: 'TensorFlow Lite / ONNX Runtime' },
+      { label: 'Konfidenz', value: 'Score pro Empfehlung, Begründung sichtbar' },
+      { label: 'Update', value: 'Wöchentliches Re-Training, Auto-Deploy' },
+    ],
+    protocols: ['ONNX', 'TFLite', 'REST API', 'WebSocket'],
+    plan: 'Pro',
+  },
+  'flottenmanagement': {
+    specs: [
+      { label: 'Standorte', value: 'bis 50 Standorte gleichzeitig (Business)' },
+      { label: 'Dispatch', value: 'KI-Optimierung, Lastspitzen-Capping' },
+      { label: 'Alerting', value: 'SLA-Monitoring, E-Mail + Push-Benachricht.' },
+      { label: 'Reporting', value: 'CO₂-Bilanz, Kostenreport, CSV-Export' },
+      { label: 'API', value: 'REST + MQTT, Webhook, OpenAPI 3.1' },
+      { label: 'Compliance', value: 'ISO 27001-konformes Logging, DSGVO' },
+    ],
+    protocols: ['REST API', 'MQTT', 'Webhook', 'OpenAPI 3.1'],
+    plan: 'Business',
+  },
+};
+
+// ── Tech Details Modal ────────────────────────────────────────────────────────
+
+function TechModal({ slug, title, onClose }: { slug: string; title: string; onClose: () => void }) {
+  const data = TECH_DATA[slug];
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', fn);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', fn); document.body.style.overflow = ''; };
+  }, [onClose]);
+  if (!data) return null;
+
+  const planColor = data.plan === 'Free' ? '#22c55e' : data.plan.includes('Business') ? '#a855f7' : '#ff9500';
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(2,4,14,0.88)', backdropFilter: 'blur(16px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 'clamp(12px,3vw,32px)',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'relative', width: '100%', maxWidth: 620,
+          background: 'linear-gradient(160deg,rgba(10,6,30,0.97),rgba(4,6,20,0.99))',
+          border: '1px solid rgba(255,107,53,0.3)',
+          borderRadius: 24, overflow: 'hidden',
+          boxShadow: '0 0 80px rgba(255,107,53,0.15), 0 40px 80px rgba(0,0,0,0.7)',
+        }}
+      >
+        {/* Top accent bar */}
+        <div style={{
+          height: 3,
+          background: 'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)',
+        }} />
+
+        {/* Header */}
+        <div style={{ padding: '24px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: `${planColor}18`, border: `1px solid ${planColor}44`,
+              borderRadius: 999, padding: '4px 12px', marginBottom: 10,
+              fontSize: 10, color: planColor, letterSpacing: '0.12em', fontWeight: 700,
+              textTransform: 'uppercase',
+            }}>
+              Verfügbar ab Plan: {data.plan}
+            </div>
+            <h2 style={{ margin: 0, fontSize: 'clamp(18px,2.5vw,26px)', fontWeight: 900, color: '#f8fafc', lineHeight: 1.2 }}>
+              {title}
+            </h2>
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: 'rgba(248,250,252,0.4)', letterSpacing: '0.06em' }}>
+              Technische Spezifikation
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.25)',
+              borderRadius: 999, color: 'rgba(255,107,53,0.8)',
+              width: 36, height: 36, fontSize: 18, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+            aria-label="Schließen"
+          >✕</button>
+        </div>
+
+        {/* Specs grid */}
+        <div style={{ padding: '20px 28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {data.specs.map((s, i) => (
+              <div key={i} style={{
+                background: 'rgba(255,107,53,0.04)',
+                border: '1px solid rgba(255,107,53,0.1)',
+                borderRadius: 12, padding: '12px 14px',
+              }}>
+                <div style={{ fontSize: 10, color: 'rgba(255,149,0,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5, fontWeight: 700 }}>{s.label}</div>
+                <div style={{ fontSize: 13, color: '#f0f4ff', fontWeight: 600, lineHeight: 1.4 }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Protocols */}
+        <div style={{ padding: '0 28px 24px' }}>
+          <div style={{ fontSize: 10, color: 'rgba(59,130,246,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10, fontWeight: 700 }}>
+            Protokolle &amp; Schnittstellen
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {data.protocols.map((p, i) => (
+              <span key={i} style={{
+                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.22)',
+                borderRadius: 999, padding: '5px 14px',
+                fontSize: 11, color: 'rgba(147,197,253,0.9)', fontWeight: 600,
+                fontFamily: 'monospace',
+              }}>{p}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom glow */}
+        <div aria-hidden="true" style={{
+          position: 'absolute', bottom: -60, right: -60, width: 200, height: 200,
+          borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,53,0.1),transparent 65%)',
+          pointerEvents: 'none',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ── SVG Visuals per Application (high-end animated 3D scenes) ─────────────────
 
 function PvVisual() {
   return (
-    <svg viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 90, display: 'block' }}>
-      <polyline points="0,80 20,70 40,50 60,30 80,22 100,26 120,44 140,62 160,75"
-        stroke="rgba(255,149,0,0.6)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      <polyline points="0,80 20,70 40,50 60,30 80,22 100,26 120,44 140,62 160,75"
-        stroke="rgba(255,149,0,0.1)" strokeWidth="9" fill="none" strokeLinecap="round" />
-      <circle cx="80" cy="22" r="6" fill="rgba(255,149,0,0.95)">
-        <animate attributeName="r" values="6;8;6" dur="7s" repeatCount="indefinite" />
+    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 180, display: 'block' }}>
+      <defs>
+        <radialGradient id="pv-sun-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#ffde6b" stopOpacity="1" />
+          <stop offset="40%" stopColor="#ff9500" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#ff6b35" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="pv-panel-face" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#1e3a5f" />
+          <stop offset="100%" stopColor="#0a1628" />
+        </linearGradient>
+        <linearGradient id="pv-energy-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff9500" stopOpacity="0" />
+          <stop offset="50%" stopColor="#ff9500" stopOpacity="1" />
+          <stop offset="100%" stopColor="#ff9500" stopOpacity="0" />
+        </linearGradient>
+        <filter id="pv-glow-f">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* Sky gradient bg */}
+      <rect width="200" height="180" fill="url(#pv-sky)" />
+      <defs>
+        <linearGradient id="pv-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#0a0f2e" />
+          <stop offset="100%" stopColor="#0d1a10" />
+        </linearGradient>
+      </defs>
+
+      {/* Sun */}
+      <circle cx="162" cy="28" r="22" fill="url(#pv-sun-glow)" opacity="0.9">
+        <animate attributeName="r" values="22;26;22" dur="8s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.9;1;0.9" dur="5s" repeatCount="indefinite" />
       </circle>
-      {[15, 24, 36].map((rad, i) => (
-        <circle key={i} cx="80" cy="22" r={rad} stroke="rgba(255,149,0,0.15)" strokeWidth="0.7" fill="none">
-          <animate attributeName="r" values={`${rad};${rad + 4};${rad}`} dur={`${10 + i * 5}s`} repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.15;0.03;0.15" dur={`${10 + i * 5}s`} repeatCount="indefinite" />
-        </circle>
-      ))}
-      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-        const rad = angle * Math.PI / 180;
+      <circle cx="162" cy="28" r="11" fill="#ffde6b">
+        <animate attributeName="r" values="11;13;11" dur="6s" repeatCount="indefinite" />
+      </circle>
+      {/* Sun rays */}
+      {[0,30,60,90,120,150,180,210,240,270,300,330].map((a,i) => {
+        const rad = a * Math.PI / 180;
         return (
           <line key={i}
-            x1={80 + Math.cos(rad) * 9} y1={22 + Math.sin(rad) * 9}
-            x2={80 + Math.cos(rad) * 18} y2={22 + Math.sin(rad) * 18}
-            stroke="rgba(255,149,0,0.45)" strokeWidth="0.8" strokeLinecap="round">
-            <animate attributeName="opacity" values="0.45;0.1;0.45"
-              dur={`${5 + (i % 3)}s`} begin={`${i * 0.5}s`} repeatCount="indefinite" />
+            x1={162 + Math.cos(rad)*15} y1={28 + Math.sin(rad)*15}
+            x2={162 + Math.cos(rad)*24} y2={28 + Math.sin(rad)*24}
+            stroke="#ffde6b" strokeWidth="1.2" strokeLinecap="round" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;0.2;0.7" dur={`${3+i%3}s`} begin={`${i*0.2}s`} repeatCount="indefinite" />
           </line>
         );
       })}
-      {[35, 55, 72].map(y => (
-        <line key={y} x1="0" y1={y} x2="160" y2={y}
-          stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="4 10" />
+
+      {/* Ground line */}
+      <line x1="0" y1="148" x2="200" y2="148" stroke="rgba(255,107,53,0.15)" strokeWidth="1" />
+
+      {/* Isometric solar panel array — 6 panels in 3x2 */}
+      {[0,1,2,3,4,5].map(i => {
+        const col = i % 3, row = Math.floor(i / 3);
+        const px = 12 + col * 58, py = 78 + row * 34 - col * 8;
+        return (
+          <g key={i}>
+            {/* Panel face */}
+            <polygon points={`${px},${py} ${px+52},${py-8} ${px+52},${py+22} ${px},${py+30}`}
+              fill="url(#pv-panel-face)" stroke="rgba(30,120,180,0.6)" strokeWidth="0.8" />
+            {/* Panel cells grid */}
+            {[1,2,3].map(c => (
+              <line key={c} x1={px+c*13} y1={py-2-c*2} x2={px+c*13} y2={py+28-c*2}
+                stroke="rgba(100,180,255,0.25)" strokeWidth="0.5" />
+            ))}
+            {[1,2].map(r => (
+              <line key={r} x1={px} y1={py+r*10} x2={px+52} y2={py+r*10-8}
+                stroke="rgba(100,180,255,0.25)" strokeWidth="0.5" />
+            ))}
+            {/* Highlight shimmer */}
+            <polygon points={`${px},${py} ${px+52},${py-8} ${px+52},${py-2} ${px},${py+6}`}
+              fill="rgba(255,255,255,0.06)">
+              <animate attributeName="opacity" values="0.06;0.15;0.06" dur={`${7+i}s`} repeatCount="indefinite" />
+            </polygon>
+            {/* Panel top edge */}
+            <polygon points={`${px},${py} ${px+52},${py-8} ${px+56},${py-5} ${px+4},${py+3}`}
+              fill="rgba(80,140,200,0.2)" stroke="rgba(100,160,220,0.4)" strokeWidth="0.5" />
+            {/* Active glow */}
+            <polygon points={`${px},${py} ${px+52},${py-8} ${px+52},${py+22} ${px},${py+30}`}
+              fill="rgba(255,149,0,0.04)">
+              <animate attributeName="fill"
+                values="rgba(255,149,0,0.04);rgba(255,149,0,0.12);rgba(255,149,0,0.04)"
+                dur={`${9+i*1.5}s`} begin={`${i*1.1}s`} repeatCount="indefinite" />
+            </polygon>
+          </g>
+        );
+      })}
+
+      {/* Energy flow arcs from panels to right */}
+      {['m-pv0','m-pv1','m-pv2'].map((id, i) => (
+        <g key={id}>
+          <path id={id} d={`M ${96+i*8} ${100-i*8} Q 150 ${60+i*10} 185 45`} fill="none" />
+          <circle r="3.5" fill="#ff9500" filter="url(#pv-glow-f)" opacity="0.9">
+            <animateMotion dur={`${3.5+i}s`} repeatCount="indefinite" begin={`${i*1.2}s`}>
+              <mpath xlinkHref={`#${id}`} />
+            </animateMotion>
+            <animate attributeName="opacity" values="0;1;1;0" dur={`${3.5+i}s`} begin={`${i*1.2}s`} repeatCount="indefinite" />
+          </circle>
+        </g>
       ))}
+
+      {/* Power meter bar at bottom */}
+      <rect x="16" y="158" width="120" height="8" rx="4" fill="rgba(255,107,53,0.1)" stroke="rgba(255,107,53,0.2)" strokeWidth="0.5" />
+      <rect x="16" y="158" width="88" height="8" rx="4" fill="rgba(255,149,0,0.7)">
+        <animate attributeName="width" values="88;110;88" dur="12s" repeatCount="indefinite" />
+      </rect>
+      <text x="144" y="166" fontSize="8" fill="rgba(255,149,0,0.9)" fontFamily="monospace" fontWeight="bold">7.4 kW</text>
+      <text x="16" y="176" fontSize="7" fill="rgba(255,107,53,0.5)" fontFamily="monospace">PV-Leistung aktuell</text>
+
+      {/* Yield line chart overlay */}
+      <polyline points="16,145 36,130 56,115 76,110 96,118 116,108 136,120 156,114"
+        stroke="rgba(255,149,0,0.55)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <polyline points="16,145 36,130 56,115 76,110 96,118 116,108 136,120 156,114"
+        stroke="rgba(255,149,0,0.08)" strokeWidth="6" fill="none" strokeLinecap="round" />
     </svg>
   );
 }
 
 function BatteryVisual() {
   return (
-    <svg viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 90, display: 'block' }}>
+    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 180, display: 'block' }}>
       <defs>
-        <linearGradient id="bat-fill-v3" x1="0" y1="1" x2="0" y2="0" gradientUnits="objectBoundingBox">
-          <stop offset="0" stopColor="rgba(255,107,53,0.8)" />
-          <stop offset="0.5" stopColor="rgba(255,149,0,0.5)" />
-          <stop offset="1" stopColor="rgba(59,130,246,0.3)" />
+        <linearGradient id="bat-body-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1a1030" />
+          <stop offset="100%" stopColor="#0a0618" />
         </linearGradient>
-        <clipPath id="bat-clip-v3"><rect x="48" y="18" width="44" height="58" rx="3" /></clipPath>
+        <linearGradient id="bat-fill-grad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="#ff4500" />
+          <stop offset="50%" stopColor="#ff9500" />
+          <stop offset="100%" stopColor="#22c55e" />
+        </linearGradient>
+        <clipPath id="bat-fill-clip"><rect x="68" y="34" width="64" height="112" rx="3" /></clipPath>
+        <filter id="bat-glow-f">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+        <filter id="bat-soft-glow">
+          <feGaussianBlur stdDeviation="8" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
       </defs>
-      <rect x="48" y="18" width="44" height="58" rx="4"
-        fill="rgba(10,6,22,0.85)" stroke="rgba(255,107,53,0.4)" strokeWidth="1" />
-      <rect x="61" y="12" width="18" height="8" rx="2"
-        fill="rgba(255,107,53,0.25)" stroke="rgba(255,107,53,0.5)" strokeWidth="0.8" />
-      <path d="M92 22 L108 14 L108 70 L92 76 Z"
-        fill="rgba(255,107,53,0.08)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.5" />
-      <path d="M48 18 L64 10 L108 10 L92 18 Z"
-        fill="rgba(255,107,53,0.05)" stroke="rgba(255,107,53,0.15)" strokeWidth="0.5" />
-      {[32, 44, 56].map(y => (
-        <line key={y} x1="49" y1={y} x2="91" y2={y} stroke="rgba(255,107,53,0.1)" strokeWidth="0.5" />
+
+      {/* Ambient glow behind battery */}
+      <ellipse cx="100" cy="100" rx="55" ry="65" fill="rgba(255,107,53,0.07)">
+        <animate attributeName="rx" values="55;65;55" dur="8s" repeatCount="indefinite" />
+        <animate attributeName="ry" values="65;75;65" dur="8s" repeatCount="indefinite" />
+      </ellipse>
+
+      {/* Battery body — isometric 3D look */}
+      {/* Right face */}
+      <polygon points="132,34 148,42 148,154 132,146"
+        fill="rgba(30,20,60,0.9)" stroke="rgba(255,107,53,0.25)" strokeWidth="0.8" />
+      {/* Top face */}
+      <polygon points="68,34 132,34 148,42 84,42"
+        fill="rgba(50,35,90,0.8)" stroke="rgba(255,107,53,0.3)" strokeWidth="0.8" />
+      {/* Front face */}
+      <rect x="68" y="34" width="64" height="112" rx="4"
+        fill="url(#bat-body-grad)" stroke="rgba(255,107,53,0.35)" strokeWidth="1.2" />
+
+      {/* Horizontal cell dividers */}
+      {[58, 82, 106].map(y => (
+        <line key={y} x1="69" y1={y} x2="131" y2={y} stroke="rgba(255,107,53,0.1)" strokeWidth="0.6" />
       ))}
-      <rect x="49" y="18" width="42" height="57" rx="3" fill="url(#bat-fill-v3)" clipPath="url(#bat-clip-v3)">
-        <animate attributeName="y" values="53;33;53" dur="14s" repeatCount="indefinite" />
-        <animate attributeName="height" values="22;42;22" dur="14s" repeatCount="indefinite" />
+
+      {/* Fill level (animated 30%→82%) */}
+      <rect x="69" y="34" width="62" height="112" rx="3" fill="url(#bat-fill-grad)" clipPath="url(#bat-fill-clip)">
+        <animate attributeName="y" values="105;56;105" dur="16s" repeatCount="indefinite" />
+        <animate attributeName="height" values="41;90;41" dur="16s" repeatCount="indefinite" />
       </rect>
-      <text x="70" y="50" textAnchor="middle" fill="rgba(255,149,0,0.8)"
-        fontSize="10" fontFamily="monospace" fontWeight="bold">
+
+      {/* Fill shimmer */}
+      <rect x="69" y="34" width="30" height="112" rx="3" fill="rgba(255,255,255,0.04)" clipPath="url(#bat-fill-clip)">
+        <animate attributeName="opacity" values="0.04;0.10;0.04" dur="6s" repeatCount="indefinite" />
+      </rect>
+
+      {/* Terminal cap */}
+      <rect x="83" y="24" width="34" height="12" rx="3"
+        fill="rgba(40,30,70,0.9)" stroke="rgba(255,107,53,0.45)" strokeWidth="1" />
+
+      {/* SOC percent label */}
+      <text x="100" y="95" textAnchor="middle" fill="#ff9500"
+        fontSize="22" fontFamily="monospace" fontWeight="900" filter="url(#bat-glow-f)">
         78%
-        <animate attributeName="opacity" values="0.8;1;0.8" dur="5s" repeatCount="indefinite" />
+        <animate attributeName="textContent" values="42%;55%;68%;78%;82%;78%" dur="16s" repeatCount="indefinite" />
       </text>
-      <path d="M66 25 L62 37 L67 37 L64 50 L74 33 L69 33 Z"
-        fill="rgba(255,107,53,0.55)" stroke="rgba(255,149,0,0.9)" strokeWidth="0.4">
-        <animate attributeName="opacity" values="0.55;1;0.55" dur="3.5s" repeatCount="indefinite" />
+      <text x="100" y="108" textAnchor="middle" fill="rgba(255,149,0,0.5)"
+        fontSize="7" fontFamily="monospace" letterSpacing="0.08em">STATE OF CHARGE</text>
+
+      {/* Lightning bolt */}
+      <path d="M96 56 L90 74 L98 74 L94 92 L110 68 L102 68 L108 56 Z"
+        fill="rgba(255,220,50,0.9)" stroke="rgba(255,149,0,0.9)" strokeWidth="0.5" filter="url(#bat-glow-f)">
+        <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2.5s" repeatCount="indefinite" />
       </path>
+
+      {/* Energy particles flowing in */}
+      {[0,1,2].map(i => (
+        <g key={i}>
+          <path id={`bat-in-${i}`} d={`M ${40+i*20} 10 Q ${60+i*10} 30 ${90+i*6} 34`} fill="none" />
+          <circle r="2.5" fill="#ff9500" filter="url(#bat-glow-f)">
+            <animateMotion dur={`${2.5+i*0.8}s`} repeatCount="indefinite" begin={`${i*0.9}s`}>
+              <mpath xlinkHref={`#bat-in-${i}`} />
+            </animateMotion>
+            <animate attributeName="opacity" values="0;1;1;0" dur={`${2.5+i*0.8}s`} begin={`${i*0.9}s`} repeatCount="indefinite" />
+          </circle>
+        </g>
+      ))}
+
+      {/* Discharge path out */}
+      <path id="bat-out-0" d="M 132 100 Q 165 100 180 80" fill="none" />
+      <circle r="2.5" fill="#22c55e" filter="url(#bat-glow-f)">
+        <animateMotion dur="3.5s" repeatCount="indefinite" begin="1.2s">
+          <mpath xlinkHref="#bat-out-0" />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="1.2s" repeatCount="indefinite" />
+      </circle>
+
+      {/* Bottom status labels */}
+      <text x="16" y="170" fill="rgba(255,149,0,0.6)" fontSize="7.5" fontFamily="monospace">⚡ Wird geladen · +3.2 kW</text>
+      <text x="16" y="180" fill="rgba(100,200,100,0.5)" fontSize="7" fontFamily="monospace">Tarifoptimiert · Tibber-Spot aktiv</text>
     </svg>
   );
 }
 
 function EvVisual() {
   return (
-    <svg viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 90, display: 'block' }}>
-      <path d="M10 48 L10 72 L36 72 L36 48 L23 34 Z"
-        fill="rgba(30,64,175,0.15)" stroke="rgba(59,130,246,0.5)" strokeWidth="1" strokeLinejoin="round" />
-      <rect x="15" y="56" width="9" height="16" rx="1" fill="rgba(30,64,175,0.25)" />
-      <circle cx="23" cy="45" r="3" fill="rgba(255,107,53,0.4)">
-        <animate attributeName="opacity" values="0.4;0.9;0.4" dur="4s" repeatCount="indefinite" />
-      </circle>
-      <rect x="110" y="52" width="44" height="17" rx="4"
-        fill="rgba(30,64,175,0.18)" stroke="rgba(59,130,246,0.55)" strokeWidth="1" />
-      <path d="M118 52 L123 43 L148 43 L153 52"
-        fill="rgba(30,64,175,0.14)" stroke="rgba(59,130,246,0.4)" strokeWidth="0.8" />
-      <circle cx="122" cy="70" r="5" fill="rgba(6,9,30,0.9)" stroke="rgba(59,130,246,0.5)" strokeWidth="1" />
-      <circle cx="148" cy="70" r="5" fill="rgba(6,9,30,0.9)" stroke="rgba(59,130,246,0.5)" strokeWidth="1" />
-      <rect x="110" y="57" width="4" height="7" rx="1" fill="rgba(255,107,53,0.7)">
-        <animate attributeName="opacity" values="0.7;1;0.7" dur="2.5s" repeatCount="indefinite" />
+    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 180, display: 'block' }}>
+      <defs>
+        <linearGradient id="ev-body-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1a2060" />
+          <stop offset="100%" stopColor="#0a1230" />
+        </linearGradient>
+        <linearGradient id="ev-charge-bar" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff6b35" />
+          <stop offset="100%" stopColor="#22c55e" />
+        </linearGradient>
+        <filter id="ev-glow">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* Background grid lines */}
+      {[40,80,120,160].map(x => (
+        <line key={x} x1={x} y1="20" x2={x} y2="155" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5" />
+      ))}
+      {[50,90,130].map(y => (
+        <line key={y} x1="10" y1={y} x2="190" y2={y} stroke="rgba(59,130,246,0.06)" strokeWidth="0.5" />
+      ))}
+
+      {/* EV car body (side view) */}
+      <path d="M 24 110 L 24 82 Q 30 62 55 56 L 108 52 Q 134 52 148 66 L 162 82 L 162 110 Z"
+        fill="url(#ev-body-grad)" stroke="rgba(59,130,246,0.6)" strokeWidth="1.5" />
+      {/* Car roof */}
+      <path d="M 55 56 Q 60 40 78 36 L 120 36 Q 138 38 148 52 L 108 52 Z"
+        fill="rgba(20,40,100,0.9)" stroke="rgba(59,130,246,0.5)" strokeWidth="1" />
+      {/* Windshield */}
+      <path d="M 80 37 Q 82 40 86 52 L 108 52 Q 120 48 122 38 Z"
+        fill="rgba(100,180,255,0.12)" stroke="rgba(100,200,255,0.3)" strokeWidth="0.6" />
+      {/* Side window */}
+      <path d="M 58 57 Q 62 48 76 44 L 80 53 Z"
+        fill="rgba(100,180,255,0.1)" stroke="rgba(100,200,255,0.25)" strokeWidth="0.5" />
+      {/* Door line */}
+      <line x1="108" y1="52" x2="110" y2="108" stroke="rgba(59,130,246,0.3)" strokeWidth="0.8" />
+      {/* Wheels */}
+      <circle cx="62" cy="112" r="16" fill="rgba(8,12,30,0.95)" stroke="rgba(59,130,246,0.5)" strokeWidth="1.5" />
+      <circle cx="62" cy="112" r="8" fill="rgba(20,40,80,0.9)" stroke="rgba(59,130,246,0.4)" strokeWidth="0.8" />
+      <circle cx="62" cy="112" r="3" fill="rgba(59,130,246,0.7)" />
+      <circle cx="140" cy="112" r="16" fill="rgba(8,12,30,0.95)" stroke="rgba(59,130,246,0.5)" strokeWidth="1.5" />
+      <circle cx="140" cy="112" r="8" fill="rgba(20,40,80,0.9)" stroke="rgba(59,130,246,0.4)" strokeWidth="0.8" />
+      <circle cx="140" cy="112" r="3" fill="rgba(59,130,246,0.7)" />
+
+      {/* Neon underbody glow */}
+      <ellipse cx="93" cy="128" rx="68" ry="5" fill="rgba(59,130,246,0.18)">
+        <animate attributeName="opacity" values="0.18;0.35;0.18" dur="5s" repeatCount="indefinite" />
+      </ellipse>
+
+      {/* Charging port (right side) */}
+      <rect x="162" y="86" width="8" height="14" rx="2"
+        fill="rgba(255,107,53,0.3)" stroke="rgba(255,107,53,0.7)" strokeWidth="1">
+        <animate attributeName="fill" values="rgba(255,107,53,0.3);rgba(255,107,53,0.7);rgba(255,107,53,0.3)" dur="2s" repeatCount="indefinite" />
       </rect>
-      <path id="ev-fwd-v3" d="M38 58 Q80 36 110 58" fill="none" />
-      <path id="ev-rev-v3" d="M110 62 Q80 84 38 62" fill="none" />
-      <path d="M38 58 Q80 36 110 58" stroke="rgba(255,107,53,0.18)" strokeWidth="1.2"
-        strokeDasharray="5 7" fill="none" />
-      <path d="M110 62 Q80 84 38 62" stroke="rgba(59,130,246,0.18)" strokeWidth="1.2"
-        strokeDasharray="5 7" fill="none" />
-      <circle r="3" fill="rgba(255,107,53,0.9)">
-        <animateMotion dur="5s" repeatCount="indefinite" begin="0s">
-          <mpath xlinkHref="#ev-fwd-v3" />
+
+      {/* Charging cable */}
+      <path id="ev-cable" d="M 170 93 Q 185 93 190 75" fill="none" stroke="rgba(255,107,53,0.35)" strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* V2H arrow — from car to house left */}
+      <path id="ev-v2h" d="M 24 90 Q 10 90 6 70" fill="none" />
+      <path d="M 24 90 Q 10 90 6 70" stroke="rgba(34,197,94,0.2)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
+      <circle r="3" fill="rgba(34,197,94,0.9)" filter="url(#ev-glow)">
+        <animateMotion dur="4s" repeatCount="indefinite" begin="0.5s">
+          <mpath xlinkHref="#ev-v2h" />
         </animateMotion>
-        <animate attributeName="opacity" values="0;1;1;0" dur="5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0" dur="4s" begin="0.5s" repeatCount="indefinite" />
       </circle>
-      <circle r="2.5" fill="rgba(59,130,246,0.9)">
-        <animateMotion dur="7s" repeatCount="indefinite" begin="2.5s">
-          <mpath xlinkHref="#ev-rev-v3" />
+
+      {/* Charge flow — grid to car */}
+      <path id="ev-charge-f" d="M 190 75 Q 185 93 170 93" fill="none" />
+      <circle r="3" fill="rgba(255,149,0,0.9)" filter="url(#ev-glow)">
+        <animateMotion dur="2.5s" repeatCount="indefinite">
+          <mpath xlinkHref="#ev-charge-f" />
         </animateMotion>
-        <animate attributeName="opacity" values="0;1;1;0" dur="7s" begin="2.5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite" />
       </circle>
-      <text x="23" y="84" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="6" fontFamily="monospace">HOME</text>
-      <text x="133" y="84" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="6" fontFamily="monospace">EV</text>
-      <text x="80" y="32" textAnchor="middle" fill="rgba(255,107,53,0.5)" fontSize="6" fontFamily="monospace">V2H · V2G</text>
+
+      {/* Labels */}
+      <text x="4" y="60" fill="rgba(34,197,94,0.7)" fontSize="7" fontFamily="monospace" fontWeight="bold">HOME</text>
+      <text x="176" y="60" fill="rgba(255,149,0,0.7)" fontSize="7" fontFamily="monospace" fontWeight="bold">GRID</text>
+      <text x="100" y="47" textAnchor="middle" fill="rgba(59,130,246,0.6)" fontSize="7.5" fontFamily="monospace">ISO 15118 · OCPP 2.0.1</text>
+
+      {/* Charge state bar */}
+      <rect x="24" y="142" width="138" height="7" rx="3.5" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.2)" strokeWidth="0.5" />
+      <rect x="24" y="142" width="95" height="7" rx="3.5" fill="url(#ev-charge-bar)">
+        <animate attributeName="width" values="95;115;95" dur="10s" repeatCount="indefinite" />
+      </rect>
+      <text x="100" y="160" textAnchor="middle" fill="rgba(255,149,0,0.65)" fontSize="7" fontFamily="monospace">SOC 68 % · Lädt mit 11 kW</text>
+      <text x="100" y="172" textAnchor="middle" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace">V2H aktiv · 2.4 kW ins Haus</text>
     </svg>
   );
 }
 
 function SmartHomeVisual() {
-  const nodes = [
-    { x: 28, y: 40, d: '0s', l: 'HP' }, { x: 58, y: 28, d: '1.8s', l: 'TV' },
-    { x: 38, y: 64, d: '3.2s', l: 'WM' }, { x: 100, y: 26, d: '1s', l: 'AC' },
-    { x: 132, y: 62, d: '2.4s', l: 'BAT' }, { x: 116, y: 46, d: '4s', l: 'PV' },
-  ];
   return (
-    <svg viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 90, display: 'block' }}>
-      <rect x="8" y="12" width="144" height="66" rx="2"
-        stroke="rgba(255,107,53,0.18)" strokeWidth="0.8" fill="none" />
-      <line x1="80" y1="12" x2="80" y2="78" stroke="rgba(255,107,53,0.1)" strokeWidth="0.5" />
-      <line x1="8" y1="50" x2="80" y2="50" stroke="rgba(255,107,53,0.1)" strokeWidth="0.5" />
-      <line x1="80" y1="46" x2="152" y2="46" stroke="rgba(255,107,53,0.1)" strokeWidth="0.5" />
-      {nodes.map((n, i) => (
-        <g key={i}>
-          <circle cx={n.x} cy={n.y} r="7" fill="transparent" stroke="rgba(255,107,53,0.22)" strokeWidth="0.6">
-            <animate attributeName="r" values="7;12;7" dur="9s" begin={n.d} repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.5;0;0.5" dur="9s" begin={n.d} repeatCount="indefinite" />
-          </circle>
-          <circle cx={n.x} cy={n.y} r="3" fill="rgba(255,149,0,0.85)">
-            <animate attributeName="opacity" values="0.85;1;0.85" dur="4s" begin={n.d} repeatCount="indefinite" />
-          </circle>
-          <text x={n.x} y={n.y + 13} textAnchor="middle" fill="rgba(255,107,53,0.38)" fontSize="5" fontFamily="monospace">{n.l}</text>
-        </g>
-      ))}
+    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 180, display: 'block' }}>
+      <defs>
+        <radialGradient id="sh-hub-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="rgba(255,149,0,0.6)" />
+          <stop offset="100%" stopColor="rgba(255,149,0,0)" />
+        </radialGradient>
+        <filter id="sh-glow">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* House outline */}
+      <path d="M 72 110 L 72 72 L 100 50 L 128 72 L 128 110 Z"
+        fill="rgba(15,20,50,0.85)" stroke="rgba(255,107,53,0.45)" strokeWidth="1.5" />
+      {/* Roof */}
+      <path d="M 65 74 L 100 48 L 135 74"
+        fill="none" stroke="rgba(255,107,53,0.55)" strokeWidth="2" strokeLinejoin="round" />
+      {/* Door */}
+      <rect x="90" y="90" width="20" height="20" rx="2"
+        fill="rgba(255,107,53,0.1)" stroke="rgba(255,107,53,0.3)" strokeWidth="0.8" />
+      {/* Windows */}
+      <rect x="76" y="75" width="14" height="12" rx="2"
+        fill="rgba(255,149,0,0.15)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.8">
+        <animate attributeName="fill" values="rgba(255,149,0,0.15);rgba(255,149,0,0.35);rgba(255,149,0,0.15)" dur="6s" repeatCount="indefinite" />
+      </rect>
+      <rect x="110" y="75" width="14" height="12" rx="2"
+        fill="rgba(255,149,0,0.15)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.8">
+        <animate attributeName="fill" values="rgba(255,149,0,0.15);rgba(255,149,0,0.35);rgba(255,149,0,0.15)" dur="8s" begin="2s" repeatCount="indefinite" />
+      </rect>
+      {/* House glow */}
+      <path d="M 72 110 L 72 72 L 100 50 L 128 72 L 128 110 Z"
+        fill="rgba(255,107,53,0.04)">
+        <animate attributeName="fill" values="rgba(255,107,53,0.04);rgba(255,107,53,0.1);rgba(255,107,53,0.04)" dur="5s" repeatCount="indefinite" />
+      </path>
+
+      {/* Central hub */}
+      <circle cx="100" cy="82" r="10" fill="url(#sh-hub-glow)" />
+      <circle cx="100" cy="82" r="5" fill="rgba(255,149,0,0.9)" filter="url(#sh-glow)">
+        <animate attributeName="r" values="5;7;5" dur="4s" repeatCount="indefinite" />
+      </circle>
+
+      {/* Device nodes */}
+      {[
+        { x: 22, y: 40, label: 'HP', color: '#ff6b35', d: '0s' },
+        { x: 178, y: 40, label: 'WP', color: '#ff9500', d: '1.2s' },
+        { x: 18, y: 130, label: 'WM', color: '#3b82f6', d: '2.4s' },
+        { x: 182, y: 130, label: 'AC', color: '#22d3ee', d: '3.5s' },
+        { x: 100, y: 160, label: 'PV', color: '#22c55e', d: '0.8s' },
+        { x: 100, y: 22, label: 'BAT', color: '#a855f7', d: '1.8s' },
+      ].map((n, i) => {
+        const pathId = `sh-path-${i}`;
+        return (
+          <g key={i}>
+            {/* Connection line */}
+            <line x1={n.x} y1={n.y} x2="100" y2="82"
+              stroke={`${n.color}30`} strokeWidth="1.5" strokeDasharray="4 5" />
+            {/* Animated pulse on line */}
+            <path id={pathId} d={`M${n.x},${n.y} L100,82`} fill="none" />
+            <circle r="2.5" fill={n.color} filter="url(#sh-glow)">
+              <animateMotion dur={`${3+i*0.7}s`} repeatCount="indefinite" begin={n.d}>
+                <mpath xlinkHref={`#${pathId}`} />
+              </animateMotion>
+              <animate attributeName="opacity" values="0;1;1;0" dur={`${3+i*0.7}s`} begin={n.d} repeatCount="indefinite" />
+            </circle>
+            {/* Node circle */}
+            <circle cx={n.x} cy={n.y} r="13"
+              fill={`${n.color}12`} stroke={`${n.color}55`} strokeWidth="1.2">
+              <animate attributeName="r" values="13;17;13" dur={`${9+i*2}s`} begin={n.d} repeatCount="indefinite" />
+              <animate attributeName="opacity" values="1;0.4;1" dur={`${9+i*2}s`} begin={n.d} repeatCount="indefinite" />
+            </circle>
+            <circle cx={n.x} cy={n.y} r="6" fill={`${n.color}80`} stroke={n.color} strokeWidth="1">
+              <animate attributeName="opacity" values="0.8;1;0.8" dur="4s" begin={n.d} repeatCount="indefinite" />
+            </circle>
+            <text x={n.x} y={n.y + 3.5} textAnchor="middle"
+              fill="rgba(255,255,255,0.9)" fontSize="5.5" fontFamily="monospace" fontWeight="bold">{n.label}</text>
+          </g>
+        );
+      })}
+
+      {/* Status footer */}
+      <text x="100" y="180" textAnchor="middle" fill="rgba(255,107,53,0.45)" fontSize="7" fontFamily="monospace">
+        6 Geräte optimiert · Einsparung: −2.1 kWh/d
+      </text>
     </svg>
   );
 }
 
 function KiVisual() {
-  const inputY = [18, 46, 74], hiddenY = [14, 36, 58, 80], outputY = [32, 62];
+  const inputs = [{ y: 30, l: 'PV' }, { y: 70, l: 'BAT' }, { y: 110, l: 'GRID' }, { y: 150, l: 'WTR' }];
+  const hidden1 = [20, 50, 80, 110, 140, 165];
+  const hidden2 = [35, 75, 115, 150];
+  const outputs = [{ y: 55, l: 'LOAD', c: '#22c55e' }, { y: 100, l: 'SELL', c: '#3b82f6' }, { y: 145, l: 'STORE', c: '#a855f7' }];
   return (
-    <svg viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 90, display: 'block' }}>
-      {inputY.map(iy => hiddenY.map(hy => (
-        <line key={`${iy}-${hy}`} x1="34" y1={iy} x2="88" y2={hy}
-          stroke="rgba(255,107,53,0.1)" strokeWidth="0.5">
+    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 180, display: 'block' }}>
+      <defs>
+        <filter id="ki-glow">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+        <filter id="ki-soft">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* Input → Hidden1 connections */}
+      {inputs.map(inp => hidden1.map(hy => (
+        <line key={`${inp.y}-${hy}`} x1="30" y1={inp.y} x2="80" y2={hy}
+          stroke="rgba(255,107,53,0.12)" strokeWidth="0.5">
+          <animate attributeName="opacity" values="0.12;0.35;0.12"
+            dur={`${5+(inp.y+hy)%6}s`} repeatCount="indefinite" />
+        </line>
+      )))}
+      {/* Hidden1 → Hidden2 */}
+      {hidden1.map(h1 => hidden2.map(h2 => (
+        <line key={`${h1}-${h2}`} x1="80" y1={h1} x2="130" y2={h2}
+          stroke="rgba(255,149,0,0.1)" strokeWidth="0.5">
           <animate attributeName="opacity" values="0.1;0.3;0.1"
-            dur={`${6 + (iy + hy) % 5}s`} repeatCount="indefinite" />
+            dur={`${6+(h1+h2)%5}s`} repeatCount="indefinite" />
         </line>
       )))}
-      {hiddenY.map(hy => outputY.map(oy => (
-        <line key={`${hy}-${oy}`} x1="88" y1={hy} x2="136" y2={oy}
-          stroke="rgba(59,130,246,0.12)" strokeWidth="0.5">
-          <animate attributeName="opacity" values="0.12;0.4;0.12"
-            dur={`${7 + (hy + oy) % 4}s`} repeatCount="indefinite" />
+      {/* Hidden2 → Output */}
+      {hidden2.map(h2 => outputs.map(o => (
+        <line key={`${h2}-${o.y}`} x1="130" y1={h2} x2="172" y2={o.y}
+          stroke={`${o.c}22`} strokeWidth="0.7">
+          <animate attributeName="opacity" values="0.13;0.4;0.13"
+            dur={`${7+(h2+o.y)%4}s`} repeatCount="indefinite" />
         </line>
       )))}
+
+      {/* Animated signals */}
       {[
-        { id: 'kp0v3', y1i: 46, y1h: 36, d: '0s', t: '5s' },
-        { id: 'kp1v3', y1i: 18, y1h: 58, d: '2s', t: '6s' },
-        { id: 'kp2v3', y1h: 14, y2o: 32, d: '1s', t: '5s', out: true },
-        { id: 'kp3v3', y1h: 80, y2o: 62, d: '3s', t: '4.5s', out: true },
-      ].map((p, i) => (
+        { from: [30, 30], to: [80, 50], t: '4s', d: '0s', c: '#ff6b35' },
+        { from: [30, 70], to: [80, 110], t: '5s', d: '1.5s', c: '#ff9500' },
+        { from: [30, 110], to: [80, 20], t: '4.5s', d: '0.8s', c: '#ff6b35' },
+        { from: [80, 50], to: [130, 75], t: '4s', d: '0.5s', c: '#ff9500' },
+        { from: [80, 140], to: [130, 115], t: '5s', d: '2s', c: '#ff6b35' },
+        { from: [130, 35], to: [172, 55], t: '3.5s', d: '1s', c: '#22c55e' },
+        { from: [130, 115], to: [172, 100], t: '4s', d: '2.5s', c: '#3b82f6' },
+        { from: [130, 150], to: [172, 145], t: '5s', d: '0.2s', c: '#a855f7' },
+      ].map((p, i) => {
+        const pid = `ki-p-${i}`;
+        return (
+          <g key={i}>
+            <path id={pid} d={`M${p.from[0]},${p.from[1]} L${p.to[0]},${p.to[1]}`} fill="none" />
+            <circle r="2.8" fill={p.c} filter="url(#ki-soft)">
+              <animateMotion dur={p.t} repeatCount="indefinite" begin={p.d}>
+                <mpath xlinkHref={`#${pid}`} />
+              </animateMotion>
+              <animate attributeName="opacity" values="0;1;1;0" dur={p.t} begin={p.d} repeatCount="indefinite" />
+            </circle>
+          </g>
+        );
+      })}
+
+      {/* Input nodes */}
+      {inputs.map((n, i) => (
         <g key={i}>
-          {!p.out
-            ? <path id={p.id} d={`M34,${p.y1i} L88,${p.y1h}`} fill="none" />
-            : <path id={p.id} d={`M88,${p.y1h} L136,${p.y2o}`} fill="none" />}
-          <circle r="2" fill={p.out ? 'rgba(59,130,246,0.9)' : 'rgba(255,107,53,0.9)'}>
-            <animateMotion dur={p.t} repeatCount="indefinite" begin={p.d}>
-              <mpath xlinkHref={`#${p.id}`} />
-            </animateMotion>
-            <animate attributeName="opacity" values="0;1;1;0" dur={p.t} begin={p.d} repeatCount="indefinite" />
+          <circle cx="30" cy={n.y} r="9" fill="rgba(255,107,53,0.12)" stroke="rgba(255,107,53,0.5)" strokeWidth="1">
+            <animate attributeName="r" values="9;12;9" dur={`${8+i*2}s`} repeatCount="indefinite" />
+            <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur={`${8+i*2}s`} repeatCount="indefinite" />
           </circle>
+          <text x="30" y={n.y + 3.5} textAnchor="middle" fill="rgba(255,149,0,0.9)"
+            fontSize="6" fontFamily="monospace" fontWeight="bold">{n.l}</text>
         </g>
       ))}
-      {inputY.map((y, i) => (
-        <g key={i}>
-          <circle cx="34" cy={y} r="5" fill="rgba(255,107,53,0.18)" stroke="rgba(255,107,53,0.45)" strokeWidth="0.8" />
-          <text x="12" y={y + 3} textAnchor="middle" fill="rgba(255,107,53,0.4)" fontSize="5" fontFamily="monospace">
-            {['PV', 'BAT', 'GRID'][i]}
-          </text>
-        </g>
-      ))}
-      {hiddenY.map((y, i) => (
-        <circle key={i} cx="88" cy={y} r="5" fill="rgba(255,107,53,0.06)" stroke="rgba(255,107,53,0.25)" strokeWidth="0.8">
-          <animate attributeName="fill" values="rgba(255,107,53,0.06);rgba(255,107,53,0.25);rgba(255,107,53,0.06)"
-            dur={`${4 + i}s`} repeatCount="indefinite" />
+
+      {/* Hidden layer 1 nodes */}
+      {hidden1.map((y, i) => (
+        <circle key={i} cx="80" cy={y} r="7" fill="rgba(255,107,53,0.08)" stroke="rgba(255,107,53,0.35)" strokeWidth="0.8">
+          <animate attributeName="fill" values="rgba(255,107,53,0.08);rgba(255,107,53,0.28);rgba(255,107,53,0.08)"
+            dur={`${5+i}s`} repeatCount="indefinite" />
         </circle>
       ))}
-      {outputY.map((y, i) => (
+
+      {/* Hidden layer 2 nodes */}
+      {hidden2.map((y, i) => (
+        <circle key={i} cx="130" cy={y} r="8" fill="rgba(255,149,0,0.06)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.8">
+          <animate attributeName="fill" values="rgba(255,149,0,0.06);rgba(255,149,0,0.25);rgba(255,149,0,0.06)"
+            dur={`${6+i}s`} repeatCount="indefinite" />
+        </circle>
+      ))}
+
+      {/* Output nodes */}
+      {outputs.map((o, i) => (
         <g key={i}>
-          <circle cx="136" cy={y} r="6" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.6)" strokeWidth="1" />
-          <text x="152" y={y + 3} textAnchor="start" fill="rgba(59,130,246,0.45)" fontSize="5" fontFamily="monospace">
-            {['LOAD', 'SELL'][i]}
-          </text>
+          <circle cx="172" cy={o.y} r="10" fill={`${o.c}18`} stroke={o.c} strokeWidth="1.2" filter="url(#ki-soft)" />
+          <text x="172" y={o.y + 3.5} textAnchor="middle" fill="rgba(255,255,255,0.85)"
+            fontSize="5.5" fontFamily="monospace" fontWeight="bold">{o.l}</text>
         </g>
       ))}
-      <text x="34" y="88" textAnchor="middle" fill="rgba(255,107,53,0.22)" fontSize="5.5" fontFamily="monospace">INPUT</text>
-      <text x="88" y="88" textAnchor="middle" fill="rgba(255,107,53,0.22)" fontSize="5.5" fontFamily="monospace">DQN</text>
-      <text x="136" y="88" textAnchor="middle" fill="rgba(59,130,246,0.22)" fontSize="5.5" fontFamily="monospace">ACTION</text>
+
+      {/* Layer labels */}
+      <text x="30" y="175" textAnchor="middle" fill="rgba(255,107,53,0.35)" fontSize="6" fontFamily="monospace">INPUT</text>
+      <text x="80" y="175" textAnchor="middle" fill="rgba(255,107,53,0.35)" fontSize="6" fontFamily="monospace">H1·6</text>
+      <text x="130" y="175" textAnchor="middle" fill="rgba(255,149,0,0.35)" fontSize="6" fontFamily="monospace">H2·4</text>
+      <text x="172" y="175" textAnchor="middle" fill="rgba(100,200,100,0.45)" fontSize="6" fontFamily="monospace">DQN-OUT</text>
+
+      {/* Confidence bar */}
+      <rect x="8" y="8" width="55" height="6" rx="3" fill="rgba(34,197,94,0.1)" stroke="rgba(34,197,94,0.25)" strokeWidth="0.5" />
+      <rect x="8" y="8" width="46" height="6" rx="3" fill="rgba(34,197,94,0.6)">
+        <animate attributeName="width" values="46;52;46" dur="8s" repeatCount="indefinite" />
+      </rect>
+      <text x="66" y="14" fill="rgba(34,197,94,0.8)" fontSize="7" fontFamily="monospace">94%</text>
     </svg>
   );
 }
 
 function FleetVisual() {
+  const vehicles = [
+    { x: 8,  y: 16, soc: 72, chg: true,  label: 'EV-01', w: 78 },
+    { x: 104, y: 16, soc: 41, chg: false, label: 'EV-02', w: 45 },
+    { x: 8,  y: 78, soc: 88, chg: false, label: 'EV-03', w: 90 },
+    { x: 104, y: 78, soc: 15, chg: true,  label: 'EV-04', w: 18 },
+    { x: 8,  y: 140, soc: 63, chg: true,  label: 'EV-05', w: 65 },
+    { x: 104, y: 140, soc: 54, chg: false, label: 'EV-06', w: 55 },
+  ];
   return (
-    <svg viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 90, display: 'block' }}>
+    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 180, display: 'block' }}>
       <defs>
-        <linearGradient id="wave-v3" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
-          <stop offset="0" stopColor="transparent" />
-          <stop offset="0.5" stopColor="rgba(255,107,53,0.55)" />
-          <stop offset="1" stopColor="transparent" />
+        <linearGradient id="fleet-bar-lo" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff4500" /><stop offset="100%" stopColor="#ff6b35" />
         </linearGradient>
+        <linearGradient id="fleet-bar-hi" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff9500" /><stop offset="100%" stopColor="#22c55e" />
+        </linearGradient>
+        <filter id="fleet-glow"><feGaussianBlur stdDeviation="2.5" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" /></filter>
       </defs>
-      {[0, 1, 2, 3, 4, 5].map(i => {
-        const col = i % 3, row = Math.floor(i / 3);
-        const x = 14 + col * 48, y = 14 + row * 40, dl = col * 1.4 + row * 0.7;
-        const sw = 8 + (i * 11) % 22;
+
+      {vehicles.map((v, i) => {
+        const isLo = v.soc < 30;
+        const barColor = isLo ? 'url(#fleet-bar-lo)' : 'url(#fleet-bar-hi)';
+        const accentCol = isLo ? 'rgba(255,80,0,0.7)' : 'rgba(255,149,0,0.6)';
         return (
           <g key={i}>
-            <rect x={x} y={y} width="36" height="22" rx="3"
-              fill="rgba(255,107,53,0.05)" stroke="rgba(255,107,53,0.2)" strokeWidth="0.6">
-              <animate attributeName="stroke" values="rgba(255,107,53,0.2);rgba(255,107,53,0.55);rgba(255,107,53,0.2)"
-                dur="9s" begin={`${dl}s`} repeatCount="indefinite" />
+            {/* Card bg */}
+            <rect x={v.x} y={v.y} width="88" height="54" rx="6"
+              fill="rgba(10,6,22,0.85)" stroke={isLo ? 'rgba(255,80,0,0.4)' : 'rgba(255,107,53,0.2)'} strokeWidth="0.8">
+              <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur={`${7+i}s`} repeatCount="indefinite" />
             </rect>
-            <rect x={x + 4} y={y + 7} width="28" height="10" rx="2" fill="rgba(255,107,53,0.18)">
-              <animate attributeName="fill"
-                values="rgba(255,107,53,0.18);rgba(255,107,53,0.45);rgba(255,107,53,0.18)"
-                dur="9s" begin={`${dl}s`} repeatCount="indefinite" />
+
+            {/* Vehicle label */}
+            <text x={v.x + 8} y={v.y + 14} fill={accentCol} fontSize="8" fontFamily="monospace" fontWeight="bold">{v.label}</text>
+
+            {/* Charging indicator */}
+            {v.chg && (
+              <text x={v.x + 64} y={v.y + 14} fill="rgba(255,220,50,0.9)" fontSize="10" fontFamily="monospace">
+                ⚡
+                <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite" />
+              </text>
+            )}
+
+            {/* SOC bar bg */}
+            <rect x={v.x + 8} y={v.y + 22} width="72" height="8" rx="4"
+              fill="rgba(255,255,255,0.05)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.5" />
+            {/* SOC bar fill */}
+            <rect x={v.x + 8} y={v.y + 22} width={v.w * 0.72} height="8" rx="4" fill={barColor}>
+              <animate attributeName="width" values={`${v.w*0.72};${v.w*0.72+5};${v.w*0.72}`} dur={`${11+i*2}s`} repeatCount="indefinite" />
             </rect>
-            <path d={`M${x + 8} ${y + 7} L${x + 11} ${y + 3} L${x + 25} ${y + 3} L${x + 28} ${y + 7}`}
-              fill="rgba(255,107,53,0.12)" />
-            <circle cx={x + 11} cy={y + 18} r="2.5" fill="rgba(6,9,30,0.9)" stroke="rgba(255,107,53,0.4)" strokeWidth="0.5" />
-            <circle cx={x + 25} cy={y + 18} r="2.5" fill="rgba(6,9,30,0.9)" stroke="rgba(255,107,53,0.4)" strokeWidth="0.5" />
-            <rect x={x + 4} y={y + 1} width="28" height="3" rx="1" fill="rgba(255,255,255,0.05)" />
-            <rect x={x + 4} y={y + 1} width={sw} height="3" rx="1" fill="rgba(255,107,53,0.55)">
-              <animate attributeName="width" values={`${sw};${sw + 10};${sw}`}
-                dur={`${11 + i * 2}s`} repeatCount="indefinite" />
-            </rect>
+
+            {/* SOC label */}
+            <text x={v.x + 8} y={v.y + 44} fill={accentCol} fontSize="7.5" fontFamily="monospace">{v.soc}% SOC</text>
+            <text x={v.x + 60} y={v.y + 44} fill="rgba(100,200,255,0.5)" fontSize="6" fontFamily="monospace">{v.chg ? '+11kW' : 'idle'}</text>
           </g>
         );
       })}
-      <rect x="0" y="0" width="10" height="90" fill="url(#wave-v3)" opacity="0.4">
-        <animate attributeName="x" values="-10;170;-10" dur="7s" repeatCount="indefinite" />
+
+      {/* KI dispatch overlay beam */}
+      <rect x="0" y="0" width="6" height="180"
+        fill="linear-gradient(to bottom,transparent,rgba(255,107,53,0.5),transparent)" opacity="0.6">
+        <animate attributeName="x" values="-6;204;-6" dur="6s" repeatCount="indefinite" />
       </rect>
-      <text x="80" y="88" textAnchor="middle" fill="rgba(255,107,53,0.28)" fontSize="6" fontFamily="monospace">
-        FLEET DISPATCH · KI-OPTIMIZED
-      </text>
     </svg>
   );
 }
@@ -652,6 +1190,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
   const heroRef = useRef<HTMLDivElement>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
+  const [techModal, setTechModal] = useState<{ slug: string; title: string } | null>(null);
 
   const onMove = useCallback((e: RMouseEvent<HTMLDivElement>) => {
     const r = heroRef.current?.getBoundingClientRect();
@@ -957,8 +1496,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
                     }} />
 
                     {/* SVG visual */}
-                    <div style={{ padding:'22px 22px 0',
-                      opacity: isH ? 1 : 0.65, transition:'opacity 1.2s ease' }}>
+                    <div style={{ padding:'16px 16px 0', opacity: 1 }}>
                       {Visual ? <Visual /> : null}
                     </div>
 
@@ -973,7 +1511,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
                         color:T.white, lineHeight:1.3 }}>{app.title}</h3>
                       <p style={{ margin:'0 0 20px', fontSize:13,
                         color:'rgba(248,250,252,0.6)', lineHeight:1.75 }}>{app.desc}</p>
-                      <button type="button" onClick={() => onNavigate('produkte')}
+                      <button type="button" onClick={() => setTechModal({ slug: app.slug, title: app.title })}
                         style={{
                           background: isH ? 'rgba(255,107,53,0.1)' : 'transparent',
                           border:`1px solid ${isH ? 'rgba(255,107,53,0.4)' : 'rgba(255,107,53,0.18)'}`,
@@ -1074,6 +1612,14 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
           </div>
         </section>
       </Fade>
+      {/* ── Tech Details Modal ── */}
+      {techModal && (
+        <TechModal
+          slug={techModal.slug}
+          title={techModal.title}
+          onClose={() => setTechModal(null)}
+        />
+      )}
     </div>
   );
 }
