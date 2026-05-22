@@ -1,6 +1,4 @@
-
 import React from "react";
-
 
 interface Device {
   id: string;
@@ -15,84 +13,137 @@ interface Device {
   power_kw?: number;
 }
 
-
 interface DeviceGridProps {
   devices: Device[];
   onConnect?: (device: Device) => void;
 }
 
-const DeviceGrid: React.FC<DeviceGridProps> = ({ devices, onConnect }) => {
-  const getStatusColor = (status?: string) => {
-    const normalized = (status || '').toLowerCase();
-    if (normalized.includes('connected')) return '#22c55e';
-    if (normalized.includes('pending')) return '#f59e0b';
-    return '#f87171';
-  };
+const WAI = `
+  @keyframes wai-breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+  @keyframes wai-pulse-ring{0%{transform:scale(1);opacity:0.4}100%{transform:scale(1.6);opacity:0}}
+  .wai-dev-card{transition:border-color .5s ease,box-shadow .5s ease,transform .3s ease!important}
+  .wai-dev-card:hover{border-color:rgba(255,107,53,0.35)!important;box-shadow:0 16px 48px rgba(255,107,53,0.09)!important;transform:translateY(-2px)!important}
+  .wai-dev-btn{transition:all .4s cubic-bezier(.16,1,.3,1)!important}
+  .wai-dev-btn:hover:not(:disabled){filter:brightness(1.15)!important;transform:translateY(-2px) scale(1.02)!important}
+`;
 
+const DEVICE_ICONS: Record<string, string> = {
+  battery: '🔋', heimspeicher: '🔋', inverter: '☀️', wallbox: '⚡',
+  'smart meter': '📊', meter: '📊',
+};
+
+const getIcon = (type: string) => {
+  const t = type.toLowerCase();
+  for (const [k, v] of Object.entries(DEVICE_ICONS)) { if (t.includes(k)) return v; }
+  return '📡';
+};
+
+const getStatusColor = (status?: string) => {
+  const s = (status || '').toLowerCase();
+  if (s.includes('connected')) return '#22c55e';
+  if (s.includes('pending')) return '#f59e0b';
+  if (s.includes('partial')) return '#f59e0b';
+  return '#ef4444';
+};
+
+const DeviceGrid: React.FC<DeviceGridProps> = ({ devices, onConnect }) => {
   return (
-  <div className="device-grid" style={{ display: 'grid', gap: 14, width: '100%', minWidth: 0 }}>
-      {devices.map((device) => {
-        const typeStr = (device.type || '').toLowerCase();
-        if (typeStr.includes('battery') || typeStr.includes('heimspeicher')) {
+    <div>
+      <style>{WAI}</style>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:16, width:'100%' }}>
+        {devices.map((device) => {
+          const typeStr = (device.type || '').toLowerCase();
+          const isBattery = typeStr.includes('battery') || typeStr.includes('heimspeicher');
           const safeSoc = Number.isFinite(device.soc) ? Math.max(0, Math.min(100, Number(device.soc))) : 0;
           const safePower = Number.isFinite(device.power_kw) ? Number(device.power_kw) : 0;
+          const statusColor = getStatusColor(device.status);
+          const connected = (device.status || '').toLowerCase().includes('connected');
+          const icon = getIcon(device.type);
 
-          // Special UI for Heimspeicher/Battery (alle Varianten)
           return (
-            <div key={device.id || Math.random()} className="device-card battery-card" style={{ background: 'rgba(15, 23, 42, 0.78)', border: '1px solid rgba(103,232,249,0.32)', boxShadow: '0 10px 30px rgba(2,6,23,0.35)', borderRadius: 14, padding: 18, color: '#e2e8f0', width: '100%', minWidth: 0, overflowWrap: 'anywhere' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, minWidth: 0 }}>
-                <span style={{ fontSize: 36 }}>🔋</span>
-                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 17, lineHeight: 1.2, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{device.type || 'Battery'} ({device.brand || 'Unbekannt'})</span>
-              </div>
-              <div style={{ color: '#cbd5e1' }}>IP: {device.ip || '-'}</div>
-              <div style={{ color: '#cbd5e1' }}>Status: <span style={{ color: getStatusColor(device.status), fontWeight: 700 }}>{device.status || 'offline'}</span></div>
-              <div style={{ color: '#cbd5e1' }}>Model: {device.model || '-'}</div>
-              <div style={{ color: '#cbd5e1' }}>Hersteller: {device.manufacturer || '-'}</div>
-              <div style={{ margin: '12px 0' }}>
-                <span style={{ color: '#bae6fd', fontWeight: 600 }}>Batterie-SOC:</span>
-                <div style={{ background: 'rgba(148,163,184,0.25)', borderRadius: 8, height: 18, width: '100%', marginTop: 4, position: 'relative' }}>
-                  <div style={{ width: `${safeSoc}%`, background: 'linear-gradient(90deg, #38bdf8 0%, #14b8a6 100%)', height: '100%', borderRadius: 8, transition: 'width 0.5s' }} />
-                  <span style={{ position: 'absolute', left: 8, top: 0, fontWeight: 700, color: '#f8fafc', fontSize: 13 }}>{safeSoc}%</span>
+            <div key={device.id} className="wai-dev-card" style={{
+              background:'rgba(4,6,20,0.72)', border:`1px solid ${connected ? 'rgba(34,197,94,0.2)' : 'rgba(255,107,53,0.12)'}`,
+              borderRadius:18, overflow:'hidden', color:'#f8fafc',
+            }}>
+              {/* Top accent bar */}
+              <div style={{ height:3, background:`linear-gradient(90deg,${statusColor},${connected ? '#3b82f6' : '#ff6b35'})` }}/>
+
+              <div style={{ padding:'18px 20px' }}>
+                {/* Header */}
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
+                  <div style={{ position:'relative', width:44, height:44, flexShrink:0 }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'rgba(255,255,255,0.05)', border:`1px solid ${statusColor}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>
+                      {icon}
+                    </div>
+                    {/* Live status dot */}
+                    <div style={{ position:'absolute', bottom:2, right:2, width:10, height:10, borderRadius:'50%', background:statusColor, border:'2px solid rgba(4,6,20,0.9)', animation:'wai-breathe 4s ease-in-out infinite' }}/>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:800, fontSize:15, lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{device.type}</div>
+                    <div style={{ fontSize:12, color:'rgba(248,250,252,0.45)', marginTop:2 }}>{device.brand || 'Unbekannt'}</div>
+                  </div>
+                  <div style={{ background:`${statusColor}15`, border:`1px solid ${statusColor}35`, borderRadius:999, padding:'4px 10px', fontSize:10, fontWeight:700, color:statusColor, letterSpacing:'0.1em', textTransform:'uppercase', whiteSpace:'nowrap' }}>
+                    {device.status || 'offline'}
+                  </div>
                 </div>
-              </div>
-              <div style={{ color: '#cbd5e1' }}>Leistung: <b style={{ color: '#f8fafc' }}>{safePower.toFixed(1)} kW</b></div>
-              <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button style={{ flex: '1 1 140px', minWidth: 0, background: 'linear-gradient(90deg, #16a34a 0%, #22c55e 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: 7, fontWeight: 700, cursor: 'pointer' }}
-                  disabled={device.status !== 'connected'}
-                  onClick={() => alert('Batterie laden (Demo)')}
-                >
-                  ➕ Laden
-                </button>
-                <button style={{ flex: '1 1 140px', minWidth: 0, background: 'linear-gradient(90deg, #ef4444 0%, #f97316 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: 7, fontWeight: 700, cursor: 'pointer' }}
-                  disabled={device.status !== 'connected'}
-                  onClick={() => alert('Batterie entladen (Demo)')}
-                >
-                  ➖ Entladen
+
+                {/* Details */}
+                <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:14 }}>
+                  {[
+                    { label:'Verbindung', value: device.ip || '—' },
+                    { label:'Modell', value: device.model || '—' },
+                    { label:'Hersteller', value: device.manufacturer || '—' },
+                    ...(isBattery ? [{ label:'Leistung', value:`${safePower.toFixed(1)} kW` }] : []),
+                    ...(device.soc != null ? [{ label:'SOC', value:`${safeSoc}%` }] : []),
+                  ].map(({label,value})=>(
+                    <div key={label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 10px', background:'rgba(255,255,255,0.025)', borderRadius:8 }}>
+                      <span style={{ fontSize:11, color:'rgba(248,250,252,0.35)', letterSpacing:'0.1em', textTransform:'uppercase' }}>{label}</span>
+                      <span style={{ fontSize:12, fontWeight:600, color:'rgba(248,250,252,0.7)', fontFamily:'monospace' }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* SOC bar for battery */}
+                {isBattery && (
+                  <div style={{ marginBottom:14 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'rgba(248,250,252,0.35)', letterSpacing:'0.1em', marginBottom:5, textTransform:'uppercase' }}>
+                      <span>Ladezustand</span><span style={{ color: safeSoc > 60 ? '#22c55e' : safeSoc > 25 ? '#f59e0b' : '#ef4444', fontWeight:700 }}>{safeSoc}%</span>
+                    </div>
+                    <div style={{ height:7, background:'rgba(255,255,255,0.06)', borderRadius:999, overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${safeSoc}%`, borderRadius:999, transition:'width 1s ease',
+                        background: safeSoc > 60 ? 'linear-gradient(90deg,#22c55e,#3b82f6)' : safeSoc > 25 ? 'linear-gradient(90deg,#f59e0b,#22c55e)' : 'linear-gradient(90deg,#ef4444,#f59e0b)',
+                        boxShadow:`0 0 8px ${safeSoc > 60 ? '#22c55e' : safeSoc > 25 ? '#f59e0b' : '#ef4444'}60`,
+                      }}/>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action button */}
+                <button
+                  className="wai-dev-btn"
+                  disabled={connected}
+                  onClick={() => onConnect && onConnect(device)}
+                  style={{
+                    width:'100%', border:'none', borderRadius:999, padding:'11px 0', fontWeight:800, fontSize:13,
+                    cursor: connected ? 'default' : 'pointer',
+                    background: connected
+                      ? 'linear-gradient(90deg,rgba(34,197,94,0.15),rgba(34,197,94,0.08))'
+                      : 'linear-gradient(90deg,#ff6b35,#ff9500)',
+                    color: connected ? '#22c55e' : '#0a0305',
+                    border: connected ? '1px solid rgba(34,197,94,0.3)' : 'none',
+                  }}>
+                  {connected ? '✓ Verbunden' : 'Gerät verbinden'}
                 </button>
               </div>
             </div>
           );
-        }
-        // Default card for other devices
-        return (
-          <div key={device.id} className="device-card" style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(148,163,184,0.28)', borderRadius: 12, padding: 14, color: '#e2e8f0', width: '100%', minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-            <h4 style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc', marginBottom: 6 }}>{device.type} ({device.brand})</h4>
-            <div style={{ color: '#cbd5e1' }}>IP: {device.ip || '-'}</div>
-            <div style={{ color: '#cbd5e1' }}>Status: <span style={{ color: getStatusColor(device.status), fontWeight: 700 }}>{device.status || 'offline'}</span></div>
-            <div style={{ color: '#cbd5e1' }}>Model: {device.model || "-"}</div>
-            <div style={{ color: '#cbd5e1' }}>Manufacturer: {device.manufacturer || "-"}</div>
-            <div style={{ color: '#cbd5e1' }}>SOC: {device.soc ?? "-"}</div>
-            <div style={{ color: '#cbd5e1' }}>Power: {Number.isFinite(device.power_kw) ? Number(device.power_kw).toFixed(1) : '0.0'} kW</div>
-            <button
-              disabled={device.status === "connected"}
-              onClick={() => onConnect && onConnect(device)}
-              style={{ marginTop: 10, background: 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', fontWeight: 700, cursor: 'pointer' }}
-            >
-              {device.status === "connected" ? "Verbunden" : "Verbinden"}
-            </button>
+        })}
+        {devices.length === 0 && (
+          <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'40px 20px', color:'rgba(248,250,252,0.25)', fontSize:14 }}>
+            Keine Geräte gefunden. Backend aktiv?
           </div>
-        );
-      })}
+        )}
+      </div>
     </div>
   );
 };

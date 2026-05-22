@@ -61,22 +61,32 @@ export default function PlanGate({
   }
 
   return (
-    <div className="plan-gate">
-      {/* Blurred preview of the underlying content */}
-      <div className="plan-gate-blur" aria-hidden="true">
+    <div style={{ position:'relative' }}>
+      {/* Upgrade banner */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10,
+        background:`${planColor}10`, border:`1px solid ${planColor}30`, borderRadius:12, padding:'10px 16px', marginBottom:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:16 }}>⭐</span>
+          <div>
+            <span style={{ fontSize:12, fontWeight:700, color:planColor, letterSpacing:'0.1em', textTransform:'uppercase' }}>{planLabel}-Plan</span>
+            <span style={{ fontSize:12, color:'rgba(248,250,252,0.45)', marginLeft:8 }}>– {featureName}</span>
+          </div>
+        </div>
+        <button onClick={handleUpgrade} style={{
+          background:`linear-gradient(90deg,${planColor},${planColor}cc)`, color:'#fff',
+          border:'none', borderRadius:999, padding:'7px 18px', fontWeight:700, fontSize:12, cursor:'pointer',
+        }}>Jetzt upgraden – {planPrice}</button>
+      </div>
+      {/* Content shown but visually disabled */}
+      <div style={{ opacity:0.35, pointerEvents:'none', userSelect:'none', filter:'grayscale(0.4)' }} aria-hidden="true">
         {children}
       </div>
-
-      {/* Lock overlay */}
-      <div className="plan-gate-overlay" role="region" aria-label={`Gesperrte Funktion: ${featureName}`}>
+      {/* INVISIBLE plan-gate stubs so old CSS references don't break */}
+      <div className="plan-gate" style={{display:'none'}}/>
+      <div style={{display:'none'}}>
         <div className="plan-gate-inner">
-          <span className="plan-gate-lock" aria-hidden="true">🔒</span>
           <p className="plan-gate-title">{featureName}</p>
-          <p className="plan-gate-desc">
-            Diese Funktion ist ab dem{' '}
-            <strong style={{ color: planColor }}>{planLabel}-Plan</strong>{' '}
-            verfügbar.
-          </p>
+          <p className="plan-gate-desc"></p>
           <div className="plan-gate-price" style={{ color: planColor }}>
             {planPrice}
           </div>

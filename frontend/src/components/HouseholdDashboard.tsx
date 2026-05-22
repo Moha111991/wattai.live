@@ -21,15 +21,21 @@ const WAI = `
   .wai-card:hover{border-color:rgba(255,107,53,.3)!important;box-shadow:0 16px 48px rgba(255,107,53,.07)!important}
 `;
 
-interface SysState { grid_power?: number; pv_power?: number; battery_soc?: number; home_power?: number; }
+interface SysState { grid_power?: number; pv_power?: number; battery_soc?: number; home_power?: number; battery_power_kw?: number; battery_capacity_kwh?: number; }
 
 const HouseholdDashboard = () => {
   const [state, setState] = useState<SysState>({});
 
   useEffect(() => {
-    const ws = new WebSocket(`${WS_URL}/ws`);
-    ws.onmessage = e => { try { setState(JSON.parse(e.data)); } catch {} };
-    return () => ws.close();
+    // Try both /ws and bare WS_URL
+    let ws: WebSocket;
+    try {
+      const url = WS_URL ? (WS_URL.endsWith('/ws') ? WS_URL : `${WS_URL}/ws`) : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+      ws = new WebSocket(url);
+      ws.onmessage = e => { try { setState(JSON.parse(e.data)); } catch {} };
+      ws.onerror = () => { /* silent */ };
+    } catch { return; }
+    return () => { try { ws.close(); } catch {} };
   }, []);
 
   const iotNodes = [
@@ -139,14 +145,14 @@ const HouseholdDashboard = () => {
           <div style={{ height:3, background:'linear-gradient(90deg,#22c55e,#ff9500)' }}/>
           <div style={{ padding:'24px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(34,197,94,0.7)', marginBottom:18 }}>Heimspeicher</div>
-            <BatteryWidget/>
+            <BatteryWidget data={{ soc: state.battery_soc ?? 0, power_kw: state.battery_power_kw ?? 0, capacity_kwh: state.battery_capacity_kwh ?? 10 }}/>
           </div>
         </div>
         <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500)' }}/>
           <div style={{ padding:'24px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:18 }}>Hausautomation</div>
-            <PlanGate feature="household.automation" featureName="Hausautomation" requiredPlan="pro">
+            <PlanGate feature="smarthome.automation" featureName="Hausautomation" requiredPlan="pro">
               <p style={{ margin:0, color:'rgba(248,250,252,0.4)', fontSize:13 }}>Automations-Features werden hier geladen…</p>
             </PlanGate>
           </div>

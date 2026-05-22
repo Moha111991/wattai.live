@@ -1,40 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { API_URL, WS_URL } from '../lib/api';
 
-interface EVState {
-  ev_soc: number;
-  ev_power_kw: number;
-  ev_charging: boolean;
-}
+interface EVState { ev_soc: number; ev_power_kw: number; ev_charging: boolean; }
+interface WallboxInfo { id?: string; type?: string; status?: string; enabled?: boolean; brand?: string; model?: string; }
+interface DevicesResponse { devices?: WallboxInfo[]; }
+interface ChargingResponse { soc?: number; power_kw?: number; }
 
-interface WallboxInfo {
-  id?: string;
-  type?: string;
-  status?: string;
-  enabled?: boolean;
-  brand?: string;
-  model?: string;
-}
+const WAI = `
+  @keyframes wai-breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+  @keyframes wai-shimmer{0%{background-position:-300% center}100%{background-position:300% center}}
+  @keyframes wai-glow-o{0%,100%{box-shadow:0 0 30px rgba(255,107,53,.25)}50%{box-shadow:0 0 70px rgba(255,107,53,.55)}}
+  .wai-btn-o{transition:all .6s cubic-bezier(.16,1,.3,1)!important}
+  .wai-btn-o:hover{filter:brightness(1.18)!important;transform:translateY(-3px) scale(1.02)!important}
+  .wai-btn-g{transition:all .6s cubic-bezier(.16,1,.3,1)!important}
+  .wai-btn-g:hover{background:rgba(255,107,53,.08)!important;border-color:rgba(255,107,53,.45)!important;transform:translateY(-2px)!important}
+  .wai-btn-r{transition:all .6s cubic-bezier(.16,1,.3,1)!important}
+  .wai-btn-r:hover{filter:brightness(1.15)!important;transform:translateY(-2px)!important}
+`;
 
-interface DevicesResponse {
-  devices?: WallboxInfo[];
-}
-
-interface ChargingResponse {
-  soc?: number;
-  power_kw?: number;
-}
-
-/**
- * Reusable EV charging control: shows SOC, power, status and allows
- * starting/stopping charging via the Wallbox.
- */
 const EVChargeControl: React.FC = () => {
-  const [evState, setEvState] = useState<EVState>({
-    ev_soc: 0,
-    ev_power_kw: 0,
-    ev_charging: false,
-  });
+  const [evState, setEvState] = useState<EVState>({ ev_soc: 0, ev_power_kw: 0, ev_charging: false });
   const [loading, setLoading] = useState(false);
   const [power, setPower] = useState<number>(11);
   const [error, setError] = useState<string | null>(null);
@@ -44,214 +29,201 @@ const EVChargeControl: React.FC = () => {
   const [cloudAvailable, setCloudAvailable] = useState<boolean | null>(null);
   const [cloudProvider, setCloudProvider] = useState<string | null>(null);
 
-  // WebSocket für Live-EV-Daten
+  // WebSocket Live-Daten
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if ('ev_soc' in data && 'ev_power_kw' in data && 'ev_charging' in data) {
-        setEvState({
-          ev_soc: data.ev_soc,
-          ev_power_kw: data.ev_power_kw,
-          ev_charging: data.ev_charging,
-        });
-      }
+      try {
+        const data = JSON.parse(event.data);
+        if ('ev_soc' in data && 'ev_power_kw' in data && 'ev_charging' in data) {
+          setEvState({ ev_soc: data.ev_soc, ev_power_kw: data.ev_power_kw, ev_charging: data.ev_charging });
+        }
+      } catch { /* ignore */ }
     };
     return () => ws.close();
   }, []);
 
-  // Verfügbarkeit der Wallbox aus der Geräte-Übersicht prüfen
+  // Wallbox aus Geräteliste
   useEffect(() => {
-    const loadWallbox = async () => {
+    const load = async () => {
       try {
-        const res = await fetch(`${API_URL}/devices`, {
-          headers: {
-            'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE',
-            'Content-Type': 'application/json',
-          },
-        });
+        const res = await fetch(`${API_URL}/devices`, { headers: { 'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE' } });
         if (!res.ok) return;
         const data: DevicesResponse = await res.json();
-        const devices = data.devices || [];
-        const wb = devices.find(
-          (d) => (d.type || '').toLowerCase().includes('wallbox')
-        );
-        if (wb) {
-          setWallbox(wb);
-        }
+        const wb = (data.devices || []).find(d => (d.type || '').toLowerCase().includes('wallbox'));
+        if (wb) setWallbox(wb);
       } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : 'Geräteübersicht konnte nicht geladen werden.';
-        setWallboxError(message);
+        setWallboxError(e instanceof Error ? e.message : 'Geräteübersicht konnte nicht geladen werden.');
       }
     };
-    loadWallbox();
+    load();
   }, []);
 
-  // Optionalen SOC aus der Fahrzeug-Cloud / dem BMS abrufen
+  // Cloud/BMS SOC
   useEffect(() => {
     let cancelled = false;
-
-    const loadCloudSoc = async () => {
+    const loadCloud = async () => {
       try {
         const res = await fetch(`${API_URL}/ev/cloud_status`);
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        if (data.available && typeof data.soc === 'number') {
-          setCloudSoc(data.soc);
-          setCloudAvailable(true);
-          setCloudProvider(data.provider || null);
-        } else {
-          setCloudAvailable(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setCloudAvailable(false);
-        }
-      }
+        if (data.available && typeof data.soc === 'number') { setCloudSoc(data.soc); setCloudAvailable(true); setCloudProvider(data.provider || null); }
+        else setCloudAvailable(false);
+      } catch { if (!cancelled) setCloudAvailable(false); }
     };
-
-    loadCloudSoc();
-    const id = setInterval(loadCloudSoc, 30000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
+    loadCloud();
+    const id = setInterval(loadCloud, 30000);
+    return () => { cancelled = true; clearInterval(id); };
   }, []);
 
   const hasWallbox = !!wallbox;
-  const wallboxConnected =
-    hasWallbox &&
-    (wallbox!.status === 'connected' || wallbox!.status === 'online' || wallbox!.enabled === true);
+  const wallboxConnected = hasWallbox && (wallbox!.status === 'connected' || wallbox!.status === 'online' || wallbox!.enabled === true);
 
   const setCharging = async (charging: boolean) => {
-    if (!wallboxConnected) return; // Sicherheitsnetz
-    setLoading(true);
-    setError(null);
+    if (!wallboxConnected) return;
+    setLoading(true); setError(null);
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE',
-        },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE' },
         body: JSON.stringify({ state: charging, power_kw: power }),
       });
       if (!res.ok) throw new Error('Fehler beim Senden der Anfrage');
       const result: ChargingResponse = await res.json();
-      setEvState((prev) => ({
-        ...prev,
-        ev_soc: result.soc ?? prev.ev_soc,
-        ev_power_kw: result.power_kw ?? prev.ev_power_kw,
-        ev_charging: charging,
-      }));
+      setEvState(prev => ({ ...prev, ev_soc: result.soc ?? prev.ev_soc, ev_power_kw: result.power_kw ?? prev.ev_power_kw, ev_charging: charging }));
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+      setError(e instanceof Error ? e.message : 'Unbekannter Fehler');
+    } finally { setLoading(false); }
   };
+
+  const soc = evState.ev_soc;
+  const socColor = soc > 60 ? '#22c55e' : soc > 25 ? '#f59e0b' : '#ef4444';
+  const r = 44, cx = 52, cy = 56;
+  const circ = 2 * Math.PI * r;
+  const dash = (soc / 100) * circ;
+
+  const POWER_OPTIONS = [
+    { value: 3.7, label: '3.7 kW', desc: 'Eco' },
+    { value: 7.4, label: '7.4 kW', desc: 'Standard' },
+    { value: 11,  label: '11 kW',  desc: 'Schnell' },
+    { value: 22,  label: '22 kW',  desc: 'Max' },
+  ];
 
   return (
     <div>
-      <h2 className="tab-page-title">EV-Ladeübersicht</h2>
-      <p className="ev-subtitle tab-page-subtitle">
-        Übersicht zum aktuellen Ladestand deines E-Autos und Steuerung der Wallbox.
-        Die Verbindung bzw. das Entfernen der Wallbox erfolgt im Tab "Übersicht" → "Geräte";
-        hier steuerst du nur den aktuellen Ladevorgang (Start/Stop und Ladeleistung).
-        SOC und Ladeleistung werden aus den Live-Daten der verbundenen Wallbox bzw. des
-        Backends abgelesen; während der Fahrt ist der genaue SOC nur über das
-        Batteriemanagementsystem (Fahrzeug/Cloud) zugänglich.
+      <style>{WAI}</style>
+
+      {/* Subtitle */}
+      <p style={{ margin:'0 0 20px', fontSize:13, color:'rgba(248,250,252,0.42)', lineHeight:1.75 }}>
+        Steuerung des Ladevorgangs (Start/Stop, Ladeleistung). Wallbox-Verbindung unter
+        Geräte verwalten. SOC aus Wallbox/Backend; während der Fahrt nur über Fahrzeug-BMS zugänglich.
       </p>
 
-      <div className="ev-info-grid">
-        <div>
-          <span className="ev-label">SOC (Wallbox/Backend):</span>
-          <span className="ev-value">{evState.ev_soc}%</span>
+      {/* Status row */}
+      <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:24, alignItems:'start', marginBottom:24 }}>
+        {/* SOC gauge */}
+        <svg width="104" height="112" viewBox="0 0 104 112" fill="none">
+          <defs>
+            <linearGradient id="ev-arc" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={socColor}/>
+              <stop offset="100%" stopColor="#3b82f6"/>
+            </linearGradient>
+          </defs>
+          <circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.05)" strokeWidth="9" fill="none"/>
+          <circle cx={cx} cy={cy} r={r} stroke="url(#ev-arc)" strokeWidth="9" fill="none"
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circ}`}
+            style={{ transition:'stroke-dasharray 1s ease', filter:'drop-shadow(0 0 6px rgba(34,197,94,0.5))', transformOrigin:`${cx}px ${cy}px`, transform:'rotate(-90deg)' }}
+          />
+          <text x={cx} y={cy-8} textAnchor="middle" fontSize="18" fill="#f8fafc">⚡</text>
+          <text x={cx} y={cy+12} textAnchor="middle" fontSize="20" fontWeight="800" fill={socColor} fontFamily="monospace">{soc}</text>
+          <text x={cx} y={cy+24} textAnchor="middle" fontSize="9" fill="rgba(248,250,252,0.4)" fontFamily="monospace">% SOC</text>
+          <text x={cx} y={cy+42} textAnchor="middle" fontSize="8" fill={evState.ev_charging ? '#22c55e' : 'rgba(248,250,252,0.3)'} fontFamily="monospace">
+            {evState.ev_charging ? '▲ LÄDT' : '● BEREIT'}
+          </text>
+        </svg>
+
+        {/* Stats */}
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {[
+            { label:'SOC (Wallbox/Backend)', value:`${soc}%`, color:socColor },
+            { label:'Ladeleistung', value:`${evState.ev_power_kw} kW`, color:'#3b82f6' },
+            { label:'Status', value: evState.ev_charging ? 'Lädt gerade' : 'Nicht am Laden', color: evState.ev_charging ? '#22c55e' : 'rgba(248,250,252,0.4)' },
+            ...(cloudAvailable && cloudSoc !== null ? [{ label:`SOC (BMS${cloudProvider ? ' · '+cloudProvider : ''})`, value:`${cloudSoc}%`, color:'#a78bfa' }] : []),
+          ].map(({label,value,color})=>(
+            <div key={label} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontSize:12, color:'rgba(248,250,252,0.42)', letterSpacing:'0.05em' }}>{label}</span>
+              <span style={{ fontSize:15, fontWeight:800, color, fontFamily:'monospace' }}>{value}</span>
+            </div>
+          ))}
         </div>
-        <div>
-          <span className="ev-label">Ladeleistung:</span>
-          <span className="ev-value">{evState.ev_power_kw} kW</span>
-        </div>
-        <div className={evState.ev_charging ? 'ev-status' : 'ev-status not-charging'}>
-          <span className="ev-label">Status:</span>
-          <span className="ev-value">
-            {evState.ev_charging ? 'Lädt gerade' : 'Nicht am Laden'}
-          </span>
-        </div>
-        {cloudAvailable && cloudSoc !== null && (
-          <div>
-            <span className="ev-label">SOC (Fahrzeug-Cloud/BMS):</span>
-            <span className="ev-value">
-              {cloudSoc}%{cloudProvider ? ` (${cloudProvider})` : ''}
-            </span>
-          </div>
-        )}
       </div>
 
-      <div className="ev-power-select">
-        <label htmlFor="power" className="ev-label">
-          Ladeleistung wählen:
-        </label>
-        <select
-          id="power"
-          value={power}
-          onChange={(e) => setPower(Number(e.target.value))}
-          disabled={!wallboxConnected || evState.ev_charging || loading}
-        >
-          <option value={3.7}>3.7 kW (Eco)</option>
-          <option value={7.4}>7.4 kW (Standard)</option>
-          <option value={11}>11 kW (Schnell)</option>
-        </select>
+      {/* Power selector */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:11, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(255,149,0,0.7)', fontWeight:700, marginBottom:10 }}>Ladeleistung wählen</div>
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          {POWER_OPTIONS.map(opt=>(
+            <button key={opt.value} type="button"
+              disabled={!wallboxConnected || evState.ev_charging || loading}
+              onClick={()=>setPower(opt.value)}
+              style={{
+                background: power===opt.value ? 'linear-gradient(90deg,#ff6b35,#ff9500)' : 'rgba(255,255,255,0.04)',
+                color: power===opt.value ? '#0a0305' : 'rgba(248,250,252,0.7)',
+                border: power===opt.value ? 'none' : '1px solid rgba(255,107,53,0.2)',
+                borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, cursor:'pointer',
+                opacity: (!wallboxConnected || evState.ev_charging || loading) ? 0.45 : 1,
+                transition:'all .3s ease',
+              }}>
+              <div>{opt.label}</div>
+              <div style={{ fontSize:10, fontWeight:400, marginTop:2 }}>{opt.desc}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="ev-actions">
-        <button
-          title="Startet den Ladevorgang mit der gewählten Ladeleistung. Ideal bei PV-Überschuss oder wenn du schnell Reichweite brauchst."
-          onClick={() => setCharging(true)}
+      {/* Action buttons */}
+      <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:16 }}>
+        <button type="button" className="wai-btn-o"
+          title="Startet den Ladevorgang mit der gewählten Ladeleistung."
+          onClick={()=>setCharging(true)}
           disabled={!wallboxConnected || evState.ev_charging || loading}
-        >
-          Start Laden
+          style={{
+            flex:'1 1 140px', background:'linear-gradient(90deg,#22c55e,#16a34a)', color:'#fff',
+            border:'none', borderRadius:999, padding:'13px 24px', fontWeight:800, fontSize:14, cursor:'pointer',
+            opacity:(!wallboxConnected || evState.ev_charging || loading)?0.4:1,
+            animation:(!wallboxConnected || evState.ev_charging || loading)?'none':'wai-glow-o 5s ease-in-out infinite',
+          }}>
+          {loading ? '…' : '▶ Laden starten'}
         </button>
-        <button
-          title="Beendet den aktuellen Ladevorgang – z.B. um Netzbezug zu sparen oder wenn genug geladen wurde."
-          onClick={() => setCharging(false)}
+        <button type="button" className="wai-btn-r"
+          title="Beendet den aktuellen Ladevorgang."
+          onClick={()=>setCharging(false)}
           disabled={!wallboxConnected || !evState.ev_charging || loading}
-        >
-          Stop Laden
+          style={{
+            flex:'1 1 140px', background:'rgba(239,68,68,0.15)', color:'rgba(248,100,80,0.9)',
+            border:'1px solid rgba(239,68,68,0.35)', borderRadius:999, padding:'13px 24px', fontWeight:700, fontSize:14, cursor:'pointer',
+            opacity:(!wallboxConnected || !evState.ev_charging || loading)?0.4:1,
+          }}>
+          ■ Laden stoppen
         </button>
       </div>
 
+      {/* Error */}
       {error && (
-        <p style={{ color: '#d32f2f', marginTop: '1rem' }}>Fehler: {error}</p>
+        <div style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#f87171', marginBottom:12 }}>
+          ⚠ {error}
+        </div>
       )}
 
-      {/* Hinweis zur Wallbox-Verfügbarkeit */}
-      {!hasWallbox && (
-        <p style={{ marginTop: '0.75rem', fontSize: 13, color: '#666' }}>
-          ⚠️ Keine verbundene Wallbox gefunden. Bitte im Tab "Übersicht" → "Geräte" eine
-          Wallbox verbinden.
-        </p>
-      )}
-      {hasWallbox && !wallboxConnected && (
-        <p style={{ marginTop: '0.75rem', fontSize: 13, color: '#666' }}>
-          ⚠️ Wallbox erkannt, aber nicht verbunden (Status: {wallbox?.status ?? 'unbekannt'}).
-          Bitte das Gerät in der Übersicht aktivieren.
-        </p>
-      )}
-      {hasWallbox && wallboxConnected && (
-        <p style={{ marginTop: '0.75rem', fontSize: 13, color: '#666' }}>
-          Verbundene Wallbox: {wallbox?.brand ?? 'Unbekannt'} {wallbox?.model ?? ''}
-          {wallbox?.status ? ` (Status: ${wallbox.status})` : ''}
-        </p>
-      )}
-
-      {wallboxError && (
-        <p style={{ marginTop: '0.5rem', fontSize: 12, color: '#d32f2f' }}>
-          Geräte-Info: {wallboxError}
-        </p>
-      )}
+      {/* Wallbox status */}
+      <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:'12px 16px', fontSize:12, color:'rgba(248,250,252,0.4)', lineHeight:1.6 }}>
+        {!hasWallbox && <span style={{ color:'#f59e0b' }}>⚠ Keine Wallbox verbunden. Bitte unter „Geräte" eine Wallbox hinzufügen.</span>}
+        {hasWallbox && !wallboxConnected && <span style={{ color:'#f59e0b' }}>⚠ Wallbox erkannt, aber nicht verbunden (Status: {wallbox?.status ?? 'unbekannt'}).</span>}
+        {hasWallbox && wallboxConnected && <span style={{ color:'#22c55e' }}>✓ Verbundene Wallbox: {wallbox?.brand ?? ''} {wallbox?.model ?? ''} ({wallbox?.status})</span>}
+        {wallboxError && <span style={{ color:'#f87171', display:'block', marginTop:4 }}>Geräte-Info: {wallboxError}</span>}
+      </div>
     </div>
   );
 };
