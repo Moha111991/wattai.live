@@ -56,8 +56,8 @@ export default defineConfig({
         ]
       },
       manifest: {
-  name: 'WattAI',
-  short_name: 'WattAI',
+  name: 'WattAI.live',
+  short_name: 'WattAI.live',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',

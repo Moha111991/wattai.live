@@ -163,7 +163,7 @@ export default function TopNav({
               ) : (
                 <>
                   <span>🔐</span>
-                  <span>Anmelden / Mein Konto</span>
+                  <span>Einloggen / Registrieren</span>
                 </>
               )}
             </button>
@@ -227,7 +227,7 @@ export default function TopNav({
             }}
             onClick={() => { if (!isLoggedIn) { onAuthClick(); setMenuOpen(false); } }}
           >
-            {isLoggedIn ? `👤 ${userName ?? 'Mein Konto'}` : '🔐 Anmelden / Mein Konto'}
+            {isLoggedIn ? `👤 ${userName ?? 'Mein Konto'}` : '🔐 Einloggen / Registrieren'}
           </button>
           {isLoggedIn && (
             <button

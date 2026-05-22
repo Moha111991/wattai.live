@@ -646,89 +646,6 @@ function SectionHeadline({
   );
 }
 
-// ── Fixed Nav ─────────────────────────────────────────────────────────────────
-
-function StickyNav({
-  onNavigate, onAuthClick,
-}: {
-  onNavigate: (p: Page) => void;
-  onAuthClick: () => void;
-}) {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  return (
-    <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999,
-      padding: '0 clamp(16px,4vw,40px)',
-      backdropFilter: scrolled ? 'blur(22px) saturate(1.4)' : 'blur(0px)',
-      background: scrolled
-        ? 'rgba(4,6,20,0.82)'
-        : 'transparent',
-      borderBottom: scrolled ? '1px solid rgba(255,107,53,0.1)' : '1px solid transparent',
-      transition: 'background 0.6s ease, backdrop-filter 0.6s ease, border-color 0.6s ease',
-      height: 64,
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    }}>
-      {/* Logo */}
-      <div
-        onClick={() => onNavigate('startseite')}
-        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8,
-          background: 'linear-gradient(135deg,#ff6b35,#ff9500)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, fontWeight: 900, color: '#000',
-          boxShadow: '0 0 18px rgba(255,107,53,0.5)',
-        }}>W</div>
-        <span style={{ fontWeight: 800, fontSize: 17, color: T.white, letterSpacing: '-0.01em' }}>
-          Watt<span style={{ color: T.orange }}>AI</span>
-        </span>
-      </div>
-
-      {/* Links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-        {[
-          { label: 'Produkte', page: 'produkte' as Page },
-          { label: 'Über uns',  page: 'about' as Page },
-          { label: 'Kontakt',  page: 'kontakt' as Page },
-        ].map(item => (
-          <button key={item.page} type="button" onClick={() => onNavigate(item.page)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: T.ghost, fontSize: 14, fontWeight: 500,
-              padding: '4px 0',
-              transition: 'color 0.3s ease',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = T.orange)}
-            onMouseLeave={e => (e.currentTarget.style.color = T.ghost)}
-          >
-            {item.label}
-          </button>
-        ))}
-        <button type="button" onClick={onAuthClick}
-          style={{
-            background: 'linear-gradient(90deg,#ff6b35,#ff9500)',
-            color: '#000', border: 'none', borderRadius: 999,
-            padding: '8px 20px', fontWeight: 700, fontSize: 13,
-            cursor: 'pointer',
-            boxShadow: '0 0 20px rgba(255,107,53,0.4)',
-            transition: 'filter 0.3s ease, transform 0.3s ease',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.15)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={e => { e.currentTarget.style.filter = ''; e.currentTarget.style.transform = ''; }}
-        >
-          Einloggen
-        </button>
-      </div>
-    </nav>
-  );
-}
-
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: StartPageProps) {
@@ -801,9 +718,6 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
         .wai-card:hover{border-color:rgba(255,107,53,0.35)!important;}
       `}</style>
 
-      {/* ── Fixed nav ── */}
-      <StickyNav onNavigate={onNavigate} onAuthClick={onAuthClick} />
-
       {/* ── Ambient particles (fixed) ── */}
       <div aria-hidden="true" style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0, overflow:'hidden' }}>
         {/* Slow scan */}
@@ -834,7 +748,6 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
         style={{ position:'relative', zIndex:1, minHeight:'100vh',
           display:'flex', flexDirection:'column', alignItems:'center',
           justifyContent:'center', overflow:'hidden',
-          paddingTop: 64 /* nav height */,
         }}
       >
         {/* WebGL full-screen shader background */}
