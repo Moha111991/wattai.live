@@ -1,196 +1,155 @@
 import { useEffect, useState } from 'react';
-import { API_URL } from '../lib/api';
 import PlanGate from './PlanGate';
 
-const RECOMMENDATION_URL = `${API_URL}/airecommendation`;
+const API_URL = import.meta.env.VITE_API_URL || '';
 
-interface KIRecommendation {
-  action: string;
-  reason: string;
-  confidence: number;
-}
+const WAI = `
+  @keyframes wai-breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+  @keyframes wai-shimmer{0%{background-position:-300% center}100%{background-position:300% center}}
+  @keyframes wai-drift{0%,100%{transform:translateY(0) translateX(0)}40%{transform:translateY(-22px) translateX(12px)}70%{transform:translateY(10px) translateX(-8px)}}
+  @keyframes wai-scan{0%{top:-2px}100%{top:100%}}
+  @keyframes wai-glow-o{0%,100%{box-shadow:0 0 30px rgba(255,107,53,.25)}50%{box-shadow:0 0 70px rgba(255,107,53,.55)}}
+  @keyframes wai-spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  .wai-btn-o{transition:all .6s cubic-bezier(.16,1,.3,1)!important}
+  .wai-btn-o:hover{filter:brightness(1.18)!important;transform:translateY(-3px) scale(1.02)!important}
+  .wai-btn-g{transition:all .6s cubic-bezier(.16,1,.3,1)!important}
+  .wai-btn-g:hover{background:rgba(255,107,53,.08)!important;border-color:rgba(255,107,53,.45)!important;transform:translateY(-2px)!important}
+  .wai-card{transition:border-color .8s ease,box-shadow .8s ease!important}
+  .wai-card:hover{border-color:rgba(255,107,53,.3)!important;box-shadow:0 16px 48px rgba(255,107,53,.07)!important}
+`;
+
+interface KIRec { action?: string; savings_eur?: number; confidence?: number; explanation?: string; }
 
 const KIDashboard = () => {
-  const [rec, setRec] = useState<KIRecommendation | null>(null);
+  const [rec, setRec] = useState<KIRec | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchRecommendation = async () => {
+  const fetchRec = async () => {
     setLoading(true);
-    setError(null);
     try {
-  const res = await fetch(RECOMMENDATION_URL, {
-        headers: {
-          'X-API-Key': 'mein_geheimer_schulkey123'
-        }
-      });
-      if (!res.ok) throw new Error('Fehler beim Laden der KI-Empfehlung');
-
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        const body = await res.text();
-        throw new Error(`Ungültige API-Antwort (kein JSON): ${body.slice(0, 80)}`);
-      }
-
-      const data = await res.json();
-
-      if (Array.isArray(data?.actions)) {
-        const firstAction = data.actions[0] || 'Keine Aktion erforderlich';
-        const reasonFromNotes = Array.isArray(data?.notes) && data.notes.length > 0
-          ? data.notes.join(' · ')
-          : 'Automatisch aus dem aktuellen Betriebszustand abgeleitet';
-
-        setRec({
-          action: firstAction,
-          reason: reasonFromNotes,
-          confidence: typeof data?.confidence === 'number' ? data.confidence : 0.8,
-        });
-      } else {
-        setRec(data as KIRecommendation);
-      }
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+      const r = await fetch(`${API_URL}/api/ai/recommendation`);
+      const d = await r.json();
+      setRec(d);
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchRecommendation();
-    const interval = setInterval(fetchRecommendation, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  useEffect(() => { fetchRec(); }, []);
+
+  const conf = rec?.confidence ?? 0;
 
   return (
-    <div style={{ width: '100%', maxWidth: '100%', margin: 0, padding: '0 0 40px', background: 'transparent' }}>
-      <style>{`
-        @keyframes ki-node { 0%,100%{opacity:.4;r:4}50%{opacity:1;r:6} }
-        @keyframes ki-stream { to{stroke-dashoffset:-24} }
-        @keyframes ki-spin { to{transform:rotate(360deg)} }
-      `}</style>
+    <div style={{ background:'transparent', paddingBottom:48, width:'100%' }}>
+      <style>{WAI}</style>
 
-      {/* Cinematic Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
-        {/* Neural Network SVG */}
-        <div style={{ flexShrink: 0 }}>
-          <svg width="160" height="100" viewBox="0 0 160 100" fill="none">
-            {/* Layer 1 */}
-            {[20,40,60,80].map((cy,i) => (
-              <g key={i}>
-                <circle cx="20" cy={cy} r="5" fill="rgba(255,107,53,0.2)" stroke="#ff6b35" strokeWidth="1.2">
-                  <animate attributeName="r" values="4;6;4" dur={`${1.5+i*0.3}s`} repeatCount="indefinite"/>
-                </circle>
-              </g>
-            ))}
-            {/* Layer 2 */}
-            {[30,55,80].map((cy,i) => (
-              <circle key={i} cx="65" cy={cy} r="5" fill="rgba(255,149,0,0.2)" stroke="#ff9500" strokeWidth="1.2">
-                <animate attributeName="r" values="4;6;4" dur={`${1.8+i*0.3}s`} repeatCount="indefinite"/>
+      {/* ── 4K CINEMATIC HEADER ─────────────────────────────────────────── */}
+      <div style={{ position:'relative', width:'100%', minHeight:'clamp(260px,30vw,360px)', overflow:'hidden', background:'linear-gradient(160deg,#020617 0%,#04060e 100%)', borderBottom:'1px solid rgba(255,107,53,0.1)', marginBottom:32 }}>
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)', zIndex:3 }}/>
+        <div style={{ position:'absolute', top:'-30%', left:'-5%', width:'55%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(255,107,53,0.1),transparent 65%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', top:'-30%', right:'-5%', width:'45%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(30,64,175,0.1),transparent 65%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(255,107,53,0.18),transparent)', animation:'wai-scan 22s linear infinite', pointerEvents:'none', zIndex:2 }}/>
+        {[0,1,2,3,4].map(i=>(
+          <div key={i} style={{ position:'absolute', width:1.5, height:1.5, borderRadius:'50%', left:`${(i*43+9)%100}%`, top:`${(i*71+13)%100}%`, background:i%2===0?'#ff6b35':'#3b82f6', animation:`wai-drift ${32+(i%5)*4}s ease-in-out ${i*2.2}s infinite`, opacity:0.16, pointerEvents:'none' }}/>
+        ))}
+
+        {/* Neural network SVG (KiVisual port) */}
+        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'60%', opacity:0.88 }}>
+          <svg viewBox="0 0 200 180" style={{ width:'100%', height:'100%' }} fill="none">
+            <defs>
+              <filter id="ki-glow"><feGaussianBlur stdDeviation="3" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
+              <linearGradient id="ki-grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#ff6b35"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
+            </defs>
+            {/* DQN layers: input(4), hidden1(5), hidden2(4), output(3) */}
+            {([[30,4],[78,5],[126,4],[174,3]] as [number,number][]).map(([x,n])=>
+              Array.from({length:n},(_,i)=>{
+                const y = 30 + i*(140/(n-1||1));
+                return <circle key={`${x}-${i}`} cx={x} cy={y} r="9" fill="rgba(4,6,20,0.9)" stroke={x===30?'rgba(255,107,53,0.8)':x===174?'rgba(34,197,94,0.8)':'rgba(59,130,246,0.7)'} strokeWidth="1.5" filter="url(#ki-glow)"><animate attributeName="opacity" values="0.6;1;0.6" dur={`${2.5+i*0.4}s`} repeatCount="indefinite"/></circle>;
+              })
+            )}
+            {/* Connections l1→l2 */}
+            {Array.from({length:4},(_,i)=>Array.from({length:5},(_,j)=>(
+              <line key={`c12-${i}-${j}`} x1="30" y1={30+i*(140/3)} x2="78" y2={30+j*(140/4)} stroke="rgba(59,130,246,0.08)" strokeWidth="0.7"/>
+            )))}
+            {/* Connections l2→l3 */}
+            {Array.from({length:5},(_,i)=>Array.from({length:4},(_,j)=>(
+              <line key={`c23-${i}-${j}`} x1="78" y1={30+i*(140/4)} x2="126" y2={30+j*(140/3)} stroke="rgba(59,130,246,0.08)" strokeWidth="0.7"/>
+            )))}
+            {/* Connections l3→l4 */}
+            {Array.from({length:4},(_,i)=>Array.from({length:3},(_,j)=>(
+              <line key={`c34-${i}-${j}`} x1="126" y1={30+i*(140/3)} x2="174" y2={30+j*(140/2)} stroke="rgba(59,130,246,0.08)" strokeWidth="0.7"/>
+            )))}
+            {/* Animated signal particles */}
+            {['rgba(255,107,53,0.9)','rgba(255,149,0,0.9)','rgba(34,197,94,0.9)'].map((c,i)=>(
+              <circle key={i} r="2.5" fill={c} filter="url(#ki-glow)">
+                <animateMotion dur={`${2.8+i*0.7}s`} repeatCount="indefinite" begin={`${i*0.9}s`}
+                  path={`M30,${30+i*45} L78,${30+(i+1)*35} L126,${30+i*47} L174,${30+i*70}`}/>
+                <animate attributeName="opacity" values="0;1;1;0" dur={`${2.8+i*0.7}s`} begin={`${i*0.9}s`} repeatCount="indefinite"/>
               </circle>
             ))}
-            {/* Layer 3 */}
-            {[30,55,80].map((cy,i) => (
-              <circle key={i} cx="110" cy={cy} r="5" fill="rgba(59,130,246,0.2)" stroke="#3b82f6" strokeWidth="1.2">
-                <animate attributeName="r" values="4;6;4" dur={`${2+i*0.3}s`} repeatCount="indefinite"/>
-              </circle>
-            ))}
-            {/* Output */}
-            <circle cx="148" cy="50" r="7" fill="rgba(255,107,53,0.2)" stroke="#ff6b35" strokeWidth="1.5">
-              <animate attributeName="r" values="5;9;5" dur="2s" repeatCount="indefinite"/>
-            </circle>
-            {/* Connections L1→L2 */}
-            {[20,40,60,80].map((y1,i) => [30,55,80].map((y2,j) => (
-              <line key={`${i}-${j}`} x1="25" y1={y1} x2="60" y2={y2} stroke="rgba(255,107,53,0.12)" strokeWidth="0.8">
-                <animate attributeName="stroke-opacity" values="0.1;0.35;0.1" dur={`${2+i*0.4}s`} repeatCount="indefinite"/>
-              </line>
-            )))}
-            {/* Connections L2→L3 */}
-            {[30,55,80].map((y1,i) => [30,55,80].map((y2,j) => (
-              <line key={`${i}-${j}`} x1="70" y1={y1} x2="105" y2={y2} stroke="rgba(255,149,0,0.12)" strokeWidth="0.8">
-                <animate attributeName="stroke-opacity" values="0.1;0.35;0.1" dur={`${2.2+j*0.3}s`} repeatCount="indefinite"/>
-              </line>
-            )))}
-            {/* Connections L3→Out */}
-            {[30,55,80].map((y1,i) => (
-              <line key={i} x1="115" y1={y1} x2="141" y2="50" stroke="rgba(59,130,246,0.2)" strokeWidth="0.8" strokeDasharray="4 3">
-                <animate attributeName="stroke-dashoffset" values="0;-24" dur={`${1.2+i*0.2}s`} repeatCount="indefinite"/>
-              </line>
+            {/* Confidence bar */}
+            <rect x="20" y="162" width="160" height="6" rx="3" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.2)" strokeWidth="0.5"/>
+            <rect x="20" y="162" width={160*conf} height="6" rx="3" fill="url(#ki-grad)">
+              <animate attributeName="width" from="0" to={160*conf} dur="2s" fill="freeze"/>
+            </rect>
+            <text x="100" y="176" textAnchor="middle" fill="rgba(255,149,0,0.6)" fontSize="7" fontFamily="monospace">Konfidenz {Math.round(conf*100)}% · DQN Agent</text>
+            {/* Labels */}
+            {[['STATE',30],['HIDDEN',78],['HIDDEN',126],['ACTION',174]].map(([l,x])=>(
+              <text key={l as string} x={x as number} y="22" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="6.5" fontFamily="monospace">{l as string}</text>
             ))}
           </svg>
         </div>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: '#ff9500', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>KI-System</div>
-          <h2 style={{ margin: '0 0 8px', fontSize: 'clamp(18px,3vw,26px)', fontWeight: 800, color: '#f8fafc', lineHeight: 1.2 }}>
-            KI-Empfehlung
-          </h2>
-          <p style={{ margin: 0, color: 'rgba(248,250,252,0.52)', fontSize: 14, lineHeight: 1.5 }}>
-            Intelligente Handlungsempfehlungen aus Live-Daten, Lastprofilen und aktuellen Systemzuständen.
-          </p>
+
+        {/* Left content */}
+        <div style={{ position:'relative', zIndex:2, padding:'clamp(28px,4vw,52px) clamp(20px,3vw,48px)', display:'flex', flexDirection:'column', gap:16, maxWidth:'clamp(260px,46%,520px)' }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,107,53,0.08)', border:'1px solid rgba(255,107,53,0.28)', borderRadius:999, padding:'6px 16px', width:'fit-content', backdropFilter:'blur(12px)' }}>
+            <span style={{ width:7, height:7, borderRadius:'50%', background:'#ff6b35', boxShadow:'0 0 8px rgba(255,107,53,0.7)', display:'inline-block', animation:'wai-breathe 4s ease-in-out infinite' }}/>
+            <span style={{ fontSize:10, color:'rgba(255,149,0,0.9)', letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 }}>KI-Agent · DQN Reinforcement Learning</span>
+          </div>
+          <h1 style={{ fontSize:'clamp(26px,3.8vw,52px)', fontWeight:900, lineHeight:1.06, letterSpacing:'-0.03em', margin:0, background:'linear-gradient(135deg,#fff5f0 0%,#ff9500 40%,#ff6b35 65%,#3b82f6 100%)', backgroundSize:'300% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'wai-shimmer 9s linear infinite' }}>
+            KI-Empfehlung<br/>& Optimierung
+          </h1>
+          <p style={{ margin:0, fontSize:'clamp(13px,1.4vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Deep-Q-Network analysiert Echtzeitzustand und liefert optimale Ladestrategien.</p>
+          <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginTop:4 }}>
+            <button type="button" className="wai-btn-o" onClick={fetchRec} disabled={loading} style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', animation:'wai-glow-o 5s ease-in-out infinite' }}>{loading ? 'Analysiere…' : 'Empfehlung laden'}</button>
+            <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>Verlauf anzeigen</button>
+          </div>
         </div>
+
+        <div aria-hidden="true" style={{ position:'absolute', zIndex:1, top:'50%', left:'50%', width:460, height:460, marginTop:-230, marginLeft:-230, borderRadius:'50%', border:'1px solid rgba(59,130,246,0.05)', animation:'wai-spin-slow 70s linear infinite', pointerEvents:'none' }}/>
       </div>
 
-      <PlanGate feature="insights.advanced" featureName="KI-Empfehlung & Prognosen" requiredPlan="pro">
-        {loading && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(248,250,252,0.6)', margin: '20px 0' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="12" cy="12" r="10" stroke="rgba(255,107,53,0.2)" strokeWidth="2.5"/>
-              <circle cx="12" cy="12" r="10" stroke="#ff6b35" strokeWidth="2.5" strokeDasharray="20 43" strokeLinecap="round">
-                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
-              </circle>
-            </svg>
-            <span style={{ fontSize: 14 }}>Lade Empfehlung...</span>
-          </div>
-        )}
-
-        {error && (
-          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 16, padding: '16px 20px', marginBottom: 16, color: '#f87171' }}>
-            ⚠️ Fehler: {error}
-          </div>
-        )}
-
+      {/* ── CONTENT ─────────────────────────────────────────────────────── */}
+      <div style={{ padding:'0 clamp(12px,2vw,24px)', display:'flex', flexDirection:'column', gap:16 }}>
         {rec && (
-          <div style={{
-            background: 'rgba(4,6,20,0.65)', border: '1px solid rgba(255,107,53,0.1)',
-            borderRadius: 20, backdropFilter: 'blur(12px)', padding: '24px',
-            display: 'flex', flexDirection: 'column', gap: 20,
-          }}>
-            <div style={{ height: 2, background: 'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)', borderRadius: 2 }}/>
-
-            {/* Action */}
-            <div style={{ background: 'rgba(255,107,53,0.04)', border: '1px solid rgba(255,107,53,0.12)', borderRadius: 12, padding: '14px 18px' }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: '#ff9500', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>Aktion</div>
-              <p style={{ margin: 0, color: '#f8fafc', lineHeight: 1.6, fontSize: 15, overflowWrap: 'anywhere' }}>{rec.action}</p>
-            </div>
-
-            {/* Reason */}
-            <div style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.12)', borderRadius: 12, padding: '14px 18px' }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: '#3b82f6', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>Begründung</div>
-              <p style={{ margin: 0, color: 'rgba(248,250,252,0.75)', lineHeight: 1.6, fontSize: 14, overflowWrap: 'anywhere' }}>{rec.reason}</p>
-            </div>
-
-            {/* Confidence bar */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontSize: 11, letterSpacing: 2, color: rec.confidence > 0.8 ? '#22c55e' : rec.confidence > 0.5 ? '#f59e0b' : '#ef4444', textTransform: 'uppercase', fontWeight: 600 }}>Vertrauen</div>
-                <span style={{ fontSize: 18, fontWeight: 800, color: rec.confidence > 0.8 ? '#22c55e' : rec.confidence > 0.5 ? '#f59e0b' : '#ef4444' }}>
-                  {Math.round(rec.confidence * 100)}%
-                </span>
+          <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+            <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
+            <div style={{ padding:'24px' }}>
+              <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(255,149,0,0.7)', marginBottom:18 }}>Aktuelle Empfehlung</div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:12 }}>
+                {[
+                  { label:'Aktion', value: rec.action ?? '—' },
+                  { label:'Einsparung', value: rec.savings_eur != null ? `${rec.savings_eur.toFixed(2)} €` : '—' },
+                  { label:'Konfidenz', value: rec.confidence != null ? `${(rec.confidence*100).toFixed(0)} %` : '—' },
+                ].map(({label,value})=>(
+                  <div key={label} style={{ background:'rgba(255,107,53,0.04)', border:'1px solid rgba(255,107,53,0.08)', borderRadius:12, padding:'14px 16px' }}>
+                    <div style={{ fontSize:10, color:'rgba(248,250,252,0.38)', letterSpacing:'0.15em', textTransform:'uppercase', marginBottom:6 }}>{label}</div>
+                    <div style={{ fontSize:18, fontWeight:800, color:'#ff9500', fontFamily:'monospace' }}>{value}</div>
+                  </div>
+                ))}
               </div>
-              <div style={{ height: 10, background: 'rgba(4,6,20,0.8)', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{
-                  height: '100%',
-                  width: `${Math.round(rec.confidence * 100)}%`,
-                  background: rec.confidence > 0.8 ? 'linear-gradient(90deg,#22c55e,#16a34a)' : rec.confidence > 0.5 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)',
-                  borderRadius: 8,
-                  boxShadow: rec.confidence > 0.8 ? '0 0 16px rgba(34,197,94,0.5)' : 'none',
-                  transition: 'width 1s cubic-bezier(0.16,1,0.3,1)',
-                }}/>
-              </div>
+              {rec.explanation && <p style={{ margin:'16px 0 0', fontSize:13, color:'rgba(248,250,252,0.5)', lineHeight:1.7 }}>{rec.explanation}</p>}
             </div>
           </div>
         )}
-      </PlanGate>
+        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+          <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500)' }}/>
+          <div style={{ padding:'24px' }}>
+            <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:18 }}>KI-Optimierungsplan</div>
+            <PlanGate feature="ai.recommendations" featureName="KI-Empfehlungen" requiredPlan="pro">
+              <p style={{ margin:0, color:'rgba(248,250,252,0.4)', fontSize:13 }}>KI-Planungsfeatures werden hier geladen…</p>
+            </PlanGate>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
