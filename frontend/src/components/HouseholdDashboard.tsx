@@ -155,94 +155,120 @@ const HouseholdDashboard = () => {
   }, []);
 
   return (
-  <div className="household-dashboard tab-content-full" style={{ width: '100%', maxWidth: '100%', margin: 0 }}>
-      <div className="animate-fade-in">
-        <h2 className="tab-page-title" style={{ marginBottom: 16 }}>Haushalt & Heimspeicher (Batterie)</h2>
-        <p className="tab-page-subtitle">Echtzeit-Überblick für Hauslast, Speicherstatus und flexible Smarthome-Lasten im selben Steuerungsfenster.</p>
+    <div style={{ width: '100%', maxWidth: '100%', margin: 0, padding: '0 0 40px', background: 'transparent' }}>
+      <style>{`
+        @keyframes hh-room { 0%,100%{opacity:.3}50%{opacity:.7} }
+        @keyframes hh-flow { to{stroke-dashoffset:-20} }
+      `}</style>
+
+      {/* Cinematic Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
+        {/* House SVG scene */}
+        <div style={{ flexShrink: 0 }}>
+          <svg width="160" height="100" viewBox="0 0 160 100" fill="none">
+            {/* House outline */}
+            <rect x="30" y="46" width="100" height="52" rx="3" fill="rgba(4,6,20,0.9)" stroke="rgba(255,107,53,0.3)" strokeWidth="1.5"/>
+            <polygon points="30,46 80,14 130,46" fill="rgba(4,6,20,0.8)" stroke="rgba(255,107,53,0.45)" strokeWidth="1.5"/>
+            {/* Rooms */}
+            <rect x="34" y="50" width="38" height="24" rx="2" fill="rgba(255,107,53,0.06)" stroke="rgba(255,107,53,0.2)" strokeWidth="1">
+              <animate attributeName="fill-opacity" values="0.06;0.15;0.06" dur="3s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="76" y="50" width="50" height="24" rx="2" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.2)" strokeWidth="1">
+              <animate attributeName="fill-opacity" values="0.06;0.15;0.06" dur="4s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="34" y="78" width="38" height="16" rx="2" fill="rgba(167,139,250,0.06)" stroke="rgba(167,139,250,0.2)" strokeWidth="1"/>
+            {/* Door */}
+            <rect x="68" y="78" width="24" height="20" rx="2" fill="rgba(4,6,20,0.8)" stroke="rgba(255,107,53,0.3)" strokeWidth="1"/>
+            {/* Energy bar on roof */}
+            <rect x="44" y="30" width="8" height="5" rx="1" fill="#ff9500" opacity="0.7"/>
+            <rect x="56" y="26" width="8" height="5" rx="1" fill="#ff9500" opacity="0.8"/>
+            <rect x="68" y="23" width="8" height="5" rx="1" fill="#ff9500"/>
+            {/* Power line */}
+            <line x1="130" y1="46" x2="155" y2="30" stroke="rgba(59,130,246,0.4)" strokeWidth="1.2" strokeDasharray="4 3">
+              <animate attributeName="stroke-dashoffset" values="0;-20" dur="1.5s" repeatCount="indefinite"/>
+            </line>
+          </svg>
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: '#ff9500', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>Haushalt</div>
+          <h2 style={{ margin: '0 0 8px', fontSize: 'clamp(18px,3vw,26px)', fontWeight: 800, color: '#f8fafc', lineHeight: 1.2 }}>
+            Haushalt &amp; Heimspeicher
+          </h2>
+          <p style={{ margin: 0, color: 'rgba(248,250,252,0.52)', fontSize: 14, lineHeight: 1.5 }}>
+            Echtzeit-Überblick für Hauslast, Speicherstatus und flexible Smarthome-Lasten.
+          </p>
+        </div>
       </div>
-      
-      <div className="tab-grid-main animate-stagger-1 animate-page-enter" style={{ marginBottom: 24 }}>
-        <div className="glass-effect" style={{ minWidth: 0, borderRadius: '12px', padding: '16px' }}>
+
+      {/* Main grid: SmartMeter + Battery */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16, marginBottom: 16 }}>
+        <div style={{ background: 'rgba(4,6,20,0.65)', border: '1px solid rgba(255,107,53,0.1)', borderRadius: 20, backdropFilter: 'blur(12px)', padding: '20px 24px' }}>
+          <div style={{ height: 2, background: 'linear-gradient(90deg,#ff6b35,#ff9500)', borderRadius: 2, marginBottom: 16 }}/>
           <SmartMeterEnergyWidget />
         </div>
-        <div className="glass-effect" style={{ minWidth: 0, borderRadius: '12px', padding: '16px' }}>
-          <BatteryWidget
-            data={{
-              soc: state?.battery_soc ?? 0,
-              power_kw: state?.battery_power_kw ?? 0,
-              capacity_kwh: 10
-            }}
-          />
+        <div style={{ background: 'rgba(4,6,20,0.65)', border: '1px solid rgba(59,130,246,0.12)', borderRadius: 20, backdropFilter: 'blur(12px)', padding: '20px 24px' }}>
+          <div style={{ height: 2, background: 'linear-gradient(90deg,#3b82f6,#ff9500)', borderRadius: 2, marginBottom: 16 }}/>
+          <BatteryWidget data={{ soc: state?.battery_soc ?? 0, power_kw: state?.battery_power_kw ?? 0, capacity_kwh: 10 }} />
           {evProfile && (
-            <div className="animate-fade-in delay-300" style={{ marginTop: 8, fontSize: 13, color: '#94a3b8' }}>
-              Verbundenes Elektroauto: {evProfile.manufacturer} {evProfile.model}
-              {` 
-· ${evProfile.capacity_kwh.toFixed(1)} kWh Batterie`}
+            <div style={{ marginTop: 10, fontSize: 12, color: 'rgba(248,250,252,0.45)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 10 }}>
+              Verbundenes EV: {evProfile.manufacturer} {evProfile.model} · {evProfile.capacity_kwh.toFixed(1)} kWh
             </div>
           )}
         </div>
       </div>
 
-      {/* Smarthome Section — automation features gated behind Pro */}
+      {/* Smart Home Section */}
       <PlanGate feature="smarthome.automation" featureName="Smart-Home-Automatisierungen" requiredPlan="pro">
-      <div className="glass-effect animate-stagger-2 animate-page-enter" style={{ background: 'rgba(15,23,42,0.78)', borderRadius: 12, padding: 20, marginTop: 16, border: '1px solid rgba(148,163,184,0.22)' }}>
-        <h3 className="tab-section-title neon-glow">IoT & Smarthome-Orchestrierung</h3>
-        
-        <div className="tab-grid-compact animate-stagger-3 animate-page-enter" style={{ marginBottom: 14 }}>
-          <div className="metric-card clickable" style={{ background: 'rgba(2,6,23,0.74)', borderRadius: 8, padding: 12, border: '1px solid rgba(71,85,105,0.45)' }}>
-            <div style={{ fontSize: 12, color: '#94a3b8' }}>Aktive IoT-Geräte</div>
-            <div className="value-increase" style={{ fontSize: 22, fontWeight: 700, color: '#f8fafc' }}>{activeSmartHomeDevices}</div>
-          </div>
-          <div className="metric-card clickable" style={{ background: 'rgba(2,6,23,0.74)', borderRadius: 8, padding: 12, border: '1px solid rgba(71,85,105,0.45)' }}>
-            <div style={{ fontSize: 12, color: '#94a3b8' }}>Verschiebbare Lasten</div>
-            <div className="value-increase" style={{ fontSize: 22, fontWeight: 700, color: '#f8fafc' }}>{flexibleLoads}</div>
-          </div>
-          <div className="metric-card clickable" style={{ background: 'rgba(2,6,23,0.74)', borderRadius: 8, padding: 12, border: '1px solid rgba(71,85,105,0.45)' }}>
-            <div style={{ fontSize: 12, color: '#94a3b8' }}>Smarthome-Leistung</div>
-            <div className="value-increase" style={{ fontSize: 22, fontWeight: 700, color: '#f8fafc' }}>{smartHomePowerW} W</div>
-          </div>
-        </div>
+        <div style={{ background: 'rgba(4,6,20,0.65)', border: '1px solid rgba(255,107,53,0.1)', borderRadius: 20, backdropFilter: 'blur(12px)', padding: '20px 24px', marginBottom: 16 }}>
+          <div style={{ height: 2, background: 'linear-gradient(90deg,#ff6b35,#a78bfa,#3b82f6)', borderRadius: 2, marginBottom: 20 }}/>
+          <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 700, color: '#f8fafc', letterSpacing: 1 }}>IoT &amp; Smarthome-Orchestrierung</h3>
 
-        <div className="animate-stagger-4 animate-page-enter" style={{ background: 'rgba(2,6,23,0.7)', borderRadius: 8, padding: 14, marginBottom: 12, border: '1px solid rgba(71,85,105,0.4)' }}>
-          <div style={{ fontWeight: 700, marginBottom: 8, color: '#e2e8f0' }}>💡 Empfohlene Automationen</div>
-          <ul style={{ margin: 0, paddingLeft: 20, color: '#cbd5e1' }}>
-            <li>Wärmepumpe bevorzugt bei PV-Überschuss &gt; 1.5 kW laufen lassen.</li>
-            <li>Waschmaschine automatisch in Zeitfenster mit niedrigem Börsenpreis verschieben.</li>
-            <li>Wallbox nur bei SOC &lt; 35% priorisieren, sonst Haushaltslast glätten.</li>
-          </ul>
-        </div>
-
-        <div className="tab-grid-compact" style={{ gap: 10 }}>
-          {smartHomeDevices.map((device, index) => (
-            <div 
-              key={device.id} 
-              className={`device-card clickable animate-scale-in delay-${Math.min(index, 5) * 100}`}
-              style={{ 
-                background: 'rgba(2,6,23,0.74)', 
-                borderRadius: 8, 
-                padding: 12, 
-                border: '1px solid rgba(71,85,105,0.45)',
-                opacity: 0
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <b style={{ color: '#f8fafc' }}>{device.name}</b>
-                <span className={device.status === 'aktiv' ? 'status-live' : device.status === 'standby' ? 'status-connecting' : 'status-offline'} style={{ color: device.status === 'aktiv' ? '#22c55e' : device.status === 'standby' ? '#f59e0b' : '#ef4444', fontWeight: 'bold' }}>
-                  <span className={`status-dot ${device.status === 'aktiv' ? 'status-live' : device.status === 'standby' ? 'status-connecting' : 'status-offline'}`}></span>
-                  {device.status}
-                </span>
+          {/* Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
+            {[
+              { value: activeSmartHomeDevices, label: 'Aktive IoT-Geräte', color: '#ff9500' },
+              { value: flexibleLoads, label: 'Verschiebbare Lasten', color: '#22c55e' },
+              { value: `${smartHomePowerW} W`, label: 'Smarthome-Leistung', color: '#3b82f6' },
+            ].map(m => (
+              <div key={m.label} style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: m.color, marginBottom: 4 }}>{m.value}</div>
+                <div style={{ fontSize: 11, color: 'rgba(248,250,252,0.4)', letterSpacing: 0.5 }}>{m.label}</div>
               </div>
-              <div style={{ fontSize: 13, color: '#cbd5e1' }}>Aktuelle Last: <strong>{device.powerW} W</strong></div>
-              <div style={{ fontSize: 13, color: '#cbd5e1' }}>Flexibilität: <span style={{ color: device.flexibility === 'hoch' ? '#22c55e' : device.flexibility === 'mittel' ? '#f59e0b' : '#94a3b8' }}>{device.flexibility}</span></div>
-              {device.lastSeen && (
-                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
-                  Letztes Update: {new Date(device.lastSeen).toLocaleTimeString()}
+            ))}
+          </div>
+
+          {/* Automation hints */}
+          <div style={{ background: 'rgba(255,107,53,0.04)', border: '1px solid rgba(255,107,53,0.1)', borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8, color: '#f8fafc', fontSize: 13 }}>Empfohlene Automationen</div>
+            <ul style={{ margin: 0, paddingLeft: 18, color: 'rgba(248,250,252,0.6)', fontSize: 13, lineHeight: 1.8 }}>
+              <li>Wärmepumpe bevorzugt bei PV-Überschuss &gt; 1.5 kW laufen lassen.</li>
+              <li>Waschmaschine automatisch in Zeitfenster mit niedrigem Börsenpreis verschieben.</li>
+              <li>Wallbox nur bei SOC &lt; 35% priorisieren, sonst Haushaltslast glätten.</li>
+            </ul>
+          </div>
+
+          {/* Device cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 10 }}>
+            {smartHomeDevices.map((device) => (
+              <div key={device.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 14, transition: 'border-color 0.2s' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <b style={{ color: '#f8fafc', fontSize: 13 }}>{device.name}</b>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: device.status === 'aktiv' ? '#22c55e' : device.status === 'standby' ? '#f59e0b' : '#ef4444' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: device.status === 'aktiv' ? '#22c55e' : device.status === 'standby' ? '#f59e0b' : '#ef4444', display: 'inline-block', boxShadow: device.status === 'aktiv' ? '0 0 6px #22c55e' : 'none' }}/>
+                    {device.status}
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
+                <div style={{ fontSize: 12, color: 'rgba(248,250,252,0.5)', marginBottom: 4 }}>Last: <strong style={{ color: '#f8fafc' }}>{device.powerW} W</strong></div>
+                <div style={{ fontSize: 12, color: 'rgba(248,250,252,0.5)' }}>Flexibilität: <span style={{ color: device.flexibility === 'hoch' ? '#22c55e' : device.flexibility === 'mittel' ? '#f59e0b' : 'rgba(248,250,252,0.35)', fontWeight: 600 }}>{device.flexibility}</span></div>
+                {device.lastSeen && (
+                  <div style={{ fontSize: 11, color: 'rgba(248,250,252,0.3)', marginTop: 6 }}>
+                    {new Date(device.lastSeen).toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
       </PlanGate>
     </div>
   );
