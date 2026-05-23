@@ -32,7 +32,7 @@ const CustomTooltip = ({ active, payload, label, accent }: {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: 'rgba(4,6,20,0.95)', backdropFilter: 'blur(16px)',
+      background: 'rgba(18,24,55,0.92)', backdropFilter: 'blur(16px)',
       border: `1px solid ${accent.glow}0.4)`,
       borderRadius: 12, padding: '12px 16px',
       boxShadow: `0 8px 32px ${accent.glow}0.25), 0 0 0 1px ${accent.glow}0.1)`,
@@ -96,7 +96,7 @@ export default function HistoryChart({ title, endpoint, dataKey, color, hours = 
 
   const cardStyle: React.CSSProperties = {
     position: 'relative',
-    background: 'rgba(4,6,20,0.82)',
+    background: 'rgba(22,30,65,0.78)',
     backdropFilter: 'blur(18px)',
     border: `1px solid ${accent.glow}0.22)`,
     borderRadius: 20,
@@ -206,7 +206,7 @@ export default function HistoryChart({ title, endpoint, dataKey, color, hours = 
                 strokeWidth={2.5}
                 fill={`url(#${gradId})`}
                 dot={false}
-                activeDot={{ r: 6, fill: accent.main, stroke: 'rgba(4,6,20,0.9)', strokeWidth: 2, filter: `url(#${glowId})` }}
+                activeDot={{ r: 6, fill: accent.main, stroke: 'rgba(22,30,65,0.88)', strokeWidth: 2, filter: `url(#${glowId})` }}
                 filter={`url(#${glowId})`}
               />
             </AreaChart>

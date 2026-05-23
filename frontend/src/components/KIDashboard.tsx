@@ -78,7 +78,7 @@ const NeuralNetSVG = ({ conf }: { conf: number }) => {
       {layers.map(([x,n])=>Array.from({length:n},(_,i)=>{
         const y=22+i*(136/(n-1||1));
         const c=x===30?'rgba(255,107,53,0.85)':x===174?'rgba(34,197,94,0.85)':'rgba(59,130,246,0.75)';
-        return <circle key={`n${x}-${i}`} cx={x} cy={y} r="8" fill="rgba(4,6,20,0.92)" stroke={c} strokeWidth="1.5" filter="url(#ki-glow3)"><animate attributeName="opacity" values="0.55;1;0.55" dur={`${2.2+i*0.35}s`} repeatCount="indefinite"/></circle>;
+        return <circle key={`n${x}-${i}`} cx={x} cy={y} r="8" fill="rgba(10,14,35,0.92)" stroke={c} strokeWidth="1.5" filter="url(#ki-glow3)"><animate attributeName="opacity" values="0.55;1;0.55" dur={`${2.2+i*0.35}s`} repeatCount="indefinite"/></circle>;
       }))}
       {signals.map((s,i)=>(
         <circle key={i} r="2.8" fill={s.color} filter="url(#ki-glow3)">
@@ -167,7 +167,7 @@ const KIDashboard = () => {
 
         {/* Current recommendation */}
         {rec && (
-          <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.15)', borderRadius:22, backdropFilter:'blur(14px)', overflow:'hidden', animation:'wai-slide-in .6s ease-out' }}>
+          <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.15)', borderRadius:22, backdropFilter:'blur(14px)', overflow:'hidden', animation:'wai-slide-in .6s ease-out' }}>
             <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
             <div style={{ padding:'24px 28px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
@@ -197,7 +197,7 @@ const KIDashboard = () => {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))', gap:16 }}>
           {AI_MODULES.map((mod) => (
             <PlanGate key={mod.id} feature={mod.feature as never} featureName={mod.featureName} requiredPlan="pro">
-              <div className="wai-ai-mod" onClick={()=>setActiveModule(activeModule===mod.id?null:mod.id)} style={{ background:`linear-gradient(130deg,rgba(4,6,20,0.78) 55%,${mod.accent}08)`, border:`1px solid ${activeModule===mod.id?mod.accent+'50':'rgba(255,255,255,0.06)'}`, borderRadius:18, overflow:'hidden', cursor:'pointer', backdropFilter:'blur(14px)', position:'relative' }}>
+              <div className="wai-ai-mod" onClick={()=>setActiveModule(activeModule===mod.id?null:mod.id)} style={{ background:`linear-gradient(130deg,rgba(22,30,65,0.75) 55%,${mod.accent}08)`, border:`1px solid ${activeModule===mod.id?mod.accent+'50':'rgba(255,255,255,0.06)'}`, borderRadius:18, overflow:'hidden', cursor:'pointer', backdropFilter:'blur(14px)', position:'relative' }}>
                 <div style={{ height:2, background:`linear-gradient(90deg,${mod.accent},${mod.accent}44)` }}/>
                 <div style={{ position:'absolute', left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${mod.accent}18,transparent)`, animation:'wai-scan 18s linear infinite', pointerEvents:'none' }}/>
                 <div style={{ padding:'18px 20px', position:'relative', zIndex:1 }}>
@@ -226,7 +226,7 @@ const KIDashboard = () => {
         </div>
 
         {/* 24h Optimization Timeline */}
-        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:22, backdropFilter:'blur(14px)', overflow:'hidden' }}>
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:22, backdropFilter:'blur(14px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500,#22c55e)' }}/>
           <div style={{ padding:'24px 28px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:20, display:'flex', alignItems:'center', gap:10 }}>
@@ -264,7 +264,7 @@ const KIDashboard = () => {
             { label:'ISO 15118-20', value:'V2G Ready', color:'#a855f7', icon:'⚡' },
             { label:'Modell Update', value:'Täglich 03:00', color:'#06b6d4', icon:'🔄' },
           ].map(({ label, value, color, icon }) => (
-            <div key={label} style={{ background:'rgba(4,6,20,0.6)', border:`1px solid ${color}18`, borderRadius:14, padding:'14px 16px', backdropFilter:'blur(10px)', display:'flex', alignItems:'center', gap:12 }}>
+            <div key={label} style={{ background:'rgba(22,30,65,0.60)', border:`1px solid ${color}18`, borderRadius:14, padding:'14px 16px', backdropFilter:'blur(10px)', display:'flex', alignItems:'center', gap:12 }}>
               <div style={{ width:36, height:36, borderRadius:10, background:`${color}12`, border:`1px solid ${color}28`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{icon}</div>
               <div>
                 <div style={{ fontSize:9, color:'rgba(248,250,252,0.35)', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:3 }}>{label}</div>

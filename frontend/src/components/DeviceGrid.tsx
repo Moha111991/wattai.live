@@ -60,7 +60,7 @@ const HexIcon: React.FC<{ icon: string; accent: string; size?: number }> = ({ ic
   <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
     <svg width={size} height={size} viewBox="0 0 52 52" fill="none" style={{ position: 'absolute', top: 0, left: 0 }}>
       <polygon points="26,2 49,14 49,38 26,50 3,38 3,14"
-        fill="rgba(4,6,20,0.9)"
+        fill="rgba(22,30,65,0.88)"
         stroke={accent}
         strokeWidth="1.5"
         opacity="0.9"
@@ -189,7 +189,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices, onConnect }) => {
 
           return (
             <div key={device.id} className="wai-dcard" style={{
-              background: `linear-gradient(120deg,rgba(4,6,20,0.82) 60%,${meta.bgGrad})`,
+              background: `linear-gradient(120deg,rgba(22,30,65,0.78) 60%,${meta.bgGrad})`,
               border: `1px solid ${isConnected ? meta.accent + '30' : 'rgba(255,107,53,0.12)'}`,
               borderRadius: 20,
               overflow: 'hidden',

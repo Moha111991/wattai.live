@@ -64,7 +64,7 @@ export default function PowerChart() {
         pointRadius: 0,
         pointHoverRadius: 6,
         pointHoverBackgroundColor: "#ff9500",
-        pointHoverBorderColor: "rgba(4,6,20,0.9)",
+        pointHoverBorderColor: "rgba(22,30,65,0.88)",
         pointHoverBorderWidth: 2,
       },
       {
@@ -78,7 +78,7 @@ export default function PowerChart() {
         pointRadius: 0,
         pointHoverRadius: 6,
         pointHoverBackgroundColor: "#3b82f6",
-        pointHoverBorderColor: "rgba(4,6,20,0.9)",
+        pointHoverBorderColor: "rgba(22,30,65,0.88)",
         pointHoverBorderWidth: 2,
       },
     ],
@@ -109,7 +109,7 @@ export default function PowerChart() {
         },
       },
       tooltip: {
-        backgroundColor: 'rgba(4,6,20,0.95)',
+        backgroundColor: 'rgba(18,24,55,0.92)',
         borderColor: 'rgba(255,107,53,0.3)',
         borderWidth: 1,
         titleColor: 'rgba(248,250,252,0.5)',
@@ -157,7 +157,7 @@ export default function PowerChart() {
   return (
     <div style={{
       position: 'relative',
-      background: 'rgba(4,6,20,0.82)',
+      background: 'rgba(22,30,65,0.78)',
       backdropFilter: 'blur(18px)',
       border: '1px solid rgba(255,107,53,0.18)',
       borderRadius: 20,

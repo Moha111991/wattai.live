@@ -85,7 +85,7 @@ export default function Dashboard() {
     return (
       <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#020617 0%,#04060e 100%)', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <style>{WAI}</style>
-        <div style={{ textAlign:'center', background:'rgba(4,6,20,0.72)', border:'1px solid rgba(255,107,53,0.18)', borderRadius:20, padding:'48px 40px', backdropFilter:'blur(16px)' }}>
+        <div style={{ textAlign:'center', background:'rgba(22,30,65,0.72)', border:'1px solid rgba(255,107,53,0.18)', borderRadius:20, padding:'48px 40px', backdropFilter:'blur(16px)' }}>
           <svg width="72" height="72" viewBox="0 0 72 72" style={{ display:'block', margin:'0 auto 24px' }}>
             <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,107,53,0.12)" strokeWidth="4"/>
             <circle cx="36" cy="36" r="30" fill="none" stroke="#ff6b35" strokeWidth="4" strokeDasharray="48 140" strokeLinecap="round">
@@ -214,14 +214,14 @@ export default function Dashboard() {
       <div style={{ padding:'0 clamp(12px,2vw,24px)', display:'flex', flexDirection:'column', gap:16 }}>
         <CO2CostWidget co2SavedKg={123.4} costEur={56.78} autarky={87.6} period="Monat" />
         <ErrorAlarmMonitor />
-        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
           <div style={{ padding:'20px 24px' }}>
             <AnimatedEnergyFlow pvPower={data.pv_power_kw} housePower={data.house_load_w/1000} batteryPower={battery.power_kw} gridPower={(data.grid_import_w-data.grid_export_w)/1000} evPower={data.ev_power_w/1000}/>
           </div>
         </div>
         <div style={{ display:'flex', justifyContent:'center' }}>
-          <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden', width:'100%', maxWidth:700 }}>
+          <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden', width:'100%', maxWidth:700 }}>
             <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500)' }}/>
             <div style={{ padding:'20px 24px' }}>
               <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.8)', marginBottom:14 }}>Heimspeicher</div>
@@ -232,17 +232,17 @@ export default function Dashboard() {
         {hasRealDevice ? (
           <>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:16 }}>
-              <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="PV-Ertrag (24h)" endpoint="/history/pv" dataKey="PV (kW)" color="#10b981"/></div>
-              <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="Verbrauch (24h)" endpoint="/history/consumption" dataKey="Verbrauch (kW)" color="#3b82f6"/></div>
+              <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="PV-Ertrag (24h)" endpoint="/history/pv" dataKey="PV (kW)" color="#10b981"/></div>
+              <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="Verbrauch (24h)" endpoint="/history/consumption" dataKey="Verbrauch (kW)" color="#3b82f6"/></div>
             </div>
-            <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="Batterie-SOC (24h)" endpoint="/history/battery" dataKey="SOC (%)" color="#f59e0b"/></div>
+            <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="Batterie-SOC (24h)" endpoint="/history/battery" dataKey="SOC (%)" color="#f59e0b"/></div>
           </>
         ) : (
-          <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(251,191,36,0.22)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px', textAlign:'center', color:'rgba(254,243,199,0.8)', fontSize:14 }}>
+          <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(251,191,36,0.22)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px', textAlign:'center', color:'rgba(254,243,199,0.8)', fontSize:14 }}>
             ⚠️ Zeitreihen werden angezeigt, sobald mindestens ein echtes Gerät verbunden ist.
           </div>
         )}
-        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><PowerChart/></div>
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><PowerChart/></div>
       </div>
     </div>
   );

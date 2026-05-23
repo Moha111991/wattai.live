@@ -68,11 +68,11 @@ const HouseholdDashboard = () => {
               <linearGradient id="hh-roof" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff6b35" stopOpacity="0.7"/><stop offset="100%" stopColor="#1e40af" stopOpacity="0.5"/></linearGradient>
             </defs>
             {/* House walls */}
-            <rect x="55" y="70" width="90" height="75" fill="rgba(4,6,20,0.85)" stroke="rgba(255,107,53,0.4)" strokeWidth="1.2"/>
+            <rect x="55" y="70" width="90" height="75" fill="rgba(22,30,65,0.82)" stroke="rgba(255,107,53,0.4)" strokeWidth="1.2"/>
             {/* Roof */}
             <polygon points="45,70 100,28 155,70" fill="url(#hh-roof)" stroke="rgba(255,107,53,0.5)" strokeWidth="1"/>
             {/* Central hub (inside house) */}
-            <circle cx="100" cy="107" r="11" fill="rgba(4,6,20,0.9)" stroke="rgba(255,107,53,0.8)" strokeWidth="1.5" filter="url(#hh-glow)">
+            <circle cx="100" cy="107" r="11" fill="rgba(22,30,65,0.88)" stroke="rgba(255,107,53,0.8)" strokeWidth="1.5" filter="url(#hh-glow)">
               <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
             </circle>
             <text x="100" y="110" textAnchor="middle" fill="#ff9500" fontSize="6" fontFamily="monospace" fontWeight="bold">HUB</text>
@@ -89,7 +89,7 @@ const HouseholdDashboard = () => {
             {iotNodes.map(({label,x,y,c})=>(
               <g key={label}>
                 <line x1="100" y1="107" x2={x} y2={y} stroke={`${c}25`} strokeWidth="1" strokeDasharray="3 3"/>
-                <circle cx={x} cy={y} r="11" fill="rgba(4,6,20,0.9)" stroke={c} strokeWidth="1.2" filter="url(#hh-glow)"/>
+                <circle cx={x} cy={y} r="11" fill="rgba(22,30,65,0.88)" stroke={c} strokeWidth="1.2" filter="url(#hh-glow)"/>
                 <text x={x} y={y+3} textAnchor="middle" fill={c} fontSize="5.5" fontFamily="monospace">{label.slice(0,5)}</text>
                 <circle r="2" fill={c} opacity="0.9">
                   <animateMotion dur="3.5s" repeatCount="indefinite" path={`M100,107 L${x},${y}`}/>
@@ -134,21 +134,21 @@ const HouseholdDashboard = () => {
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
       <div style={{ padding:'0 clamp(12px,2vw,24px)', display:'flex', flexDirection:'column', gap:16 }}>
-        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
           <div style={{ padding:'24px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(255,149,0,0.7)', marginBottom:18 }}>Smart Meter & Verbrauch</div>
             <SmartMeterEnergyWidget/>
           </div>
         </div>
-        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(34,197,94,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(34,197,94,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#22c55e,#ff9500)' }}/>
           <div style={{ padding:'24px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(34,197,94,0.7)', marginBottom:18 }}>Heimspeicher</div>
             <BatteryWidget data={{ soc: state.battery_soc ?? 0, power_kw: state.battery_power_kw ?? 0, capacity_kwh: state.battery_capacity_kwh ?? 10 }}/>
           </div>
         </div>
-        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500)' }}/>
           <div style={{ padding:'24px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:18 }}>Hausautomation</div>

@@ -40,7 +40,7 @@ export default function BatteryWidget({ data }: { data?: BatteryData }) {
   const dash = (soc / 100) * circ;
 
   return (
-    <div style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:20, overflow:'hidden', color:'#f8fafc' }}>
+    <div style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(34,197,94,0.15)', borderRadius:20, overflow:'hidden', color:'#f8fafc' }}>
       <div style={{ height:3, background:`linear-gradient(90deg,${socColor},#22c55e,#3b82f6)` }}/>
       <div style={{ padding:'20px 22px' }}>
         <div style={{ display:'flex', gap:24, alignItems:'flex-start', flexWrap:'wrap' }}>

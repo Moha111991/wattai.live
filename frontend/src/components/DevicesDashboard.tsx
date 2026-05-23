@@ -56,7 +56,7 @@ const DevicesDashboard = (): ReactElement => {
               <filter id="dev-glow"><feGaussianBlur stdDeviation="3" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
             </defs>
             {/* Hub */}
-            <circle cx="100" cy="90" r="18" fill="rgba(4,6,20,0.9)" stroke="rgba(255,107,53,0.7)" strokeWidth="1.5" filter="url(#dev-glow)"/>
+            <circle cx="100" cy="90" r="18" fill="rgba(22,30,65,0.88)" stroke="rgba(255,107,53,0.7)" strokeWidth="1.5" filter="url(#dev-glow)"/>
             <circle cx="100" cy="90" r="18" fill="none" stroke="rgba(255,107,53,0.4)" strokeWidth="1.5">
               <animate attributeName="r" values="18;36" dur="3s" repeatCount="indefinite"/>
               <animate attributeName="opacity" values="0.3;0" dur="3s" repeatCount="indefinite"/>
@@ -70,7 +70,7 @@ const DevicesDashboard = (): ReactElement => {
               return (
                 <g key={label}>
                   <line x1="100" y1="90" x2={nx} y2={ny} stroke={`${color}30`} strokeWidth="1.2" strokeDasharray="4 3"/>
-                  <circle cx={nx} cy={ny} r="14" fill="rgba(4,6,20,0.9)" stroke={color} strokeWidth="1.5" filter="url(#dev-glow)"/>
+                  <circle cx={nx} cy={ny} r="14" fill="rgba(22,30,65,0.88)" stroke={color} strokeWidth="1.5" filter="url(#dev-glow)"/>
                   <text x={nx} y={ny+3} textAnchor="middle" fill={color} fontSize="7" fontFamily="monospace" fontWeight="bold">{label}</text>
                   {/* signal pulse */}
                   <circle r="3" fill={color} filter="url(#dev-glow)" opacity="0.9">
@@ -109,7 +109,7 @@ const DevicesDashboard = (): ReactElement => {
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
       <div style={{ padding:'0 clamp(12px,2vw,24px)' }}>
-        <div className="wai-card" style={{ background:'rgba(4,6,20,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
           <div style={{ padding:'24px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(255,149,0,0.7)', marginBottom:18 }}>Geräte & Adapter</div>
