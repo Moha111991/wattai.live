@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { API_URL, resolveWsUrl } from "../lib/api";
 
 type ConnectParams = Record<string, unknown>;
@@ -196,52 +196,53 @@ function BatteryModbusDialog({ onConnect, onClose, realDevices }: { onConnect: (
     alert("Batterie über Modbus verbunden und registriert!");
   };
 
+  const DLG_BACKDROP: React.CSSProperties = { position:'fixed', inset:0, background:'rgba(4,6,20,0.72)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 };
+  const DLG_BOX: React.CSSProperties = { background:'linear-gradient(140deg,rgba(18,24,58,0.97),rgba(22,30,65,0.97))', border:'1px solid rgba(255,107,53,0.22)', borderRadius:20, padding:'32px 36px', minWidth:360, maxWidth:480, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', color:'#f8fafc', fontFamily:'Inter,Segoe UI,sans-serif' };
+  const DLG_H3: React.CSSProperties = { fontSize:17, fontWeight:900, color:'#ff9500', marginBottom:20, letterSpacing:'-0.01em' };
+  const DLG_LABEL: React.CSSProperties = { display:'block', fontSize:11, color:'rgba(248,250,252,0.5)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4, marginTop:12 };
+  const DLG_INPUT: React.CSSProperties = { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,107,53,0.22)', borderRadius:10, padding:'10px 14px', color:'#f8fafc', fontSize:13, outline:'none', fontFamily:'monospace', boxSizing:'border-box' };
+  const DLG_BTN_P: React.CSSProperties = { background:'linear-gradient(90deg,#ff6b35,#ff9500)', border:'none', borderRadius:999, padding:'11px 24px', fontWeight:800, fontSize:13, color:'#0a0305', cursor:'pointer', marginRight:10, marginTop:18 };
+  const DLG_BTN_S: React.CSSProperties = { background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:999, padding:'11px 24px', fontWeight:700, fontSize:13, color:'rgba(248,250,252,0.6)', cursor:'pointer', marginTop:18 };
+  const DLG_RADIO_ROW: React.CSSProperties = { display:'flex', gap:20, marginTop:18, paddingTop:16, borderTop:'1px solid rgba(255,255,255,0.07)' };
+  const DLG_ERR: React.CSSProperties = { color:'#f87171', fontSize:12, marginTop:10, padding:'8px 12px', background:'rgba(248,113,113,0.08)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:8 };
+  const DLG_OK: React.CSSProperties  = { color:'#22c55e', fontSize:12, marginTop:10, padding:'8px 12px', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:8 };
+
   return (
-    <div className="dialog-backdrop">
-      <div className="dialog">
-        {protocol === 'modbus' && step === 1 && (
-          <>
-            <h3>Modbus Verbindung zur Batterie</h3>
-            <label>IP-Adresse: <input type="text" value={ip} onChange={e => setIp(e.target.value)} placeholder="z.B. 192.168.1.50" /></label><br/>
-            <label>Port: <input type="number" value={port} onChange={e => setPort(Number(e.target.value))} /></label><br/>
-            {error && <div style={{color:'red',marginBottom:8}}>{error}</div>}
-            <button onClick={handleConnect} disabled={!ip || loading}>Verbinden</button>
-            <button onClick={onClose} style={{marginLeft:8}}>Abbrechen</button>
-          </>
-        )}
-        {protocol === 'modbus' && step === 2 && (
-          <>
-            <h3>Batterie registrieren (Modbus)</h3>
-            <label>SoC (%): <input type="number" value={soc} onChange={e => setSoc(Number(e.target.value))} /></label><br/>
-            <label>SoH (%): <input type="number" value={soh} onChange={e => setSoh(Number(e.target.value))} /></label><br/>
-            <label>Spannung (V): <input type="number" value={voltage} onChange={e => setVoltage(Number(e.target.value))} /></label><br/>
-            <label>Strom (A): <input type="number" value={current} onChange={e => setCurrent(Number(e.target.value))} /></label><br/>
-            <label>Temperatur (°C): <input type="number" value={temperature} onChange={e => setTemperature(Number(e.target.value))} /></label><br/>
-            <label>Fehlerstatus: <input type="text" value={errorStatus} onChange={e => setErrorStatus(e.target.value)} /></label><br/>
-            <label>Steuerbefehl: <input type="text" value={command} onChange={e => setCommand(e.target.value)} placeholder="z.B. set_power=2.5" /></label><br/>
-            <button onClick={handleRegister}>Registrieren</button>
-            <button onClick={onClose} style={{marginLeft:8}}>Abbrechen</button>
-          </>
-        )}
-        {protocol === 'cloud' && (
-          <>
-            <h3>Batterie verbinden (Cloud API)</h3>
-            <label>Device-ID: <input type="text" value={deviceId} onChange={e => setDeviceId(e.target.value)} placeholder="z.B. BAT123456" /></label><br/>
-            <label>API Base URL: <input type="text" value={apiBaseUrl} onChange={e => setApiBaseUrl(e.target.value)} placeholder="https://cloud.battery.com/api" /></label><br/>
-            <label>API Key: <input type="text" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="API Key" /></label><br/>
-            {error && <div style={{color:'red',marginBottom:8}}>{error}</div>}
-            {success && <div style={{color:'green',marginBottom:8}}>✅ Verbunden!</div>}
-            <button onClick={handleConnect} disabled={loading} style={{marginRight:8}}>Verbinden</button>
-            <button onClick={onClose}>Abbrechen</button>
-          </>
-        )}
-        <div style={{marginTop:16}}>
-          <label>
-            <input type="radio" checked={protocol === 'modbus'} onChange={() => setProtocol('modbus')} disabled={loading} /> Modbus
-          </label>
-          <label style={{ marginLeft: 16 }}>
-            <input type="radio" checked={protocol === 'cloud'} onChange={() => setProtocol('cloud')} disabled={loading} /> Cloud API
-          </label>
+    <div style={DLG_BACKDROP}>
+      <div style={DLG_BOX}>
+        {protocol === 'modbus' && step === 1 && (<>
+          <div style={DLG_H3}>⚡ Batterie verbinden — Modbus</div>
+          <label style={DLG_LABEL}>IP-Adresse<input style={DLG_INPUT} type="text" value={ip} onChange={e=>setIp(e.target.value)} placeholder="192.168.1.50"/></label>
+          <label style={DLG_LABEL}>Port<input style={DLG_INPUT} type="number" value={port} onChange={e=>setPort(Number(e.target.value))}/></label>
+          {error && <div style={DLG_ERR}>{error}</div>}
+          <div><button style={DLG_BTN_P} onClick={handleConnect} disabled={!ip||loading}>Verbinden</button><button style={DLG_BTN_S} onClick={onClose}>Abbrechen</button></div>
+        </>)}
+        {protocol === 'modbus' && step === 2 && (<>
+          <div style={DLG_H3}>⚡ Batterie registrieren — Modbus</div>
+          <label style={DLG_LABEL}>SoC (%)<input style={DLG_INPUT} type="number" value={soc} onChange={e=>setSoc(Number(e.target.value))}/></label>
+          <label style={DLG_LABEL}>SoH (%)<input style={DLG_INPUT} type="number" value={soh} onChange={e=>setSoh(Number(e.target.value))}/></label>
+          <label style={DLG_LABEL}>Spannung (V)<input style={DLG_INPUT} type="number" value={voltage} onChange={e=>setVoltage(Number(e.target.value))}/></label>
+          <label style={DLG_LABEL}>Strom (A)<input style={DLG_INPUT} type="number" value={current} onChange={e=>setCurrent(Number(e.target.value))}/></label>
+          <label style={DLG_LABEL}>Temperatur (°C)<input style={DLG_INPUT} type="number" value={temperature} onChange={e=>setTemperature(Number(e.target.value))}/></label>
+          <label style={DLG_LABEL}>Fehlerstatus<input style={DLG_INPUT} type="text" value={errorStatus} onChange={e=>setErrorStatus(e.target.value)}/></label>
+          <label style={DLG_LABEL}>Steuerbefehl<input style={DLG_INPUT} type="text" value={command} onChange={e=>setCommand(e.target.value)} placeholder="z.B. set_power=2.5"/></label>
+          <div><button style={DLG_BTN_P} onClick={handleRegister}>Registrieren</button><button style={DLG_BTN_S} onClick={onClose}>Abbrechen</button></div>
+        </>)}
+        {protocol === 'cloud' && (<>
+          <div style={DLG_H3}>☁️ Batterie verbinden — Cloud API</div>
+          <label style={DLG_LABEL}>Device-ID<input style={DLG_INPUT} type="text" value={deviceId} onChange={e=>setDeviceId(e.target.value)} placeholder="BAT123456"/></label>
+          <label style={DLG_LABEL}>API Base URL<input style={DLG_INPUT} type="text" value={apiBaseUrl} onChange={e=>setApiBaseUrl(e.target.value)} placeholder="https://cloud.battery.com/api"/></label>
+          <label style={DLG_LABEL}>API Key<input style={DLG_INPUT} type="text" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="API Key"/></label>
+          {error && <div style={DLG_ERR}>{error}</div>}
+          {success && <div style={DLG_OK}>✅ Erfolgreich verbunden!</div>}
+          <div><button style={DLG_BTN_P} onClick={handleConnect} disabled={loading}>Verbinden</button><button style={DLG_BTN_S} onClick={onClose}>Abbrechen</button></div>
+        </>)}
+        <div style={DLG_RADIO_ROW}>
+          {(['modbus','cloud'] as const).map(p=>(
+            <label key={p} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'rgba(248,250,252,0.6)', cursor:'pointer' }}>
+              <input type="radio" checked={protocol===p} onChange={()=>setProtocol(p)} disabled={loading} style={{ accentColor:'#ff6b35' }}/> {p==='modbus'?'Modbus TCP':'Cloud API'}
+            </label>
+          ))}
         </div>
       </div>
     </div>
@@ -354,73 +355,79 @@ function DeviceConnectDialog({ deviceType, realDevices, onConnect, onClose }: { 
     alert(`${deviceType} über Modbus verbunden und registriert!`);
   };
 
+  const DLG_BACKDROP: React.CSSProperties = { position:'fixed', inset:0, background:'rgba(4,6,20,0.72)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 };
+  const DLG_BOX: React.CSSProperties = { background:'linear-gradient(140deg,rgba(18,24,58,0.97),rgba(22,30,65,0.97))', border:'1px solid rgba(255,107,53,0.22)', borderRadius:20, padding:'32px 36px', minWidth:360, maxWidth:500, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', color:'#f8fafc', fontFamily:'Inter,Segoe UI,sans-serif', maxHeight:'90vh', overflowY:'auto' };
+  const DLG_H3: React.CSSProperties = { fontSize:17, fontWeight:900, color:'#ff9500', marginBottom:20, letterSpacing:'-0.01em' };
+  const DLG_LABEL: React.CSSProperties = { display:'block', fontSize:11, color:'rgba(248,250,252,0.5)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4, marginTop:12 };
+  const DLG_INPUT: React.CSSProperties = { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,107,53,0.22)', borderRadius:10, padding:'10px 14px', color:'#f8fafc', fontSize:13, outline:'none', fontFamily:'monospace', boxSizing:'border-box' };
+  const DLG_BTN_P: React.CSSProperties = { background:'linear-gradient(90deg,#ff6b35,#ff9500)', border:'none', borderRadius:999, padding:'11px 24px', fontWeight:800, fontSize:13, color:'#0a0305', cursor:'pointer', marginRight:10, marginTop:18 };
+  const DLG_BTN_S: React.CSSProperties = { background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:999, padding:'11px 24px', fontWeight:700, fontSize:13, color:'rgba(248,250,252,0.6)', cursor:'pointer', marginTop:18 };
+  const DLG_RADIO_ROW: React.CSSProperties = { display:'flex', gap:20, marginTop:18, paddingTop:16, borderTop:'1px solid rgba(255,255,255,0.07)' };
+  const DLG_ERR: React.CSSProperties = { color:'#f87171', fontSize:12, marginTop:10, padding:'8px 12px', background:'rgba(248,113,113,0.08)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:8 };
+  const DLG_OK: React.CSSProperties  = { color:'#22c55e', fontSize:12, marginTop:10, padding:'8px 12px', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:8 };
+
+  const typeIcon: Record<string,string> = { Battery:'⚡', Wallbox:'🔌', Inverter:'☀️', 'Smart Meter':'📊' };
+
   return (
-    <div className="dialog-backdrop">
-      <div className="dialog">
-        {protocol === 'modbus' && step === 1 && (
-          <>
-            <h3>{deviceType} verbinden (Modbus)</h3>
-            <label>IP-Adresse: <input type="text" value={ip} onChange={e => setIp(e.target.value)} placeholder="z.B. 192.168.1.50" /></label><br/>
-            <label>Port: <input type="number" value={port} onChange={e => setPort(Number(e.target.value))} /></label><br/>
-            {error && <div style={{color:'red',marginBottom:8}}>{error}</div>}
-            <button onClick={handleConnect} disabled={!ip || loading}>Verbinden</button>
-            <button onClick={onClose} style={{marginLeft:8}}>Abbrechen</button>
-          </>
-        )}
-        {protocol === 'modbus' && step === 2 && (
-          <>
-            <h3>{deviceType} registrieren (Modbus)</h3>
-            {deviceType === 'Battery' && <>
-              <label>SoC (%): <input type="number" value={soc} onChange={e => setSoc(Number(e.target.value))} /></label><br/>
-              <label>SoH (%): <input type="number" value={soh} onChange={e => setSoh(Number(e.target.value))} /></label><br/>
-              <label>Spannung (V): <input type="number" value={voltage} onChange={e => setVoltage(Number(e.target.value))} /></label><br/>
-              <label>Strom (A): <input type="number" value={current} onChange={e => setCurrent(Number(e.target.value))} /></label><br/>
-              <label>Temperatur (°C): <input type="number" value={temperature} onChange={e => setTemperature(Number(e.target.value))} /></label><br/>
-              <label>Fehlerstatus: <input type="text" value={errorStatus} onChange={e => setErrorStatus(e.target.value)} /></label><br/>
-              <label>Steuerbefehl: <input type="text" value={command} onChange={e => setCommand(e.target.value)} placeholder="z.B. set_power=2.5" /></label><br/>
-            </>}
-            {deviceType === 'Wallbox' && <>
-              <label>Laden aktiv: <input type="checkbox" checked={charging} onChange={e => setCharging(e.target.checked)} /></label><br/>
-              <label>Spannung (V): <input type="number" value={voltage} onChange={e => setVoltage(Number(e.target.value))} /></label><br/>
-              <label>Strom (A): <input type="number" value={current} onChange={e => setCurrent(Number(e.target.value))} /></label><br/>
-              <label>Steuerbefehl: <input type="text" value={command} onChange={e => setCommand(e.target.value)} placeholder="z.B. start_charge" /></label><br/>
-            </>}
-            {deviceType === 'Inverter' && <>
-              <label>Leistung (kW): <input type="number" value={power} onChange={e => setPower(Number(e.target.value))} /></label><br/>
-              <label>Spannung (V): <input type="number" value={voltage} onChange={e => setVoltage(Number(e.target.value))} /></label><br/>
-              <label>Strom (A): <input type="number" value={current} onChange={e => setCurrent(Number(e.target.value))} /></label><br/>
-              <label>Temperatur (°C): <input type="number" value={temperature} onChange={e => setTemperature(Number(e.target.value))} /></label><br/>
-              <label>Steuerbefehl: <input type="text" value={command} onChange={e => setCommand(e.target.value)} placeholder="z.B. set_power=2.5" /></label><br/>
-            </>}
-            {deviceType === 'Smart Meter' && <>
-              <label>Zählerstand: <input type="number" value={meterReading} onChange={e => setMeterReading(Number(e.target.value))} /></label><br/>
-              <label>Spannung (V): <input type="number" value={voltage} onChange={e => setVoltage(Number(e.target.value))} /></label><br/>
-              <label>Strom (A): <input type="number" value={current} onChange={e => setCurrent(Number(e.target.value))} /></label><br/>
-              <label>Steuerbefehl: <input type="text" value={command} onChange={e => setCommand(e.target.value)} placeholder="z.B. reset_meter" /></label><br/>
-            </>}
-            <button onClick={handleRegister}>Registrieren</button>
-            <button onClick={onClose} style={{marginLeft:8}}>Abbrechen</button>
-          </>
-        )}
-        {protocol === 'cloud' && (
-          <>
-            <h3>{deviceType} verbinden (Cloud API)</h3>
-            <label>Device-ID: <input type="text" value={deviceId} onChange={e => setDeviceId(e.target.value)} placeholder="z.B. WBX123456" /></label><br/>
-            <label>API Base URL: <input type="text" value={apiBaseUrl} onChange={e => setApiBaseUrl(e.target.value)} placeholder="https://cloud.wallbox.com/api" /></label><br/>
-            <label>API Key: <input type="text" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="API Key" /></label><br/>
-            {error && <div style={{color:'red',marginBottom:8}}>{error}</div>}
-            {success && <div style={{color:'green',marginBottom:8}}>✅ Verbunden!</div>}
-            <button onClick={handleConnect} disabled={loading} style={{marginRight:8}}>Verbinden</button>
-            <button onClick={onClose}>Abbrechen</button>
-          </>
-        )}
-        <div style={{marginTop:16}}>
-          <label>
-            <input type="radio" checked={protocol === 'modbus'} onChange={() => setProtocol('modbus')} disabled={loading} /> Modbus
-          </label>
-          <label style={{ marginLeft: 16 }}>
-            <input type="radio" checked={protocol === 'cloud'} onChange={() => setProtocol('cloud')} disabled={loading} /> Cloud API
-          </label>
+    <div style={DLG_BACKDROP}>
+      <div style={DLG_BOX}>
+        {protocol === 'modbus' && step === 1 && (<>
+          <div style={DLG_H3}>{typeIcon[deviceType]||'📡'} {deviceType} verbinden — Modbus</div>
+          <label style={DLG_LABEL}>IP-Adresse<input style={DLG_INPUT} type="text" value={ip} onChange={e=>setIp(e.target.value)} placeholder="192.168.1.50"/></label>
+          <label style={DLG_LABEL}>Port<input style={DLG_INPUT} type="number" value={port} onChange={e=>setPort(Number(e.target.value))}/></label>
+          {error && <div style={DLG_ERR}>{error}</div>}
+          <div><button style={DLG_BTN_P} onClick={handleConnect} disabled={!ip||loading}>Verbinden</button><button style={DLG_BTN_S} onClick={onClose}>Abbrechen</button></div>
+        </>)}
+        {protocol === 'modbus' && step === 2 && (<>
+          <div style={DLG_H3}>{typeIcon[deviceType]||'📡'} {deviceType} registrieren — Modbus</div>
+          {deviceType === 'Battery' && <>
+            <label style={DLG_LABEL}>SoC (%)<input style={DLG_INPUT} type="number" value={soc} onChange={e=>setSoc(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>SoH (%)<input style={DLG_INPUT} type="number" value={soh} onChange={e=>setSoh(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Spannung (V)<input style={DLG_INPUT} type="number" value={voltage} onChange={e=>setVoltage(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Strom (A)<input style={DLG_INPUT} type="number" value={current} onChange={e=>setCurrent(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Temperatur (°C)<input style={DLG_INPUT} type="number" value={temperature} onChange={e=>setTemperature(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Fehlerstatus<input style={DLG_INPUT} type="text" value={errorStatus} onChange={e=>setErrorStatus(e.target.value)}/></label>
+            <label style={DLG_LABEL}>Steuerbefehl<input style={DLG_INPUT} type="text" value={command} onChange={e=>setCommand(e.target.value)} placeholder="z.B. set_power=2.5"/></label>
+          </>}
+          {deviceType === 'Wallbox' && <>
+            <label style={{ ...DLG_LABEL, display:'flex', alignItems:'center', gap:10 }}>
+              <span>Laden aktiv</span>
+              <input type="checkbox" checked={charging} onChange={e=>setCharging(e.target.checked)} style={{ accentColor:'#ff6b35', width:16, height:16 }}/>
+            </label>
+            <label style={DLG_LABEL}>Spannung (V)<input style={DLG_INPUT} type="number" value={voltage} onChange={e=>setVoltage(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Strom (A)<input style={DLG_INPUT} type="number" value={current} onChange={e=>setCurrent(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Steuerbefehl<input style={DLG_INPUT} type="text" value={command} onChange={e=>setCommand(e.target.value)} placeholder="z.B. start_charge"/></label>
+          </>}
+          {deviceType === 'Inverter' && <>
+            <label style={DLG_LABEL}>Leistung (kW)<input style={DLG_INPUT} type="number" value={power} onChange={e=>setPower(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Spannung (V)<input style={DLG_INPUT} type="number" value={voltage} onChange={e=>setVoltage(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Strom (A)<input style={DLG_INPUT} type="number" value={current} onChange={e=>setCurrent(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Temperatur (°C)<input style={DLG_INPUT} type="number" value={temperature} onChange={e=>setTemperature(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Steuerbefehl<input style={DLG_INPUT} type="text" value={command} onChange={e=>setCommand(e.target.value)} placeholder="z.B. set_power=2.5"/></label>
+          </>}
+          {deviceType === 'Smart Meter' && <>
+            <label style={DLG_LABEL}>Zählerstand<input style={DLG_INPUT} type="number" value={meterReading} onChange={e=>setMeterReading(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Spannung (V)<input style={DLG_INPUT} type="number" value={voltage} onChange={e=>setVoltage(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Strom (A)<input style={DLG_INPUT} type="number" value={current} onChange={e=>setCurrent(Number(e.target.value))}/></label>
+            <label style={DLG_LABEL}>Steuerbefehl<input style={DLG_INPUT} type="text" value={command} onChange={e=>setCommand(e.target.value)} placeholder="z.B. reset_meter"/></label>
+          </>}
+          <div><button style={DLG_BTN_P} onClick={handleRegister}>Registrieren</button><button style={DLG_BTN_S} onClick={onClose}>Abbrechen</button></div>
+        </>)}
+        {protocol === 'cloud' && (<>
+          <div style={DLG_H3}>☁️ {deviceType} verbinden — Cloud API</div>
+          <label style={DLG_LABEL}>Device-ID<input style={DLG_INPUT} type="text" value={deviceId} onChange={e=>setDeviceId(e.target.value)} placeholder="WBX123456"/></label>
+          <label style={DLG_LABEL}>API Base URL<input style={DLG_INPUT} type="text" value={apiBaseUrl} onChange={e=>setApiBaseUrl(e.target.value)} placeholder="https://cloud.device.com/api"/></label>
+          <label style={DLG_LABEL}>API Key<input style={DLG_INPUT} type="text" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="API Key"/></label>
+          {error && <div style={DLG_ERR}>{error}</div>}
+          {success && <div style={DLG_OK}>✅ Erfolgreich verbunden!</div>}
+          <div><button style={DLG_BTN_P} onClick={handleConnect} disabled={loading}>Verbinden</button><button style={DLG_BTN_S} onClick={onClose}>Abbrechen</button></div>
+        </>)}
+        <div style={DLG_RADIO_ROW}>
+          {(['modbus','cloud'] as const).map(p=>(
+            <label key={p} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'rgba(248,250,252,0.6)', cursor:'pointer' }}>
+              <input type="radio" checked={protocol===p} onChange={()=>setProtocol(p)} disabled={loading} style={{ accentColor:'#ff6b35' }}/> {p==='modbus'?'Modbus TCP':'Cloud API'}
+            </label>
+          ))}
         </div>
       </div>
     </div>
