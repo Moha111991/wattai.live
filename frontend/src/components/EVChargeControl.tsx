@@ -2,9 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { API_URL, WS_URL } from '../lib/api';
 
 interface EVState { ev_soc: number; ev_power_kw: number; ev_charging: boolean; }
-interface WallboxInfo { id?: string; type?: string; status?: string; enabled?: boolean; brand?: string; model?: string; }
+interface WallboxInfo { id?: string; type?: string; status?: string; enabled?: boolean; brand?: string; model?: string; ip?: string; }
 interface DevicesResponse { devices?: WallboxInfo[]; }
 interface ChargingResponse { soc?: number; power_kw?: number; }
+
+/* ── Nur wirklich verbundene Wallboxen zählen ── */
+const isReallyConnected = (w: WallboxInfo) =>
+  (w.status || '').toLowerCase() === 'connected' ||
+  (w.status || '').toLowerCase() === 'online';
 
 const WAI = `
   @keyframes wai-breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
@@ -16,6 +21,8 @@ const WAI = `
   .wai-btn-g:hover{background:rgba(255,107,53,.08)!important;border-color:rgba(255,107,53,.45)!important;transform:translateY(-2px)!important}
   .wai-btn-r{transition:all .6s cubic-bezier(.16,1,.3,1)!important}
   .wai-btn-r:hover{filter:brightness(1.15)!important;transform:translateY(-2px)!important}
+  .wai-wb-select{transition:border-color .25s ease!important}
+  .wai-wb-select:hover{border-color:rgba(59,130,246,0.5)!important}
 `;
 
 const EVChargeControl: React.FC = () => {
@@ -23,7 +30,9 @@ const EVChargeControl: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [power, setPower] = useState<number>(11);
   const [error, setError] = useState<string | null>(null);
-  const [wallbox, setWallbox] = useState<WallboxInfo | null>(null);
+  /* ── Alle Wallboxen aus der API ── */
+  const [allWallboxes, setAllWallboxes] = useState<WallboxInfo[]>([]);
+  const [selectedWallboxId, setSelectedWallboxId] = useState<string | null>(null);
   const [wallboxError, setWallboxError] = useState<string | null>(null);
   const [cloudSoc, setCloudSoc] = useState<number | null>(null);
   const [cloudAvailable, setCloudAvailable] = useState<boolean | null>(null);
@@ -43,20 +52,31 @@ const EVChargeControl: React.FC = () => {
     return () => ws.close();
   }, []);
 
-  // Wallbox aus Geräteliste
+  // Alle Wallboxen aus Geräteliste laden (nicht nur die erste)
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`${API_URL}/devices`, { headers: { 'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE' } });
+        const res = await fetch(`${API_URL}/devices`, {
+          headers: { 'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE' },
+        });
         if (!res.ok) return;
         const data: DevicesResponse = await res.json();
-        const wb = (data.devices || []).find(d => (d.type || '').toLowerCase().includes('wallbox'));
-        if (wb) setWallbox(wb);
+        const wbs = (data.devices || []).filter(
+          d => (d.type || '').toLowerCase().includes('wallbox') ||
+               (d.type || '').toLowerCase().includes('evse') ||
+               (d.type || '').toLowerCase().includes('charger'),
+        );
+        setAllWallboxes(wbs);
+        // Vorauswahl: erste wirklich verbundene Wallbox
+        const firstConnected = wbs.find(isReallyConnected);
+        if (firstConnected?.id) setSelectedWallboxId(firstConnected.id);
       } catch (e: unknown) {
         setWallboxError(e instanceof Error ? e.message : 'Geräteübersicht konnte nicht geladen werden.');
       }
     };
     load();
+    const id = setInterval(load, 15000); // alle 15s aktualisieren
+    return () => clearInterval(id);
   }, []);
 
   // Cloud/BMS SOC
@@ -68,8 +88,9 @@ const EVChargeControl: React.FC = () => {
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        if (data.available && typeof data.soc === 'number') { setCloudSoc(data.soc); setCloudAvailable(true); setCloudProvider(data.provider || null); }
-        else setCloudAvailable(false);
+        if (data.available && typeof data.soc === 'number') {
+          setCloudSoc(data.soc); setCloudAvailable(true); setCloudProvider(data.provider || null);
+        } else setCloudAvailable(false);
       } catch { if (!cancelled) setCloudAvailable(false); }
     };
     loadCloud();
@@ -77,8 +98,12 @@ const EVChargeControl: React.FC = () => {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  const hasWallbox = !!wallbox;
-  const wallboxConnected = hasWallbox && (wallbox!.status === 'connected' || wallbox!.status === 'online' || wallbox!.enabled === true);
+  /* ── Abgeleitete Werte ── */
+  const connectedWallboxes = allWallboxes.filter(isReallyConnected);
+  const selectedWallbox = connectedWallboxes.find(w => w.id === selectedWallboxId) ?? connectedWallboxes[0] ?? null;
+  const wallboxConnected = selectedWallbox !== null;
+  // Wallboxen, die in der API existieren aber nicht verbunden sind
+  const disconnectedWallboxes = allWallboxes.filter(w => !isReallyConnected(w));
 
   const setCharging = async (charging: boolean) => {
     if (!wallboxConnected) return;
@@ -219,10 +244,88 @@ const EVChargeControl: React.FC = () => {
 
       {/* Wallbox status */}
       <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:'12px 16px', fontSize:12, color:'rgba(248,250,252,0.4)', lineHeight:1.6 }}>
-        {!hasWallbox && <span style={{ color:'#f59e0b' }}>⚠ Keine Wallbox verbunden. Bitte unter „Geräte" eine Wallbox hinzufügen.</span>}
-        {hasWallbox && !wallboxConnected && <span style={{ color:'#f59e0b' }}>⚠ Wallbox erkannt, aber nicht verbunden (Status: {wallbox?.status ?? 'unbekannt'}).</span>}
-        {hasWallbox && wallboxConnected && <span style={{ color:'#22c55e' }}>✓ Verbundene Wallbox: {wallbox?.brand ?? ''} {wallbox?.model ?? ''} ({wallbox?.status})</span>}
-        {wallboxError && <span style={{ color:'#f87171', display:'block', marginTop:4 }}>Geräte-Info: {wallboxError}</span>}
+
+        {/* Keine Wallbox in API */}
+        {allWallboxes.length === 0 && !wallboxError && (
+          <div style={{ color:'#f59e0b', display:'flex', alignItems:'center', gap:8 }}>
+            <span>⚠</span>
+            <span>Keine Wallbox gefunden. Bitte unter <strong style={{ color:'rgba(248,250,252,0.6)' }}>„Geräte"</strong> eine Wallbox verbinden.</span>
+          </div>
+        )}
+
+        {/* Wallboxen vorhanden aber keine verbunden */}
+        {allWallboxes.length > 0 && connectedWallboxes.length === 0 && (
+          <div>
+            <div style={{ color:'#f59e0b', display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+              <span>⚠</span>
+              <span>
+                {allWallboxes.length === 1
+                  ? `Wallbox erkannt (${allWallboxes[0].brand ?? ''} ${allWallboxes[0].model ?? ''}) — Status: „${allWallboxes[0].status ?? 'unbekannt'}" (nicht verbunden).`
+                  : `${allWallboxes.length} Wallboxen erkannt — keine davon ist verbunden.`}
+              </span>
+            </div>
+            <div style={{ color:'rgba(248,250,252,0.25)', fontSize:11 }}>
+              Bitte im Tab <strong style={{ color:'rgba(248,250,252,0.45)' }}>Geräte → Wallbox / EVSE</strong> auf „Jetzt verbinden" klicken.
+            </div>
+            {disconnectedWallboxes.map(w => (
+              <div key={w.id ?? w.ip} style={{ marginTop:6, padding:'6px 10px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.18)', borderRadius:8, fontSize:11, fontFamily:'monospace', color:'rgba(248,250,252,0.4)' }}>
+                🔌 {w.brand ?? 'Wallbox'} {w.model ?? ''} — Status: <span style={{ color:'#f87171' }}>{w.status ?? 'unbekannt'}</span>{w.ip ? ` · ${w.ip}` : ''}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Mindestens eine verbundene Wallbox */}
+        {connectedWallboxes.length > 0 && (
+          <div>
+            {/* Auswahl bei mehreren */}
+            {connectedWallboxes.length > 1 && (
+              <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(59,130,246,0.7)', fontWeight:700, marginBottom:6 }}>
+                  Aktive Wallbox ({connectedWallboxes.length} verbunden)
+                </div>
+                <select
+                  className="wai-wb-select"
+                  value={selectedWallboxId ?? ''}
+                  onChange={e => setSelectedWallboxId(e.target.value)}
+                  style={{
+                    width:'100%', padding:'8px 12px', borderRadius:9, fontSize:12, fontFamily:'monospace',
+                    background:'rgba(255,255,255,0.05)', border:'1px solid rgba(59,130,246,0.3)',
+                    color:'#f8fafc', outline:'none', cursor:'pointer',
+                  }}>
+                  {connectedWallboxes.map(w => (
+                    <option key={w.id ?? w.ip} value={w.id ?? ''} style={{ background:'#0f172a' }}>
+                      🔌 {w.brand ?? 'Wallbox'} {w.model ?? ''}{w.ip ? ` · ${w.ip}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Aktive Wallbox Details */}
+            {selectedWallbox && (
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:8, height:8, borderRadius:'50%', background:'#22c55e', flexShrink:0,
+                  boxShadow:'0 0 8px rgba(34,197,94,0.6)', animation:'wai-breathe 3s ease-in-out infinite' }}/>
+                <span style={{ color:'#22c55e', fontWeight:700 }}>
+                  ✓ Verbunden: {selectedWallbox.brand ?? 'Wallbox'} {selectedWallbox.model ?? ''}
+                </span>
+                {selectedWallbox.ip && <span style={{ color:'rgba(248,250,252,0.25)', fontFamily:'monospace', fontSize:11 }}>· {selectedWallbox.ip}</span>}
+              </div>
+            )}
+
+            {/* Alle verbundenen als Liste */}
+            {connectedWallboxes.length > 1 && (
+              <div style={{ marginTop:8, fontSize:11, color:'rgba(248,250,252,0.3)' }}>
+                Alle verbundenen Wallboxen: {connectedWallboxes.map(w => `${w.brand ?? 'Wallbox'} ${w.model ?? ''}`.trim()).join(' · ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {wallboxError && (
+          <div style={{ color:'#f87171', marginTop:6, fontSize:11 }}>⚠ {wallboxError}</div>
+        )}
       </div>
     </div>
   );

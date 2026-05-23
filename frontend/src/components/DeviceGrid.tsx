@@ -599,6 +599,10 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [connStates, setConnStates] = useState<Record<string, ConnState>>({});
   const [connDevices, setConnDevices] = useState<Record<string, Partial<Device>>>({});
+  // Multiple connections per slot (key: `${slotKey}:${index}`)
+  const [extraConns, setExtraConns] = useState<Record<string, Partial<Device>[]>>({});
+  // Which "add another" panel is open per slot
+  const [addPanel, setAddPanel] = useState<string | null>(null);
 
   // Initialize conn states from incoming devices
   useEffect(() => {
@@ -649,10 +653,16 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
   }, []);
 
   const handleConnected = useCallback((slotKey: string, data: Partial<Device>) => {
-    setConnStates(p => ({ ...p, [slotKey]: 'connected' }));
-    setConnDevices(p => ({ ...p, [slotKey]: data }));
-    setOpenPanel(null);
-  }, []);
+    if (addPanel === slotKey) {
+      // Adding an additional connection for this slot
+      setExtraConns(p => ({ ...p, [slotKey]: [...(p[slotKey] ?? []), data] }));
+      setAddPanel(null);
+    } else {
+      setConnStates(p => ({ ...p, [slotKey]: 'connected' }));
+      setConnDevices(p => ({ ...p, [slotKey]: data }));
+      setOpenPanel(null);
+    }
+  }, [addPanel]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -685,8 +695,12 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
           const cState = connStates[slot.key] ?? 'idle';
           const si = getStatusInfo(cState, device?.status);
           const isOpen = openPanel === slot.key;
+          const isAddOpen = addPanel === slot.key;
           const isBatt = slot.key === 'battery';
           const safeSoc = Number.isFinite(device?.soc) ? Math.max(0, Math.min(100, Number(device?.soc))) : 0;
+          const extras = extraConns[slot.key] ?? [];
+          // Total connected count for this slot (primary + extras)
+          const totalConnected = (cState === 'connected' ? 1 : 0) + extras.length;
 
           return (
             <div key={slot.key} className="wai-dcard" style={{
@@ -738,7 +752,16 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
 
                 {/* ── Name + badge ── */}
                 <div style={{ flex:'0 0 auto', minWidth:160, marginRight:16 }}>
-                  <div style={{ fontSize:15, fontWeight:900, color:'#f8fafc', letterSpacing:'-0.02em', marginBottom:2 }}>{slot.label}</div>
+                  <div style={{ fontSize:15, fontWeight:900, color:'#f8fafc', letterSpacing:'-0.02em', marginBottom:2 }}>
+                    {slot.label}
+                    {totalConnected > 1 && (
+                      <span style={{ marginLeft:8, fontSize:10, fontWeight:700, color:slot.accent,
+                        background:`${slot.accent}14`, border:`1px solid ${slot.accent}30`,
+                        borderRadius:999, padding:'2px 8px', verticalAlign:'middle' }}>
+                        {totalConnected}×
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize:10, color:'rgba(248,250,252,0.3)', marginBottom:8 }}>{slot.sublabel}</div>
                   <span style={{ display:'inline-flex', alignItems:'center', gap:5,
                     background:`${si.color}12`, border:`1px solid ${si.color}28`, borderRadius:999,
@@ -752,6 +775,21 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                       {device.brand && <span>{device.brand}</span>}
                       {device.model && <span> · {device.model}</span>}
                       {device.ip && <div style={{ color:'rgba(248,250,252,0.2)' }}>{device.ip}</div>}
+                    </div>
+                  )}
+                  {/* Extra connected devices list */}
+                  {extras.length > 0 && (
+                    <div style={{ marginTop:6 }}>
+                      {extras.map((ex, i) => (
+                        <div key={i} style={{ fontSize:10, color:'rgba(248,250,252,0.3)', fontFamily:'monospace',
+                          display:'flex', alignItems:'center', gap:5 }}>
+                          <span style={{ color:slot.accent }}>✓</span>
+                          {ex.brand ?? slot.label} {ex.model ?? ''}{ex.ip ? ` · ${ex.ip}` : ''}
+                          <button type="button"
+                            onClick={() => setExtraConns(p => ({ ...p, [slot.key]: (p[slot.key]??[]).filter((_,j)=>j!==i) }))}
+                            style={{ fontSize:9, color:'#f87171', background:'none', border:'none', cursor:'pointer', padding:'0 2px' }}>✕</button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -772,7 +810,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Metrics + CTA ── */}
-                <div style={{ flexShrink:0, width:118, display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                <div style={{ flexShrink:0, width:118, display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
                   {isBatt && cState==='connected' ? (
                     <SOCRing soc={safeSoc} accent={slot.accent}/>
                   ) : (
@@ -784,22 +822,21 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                     </div>
                   )}
 
+                  {/* Primary connect / connected button */}
                   {cState === 'connected' ? (
-                    <div style={{ width:'100%', textAlign:'center', padding:'8px 10px', borderRadius:999,
+                    <div style={{ width:'100%', textAlign:'center', padding:'7px 10px', borderRadius:999,
                       background:`${slot.accent}12`, border:`1px solid ${slot.accent}35`,
                       fontSize:11, fontWeight:800, color:slot.accent }}>
                       ✓ Verbunden
                     </div>
                   ) : (
                     <button type="button" className="wai-btn-p"
-                      onClick={() => setOpenPanel(isOpen ? null : slot.key)}
+                      onClick={() => { setOpenPanel(isOpen ? null : slot.key); setAddPanel(null); }}
                       style={{
-                        width:'100%', outline:'none', border:'none', borderRadius:999,
-                        padding:'9px 10px', fontWeight:800, fontSize:11, cursor:'pointer',
+                        width:'100%', outline:'none', borderRadius:999,
+                        padding:'8px 10px', fontWeight:800, fontSize:11, cursor:'pointer',
                         letterSpacing:'0.04em', boxShadow:'none',
-                        background: isOpen
-                          ? `${slot.accent}20`
-                          : 'linear-gradient(90deg,#ff6b35,#ff9500)',
+                        background: isOpen ? `${slot.accent}20` : 'linear-gradient(90deg,#ff6b35,#ff9500)',
                         color: isOpen ? slot.accent : '#0a0305',
                         border: isOpen ? `1px solid ${slot.accent}40` : 'none',
                         animation: isOpen ? 'none' : 'wai-glow-o 4s ease-in-out infinite',
@@ -808,10 +845,26 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                     </button>
                   )}
 
+                  {/* Weitere hinzufügen — nur wenn schon verbunden */}
                   {cState === 'connected' && (
                     <button type="button"
-                      onClick={() => { setConnStates(p=>({...p,[slot.key]:'idle'})); setOpenPanel(slot.key); }}
-                      style={{ fontSize:10, color:'rgba(248,250,252,0.3)', background:'none', border:'none',
+                      onClick={() => { setAddPanel(isAddOpen ? null : slot.key); setOpenPanel(null); }}
+                      style={{
+                        width:'100%', outline:'none', borderRadius:999, padding:'6px 10px',
+                        fontWeight:700, fontSize:10, cursor:'pointer', letterSpacing:'0.04em',
+                        background: isAddOpen ? `${slot.accent}18` : 'rgba(255,255,255,0.04)',
+                        color: isAddOpen ? slot.accent : 'rgba(248,250,252,0.4)',
+                        border: `1px solid ${isAddOpen ? slot.accent+'44' : 'rgba(255,255,255,0.1)'}`,
+                        transition:'all .25s ease',
+                      }}>
+                      {isAddOpen ? '▲ Schließen' : `+ Weiteres ${slot.label.split(' ')[0]}`}
+                    </button>
+                  )}
+
+                  {cState === 'connected' && (
+                    <button type="button"
+                      onClick={() => { setConnStates(p=>({...p,[slot.key]:'idle'})); setOpenPanel(slot.key); setAddPanel(null); }}
+                      style={{ fontSize:10, color:'rgba(248,250,252,0.25)', background:'none', border:'none',
                         cursor:'pointer', textDecoration:'underline', padding:0 }}>
                       Neu konfigurieren
                     </button>
@@ -819,7 +872,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
               </div>
 
-              {/* ── Inline connect panel ── */}
+              {/* ── Inline connect panel (primary) ── */}
               {isOpen && (
                 <ConnectPanel
                   slot={slot}
@@ -828,6 +881,23 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                   onConnected={(d) => handleConnected(slot.key, d)}
                   onClose={() => setOpenPanel(null)}
                 />
+              )}
+
+              {/* ── Inline connect panel (additional device) ── */}
+              {isAddOpen && (
+                <div>
+                  <div style={{ padding:'10px 22px 0', fontSize:11, fontWeight:700, color:slot.accent,
+                    letterSpacing:'0.1em', textTransform:'uppercase', background:`${slot.accent}06` }}>
+                    ＋ Weiteres {slot.label} hinzufügen
+                  </div>
+                  <ConnectPanel
+                    slot={slot}
+                    device={null}
+                    connState="idle"
+                    onConnected={(d) => handleConnected(slot.key, d)}
+                    onClose={() => setAddPanel(null)}
+                  />
+                </div>
               )}
             </div>
           );
