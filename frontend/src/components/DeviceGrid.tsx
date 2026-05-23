@@ -21,7 +21,7 @@ interface DeviceGridProps {
   onConnect?: (device: Device) => void;
 }
 
-type Proto = 'modbus' | 'cloud' | 'ocpp' | 'sunspec';
+type Proto = 'modbus' | 'cloud' | 'ocpp' | 'sunspec' | 'mqtt';
 type ConnState = 'idle' | 'connecting' | 'connected' | 'partial' | 'failed';
 
 /* ─── Animations / WAI CSS ─────────────────────────────────────── */
@@ -52,86 +52,94 @@ const SLOTS = [
     key: 'battery',
     apiType: 'Battery',
     label: 'Heimspeicher',
-    sublabel: 'Batteriespeicher · BMS · Modbus / Cloud',
+    sublabel: 'Batteriespeicher · BMS · Modbus / MQTT / Cloud',
     icon: '⚡',
     accent: '#22c55e',
     bg: 'rgba(34,197,94,0.06)',
     border: 'rgba(34,197,94,0.22)',
     match: ['battery','heimspeicher','bat','batteriespeicher'],
-    protos: ['modbus','cloud'] as Proto[],
+    protos: ['modbus','mqtt','cloud'] as Proto[],
     defaultPort: 502,
+    mqttTopicDefault: 'energy/battery',
     fields: {
       modbus: ['ip','port','soc','soh','voltage','current','temperature'],
+      mqtt:   ['mqttBroker','mqttPort','mqttTopic','mqttUser','mqttPass','mqttTls'],
       cloud:  ['deviceId','apiBaseUrl','apiKey'],
     },
-    protoLabel: { modbus:'Modbus TCP', cloud:'Cloud API' },
-    description: 'Verbindet Batteriespeicher über Modbus RTU/TCP (SunSpec) oder Hersteller-Cloud-API.',
-    protocols_info: 'Modbus RTU · TCP · SunSpec · CAN Bus',
+    protoLabel: { modbus:'Modbus TCP', mqtt:'MQTT', cloud:'Cloud API' },
+    description: 'Verbindet Batteriespeicher über Modbus RTU/TCP, MQTT-Broker oder Hersteller-Cloud-API.',
+    protocols_info: 'Modbus RTU · TCP · MQTT · SunSpec',
     standard: 'IEC 62619 · SunSpec',
   },
   {
     key: 'inverter',
     apiType: 'Inverter',
     label: 'PV-Wechselrichter',
-    sublabel: 'Solar Inverter · MPPT · SunSpec / Modbus',
+    sublabel: 'Solar Inverter · MPPT · SunSpec / Modbus / MQTT',
     icon: '☀️',
     accent: '#ff9500',
     bg: 'rgba(255,149,0,0.06)',
     border: 'rgba(255,149,0,0.22)',
     match: ['inverter','wechselrichter','pv'],
-    protos: ['modbus','sunspec','cloud'] as Proto[],
+    protos: ['modbus','mqtt','sunspec','cloud'] as Proto[],
     defaultPort: 502,
+    mqttTopicDefault: 'energy/pv',
     fields: {
       modbus:  ['ip','port','power','voltage','current','temperature'],
+      mqtt:    ['mqttBroker','mqttPort','mqttTopic','mqttUser','mqttPass','mqttTls'],
       sunspec: ['ip','port'],
       cloud:   ['deviceId','apiBaseUrl','apiKey'],
     },
-    protoLabel: { modbus:'Modbus TCP', sunspec:'SunSpec REST', cloud:'Cloud API' },
-    description: 'Verbindet PV-Wechselrichter via Modbus TCP, SunSpec-REST oder Hersteller-Cloud-API.',
-    protocols_info: 'Modbus TCP · SunSpec · REST',
+    protoLabel: { modbus:'Modbus TCP', mqtt:'MQTT', sunspec:'SunSpec REST', cloud:'Cloud API' },
+    description: 'Verbindet PV-Wechselrichter via Modbus TCP, MQTT, SunSpec-REST oder Hersteller-Cloud-API.',
+    protocols_info: 'Modbus TCP · MQTT · SunSpec · REST',
     standard: 'IEC 61850 · SunSpec',
   },
   {
     key: 'wallbox',
     apiType: 'Wallbox',
     label: 'Wallbox / EVSE',
-    sublabel: 'Ladestation · OCPP 2.0.1 · ISO 15118',
+    sublabel: 'Ladestation · OCPP 2.0.1 · ISO 15118 · MQTT',
     icon: '🔌',
     accent: '#3b82f6',
     bg: 'rgba(59,130,246,0.06)',
     border: 'rgba(59,130,246,0.22)',
     match: ['wallbox','evse','charger','ladestation'],
-    protos: ['ocpp','modbus','cloud'] as Proto[],
+    protos: ['ocpp','mqtt','modbus','cloud'] as Proto[],
     defaultPort: 9000,
+    mqttTopicDefault: 'energy/ev',
     fields: {
       ocpp:   ['ip','port','chargeCurrent'],
+      mqtt:   ['mqttBroker','mqttPort','mqttTopic','mqttUser','mqttPass','mqttTls'],
       modbus: ['ip','port','chargeCurrent'],
       cloud:  ['deviceId','apiBaseUrl','apiKey'],
     },
-    protoLabel: { ocpp:'OCPP 2.0.1', modbus:'Modbus TCP', cloud:'Cloud API' },
-    description: 'Verbindet Wallbox/EVSE über OCPP 2.0.1, Modbus TCP oder Hersteller-Cloud-API.',
-    protocols_info: 'OCPP 2.0.1 · Modbus TCP · REST',
+    protoLabel: { ocpp:'OCPP 2.0.1', mqtt:'MQTT', modbus:'Modbus TCP', cloud:'Cloud API' },
+    description: 'Verbindet Wallbox/EVSE über OCPP 2.0.1, MQTT, Modbus TCP oder Hersteller-Cloud-API.',
+    protocols_info: 'OCPP 2.0.1 · MQTT · Modbus TCP · REST',
     standard: 'ISO 15118-20 · IEC 61851',
   },
   {
     key: 'meter',
     apiType: 'Smart Meter',
     label: 'Smart Meter',
-    sublabel: 'Energiezähler · SML · DLMS/COSEM',
+    sublabel: 'Energiezähler · SML · DLMS/COSEM · MQTT',
     icon: '📊',
     accent: '#a855f7',
     bg: 'rgba(168,85,247,0.06)',
     border: 'rgba(168,85,247,0.22)',
     match: ['smart meter','meter','zähler','smartmeter'],
-    protos: ['modbus','cloud'] as Proto[],
+    protos: ['modbus','mqtt','cloud'] as Proto[],
     defaultPort: 502,
+    mqttTopicDefault: 'energy/smartmeter',
     fields: {
       modbus: ['ip','port','meterId'],
+      mqtt:   ['mqttBroker','mqttPort','mqttTopic','mqttUser','mqttPass','mqttTls'],
       cloud:  ['deviceId','apiBaseUrl','apiKey'],
     },
-    protoLabel: { modbus:'Modbus TCP', cloud:'Cloud API' },
-    description: 'Verbindet Smart Meter über Modbus TCP (SML/DLMS) oder Cloud-Integration.',
-    protocols_info: 'SML · DLMS/COSEM · Modbus TCP',
+    protoLabel: { modbus:'Modbus TCP', mqtt:'MQTT', cloud:'Cloud API' },
+    description: 'Verbindet Smart Meter über Modbus TCP (SML/DLMS), MQTT oder Cloud-Integration.',
+    protocols_info: 'SML · DLMS/COSEM · MQTT · Modbus TCP',
     standard: 'IEC 62056 · EN 13757',
   },
 ] as const;
@@ -245,6 +253,13 @@ const ConnectPanel: React.FC<{
   const [voltage, setVoltage] = useState(400);
   const [current, setCurrent] = useState(10);
   const [temperature, setTemperature] = useState(25);
+  // MQTT fields
+  const [mqttBroker, setMqttBroker] = useState('localhost');
+  const [mqttPort, setMqttPort] = useState(1883);
+  const [mqttTopic, setMqttTopic] = useState(slot.mqttTopicDefault ?? 'energy/#');
+  const [mqttUser, setMqttUser] = useState('');
+  const [mqttPass, setMqttPass] = useState('');
+  const [mqttTls, setMqttTls] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
@@ -253,6 +268,12 @@ const ConnectPanel: React.FC<{
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   const validate = (): string | null => {
+    if (proto === 'mqtt') {
+      if (!mqttBroker) return 'MQTT Broker-Adresse erforderlich';
+      if (!mqttPort || mqttPort < 1 || mqttPort > 65535) return 'MQTT Port 1–65535 erforderlich';
+      if (!mqttTopic) return 'MQTT Topic erforderlich';
+      return null;
+    }
     if (proto === 'modbus' || proto === 'ocpp' || proto === 'sunspec') {
       if (!ip) return 'IP-Adresse erforderlich';
       if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return 'Ungültige IP-Adresse';
@@ -267,6 +288,17 @@ const ConnectPanel: React.FC<{
 
   const buildParams = () => {
     const base = { protocol: proto, ip, port, type: slot.apiType };
+    if (proto === 'mqtt') {
+      return {
+        protocol: 'mqtt', type: slot.apiType,
+        broker_host: mqttBroker,
+        broker_port: mqttPort,
+        topic: mqttTopic,
+        username: mqttUser || undefined,
+        password: mqttPass || undefined,
+        tls: mqttTls,
+      };
+    }
     if (proto === 'cloud') {
       return { ...base, device_id: deviceId, api_base_url: apiBaseUrl, api_key: apiKey };
     }
@@ -302,6 +334,35 @@ const ConnectPanel: React.FC<{
         if (!res.ok || data.error) throw new Error(data.error || 'Cloud API Fehler');
         setStatusMsg('✓ Cloud-Verbindung hergestellt');
         onConnected({ ...data, status:'connected', ip: data.ip || ip, type: slot.apiType });
+        return;
+      }
+
+      if (proto === 'mqtt') {
+        // MQTT broker connect — POST to /devices/connect or /devices/{id}/connect with protocol=mqtt
+        const targetId = device?.id;
+        const url = targetId
+          ? `${API_URL}/devices/${encodeURIComponent(targetId)}/connect`
+          : `${API_URL}/devices/connect`;
+        setStatusMsg(`Verbinde mit MQTT-Broker ${mqttBroker}:${mqttPort}…`);
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'X-API-Key': import.meta.env.VITE_API_KEY || '' },
+          body: JSON.stringify(params),
+          signal: ac.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        const requestId = data.request_id || data.requestId;
+        if (requestId) {
+          setStatusMsg(`MQTT-Verbindung wird bestätigt (Topic: ${mqttTopic})…`);
+          await pollUntilConnected(requestId, ac.signal, (s) => setStatusMsg(`MQTT Status: ${s}`));
+        }
+        setStatusMsg(`✓ MQTT verbunden — Broker: ${mqttBroker}:${mqttPort}, Topic: ${mqttTopic}`);
+        onConnected({
+          id: data.device_id || data.id || device?.id,
+          status: 'connected', type: slot.apiType,
+          brand: data.brand || device?.brand || '',
+          ip: mqttBroker,
+        });
         return;
       }
 
@@ -346,10 +407,11 @@ const ConnectPanel: React.FC<{
   };
 
   const isCloud = proto === 'cloud';
+  const isMqtt  = proto === 'mqtt';
   const accent = slot.accent;
 
   const protoLabels: Record<string, string> = {
-    modbus:'Modbus TCP', cloud:'Cloud API', ocpp:'OCPP 2.0.1', sunspec:'SunSpec REST'
+    modbus:'Modbus TCP', cloud:'Cloud API', ocpp:'OCPP 2.0.1', sunspec:'SunSpec REST', mqtt:'MQTT'
   };
 
   return (
@@ -380,11 +442,52 @@ const ConnectPanel: React.FC<{
       {/* Fields */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
         {/* Network fields */}
-        {!isCloud && <>
+        {!isCloud && !isMqtt && <>
           <FInput label="IP-Adresse" accent={accent} type="text" value={ip}
             onChange={e=>setIp(e.target.value)} placeholder="192.168.1.50" style={{ minWidth:140 }}/>
           <FInput label={`Port (Standard: ${slot.defaultPort})`} accent={accent} type="number" value={port}
             onChange={e=>setPort(Number(e.target.value))} style={{ maxWidth:110 }}/>
+        </>}
+
+        {/* MQTT fields */}
+        {isMqtt && <>
+          <FInput label="Broker-Adresse" accent={accent} type="text" value={mqttBroker}
+            onChange={e=>setMqttBroker(e.target.value)} placeholder="192.168.1.10 oder mqtt.example.com" style={{ minWidth:200 }}/>
+          <FInput label={`Port (${mqttTls ? '8883 TLS' : '1883 plain'})`} accent={accent} type="number" value={mqttPort}
+            onChange={e=>setMqttPort(Number(e.target.value))} style={{ maxWidth:120 }}/>
+          <FInput label="Topic-Prefix" accent={accent} type="text" value={mqttTopic}
+            onChange={e=>setMqttTopic(e.target.value)} placeholder="energy/battery" style={{ minWidth:180 }}/>
+          <FInput label="Benutzername (optional)" accent={accent} type="text" value={mqttUser}
+            onChange={e=>setMqttUser(e.target.value)} placeholder="mqtt_user" style={{ minWidth:140 }}/>
+          <FInput label="Passwort (optional)" accent={accent} type="password" value={mqttPass}
+            onChange={e=>setMqttPass(e.target.value)} placeholder="••••••••" style={{ minWidth:140 }}/>
+          {/* TLS toggle */}
+          <label style={{ display:'flex', flexDirection:'column', gap:4, justifyContent:'flex-end', paddingBottom:4 }}>
+            <span style={{ fontSize:10, color:'rgba(248,250,252,0.4)', letterSpacing:'0.13em', textTransform:'uppercase', fontFamily:'monospace' }}>TLS / SSL</span>
+            <button type="button"
+              onClick={() => { setMqttTls(t => { const next = !t; setMqttPort(p => p === (t ? 8883 : 1883) ? (next ? 8883 : 1883) : p); return next; }); }}
+              style={{
+                display:'flex', alignItems:'center', gap:8, padding:'9px 14px', borderRadius:9, cursor:'pointer',
+                background: mqttTls ? `${accent}20` : 'rgba(255,255,255,0.04)',
+                border: mqttTls ? `1px solid ${accent}55` : `1px solid ${accent}28`,
+                color: mqttTls ? accent : 'rgba(248,250,252,0.35)', fontSize:12, fontWeight:700, outline:'none',
+                transition:'all .25s ease', fontFamily:'monospace',
+              }}>
+              <span style={{ width:16, height:16, borderRadius:'50%', background: mqttTls ? accent : 'rgba(255,255,255,0.1)',
+                border:`2px solid ${mqttTls ? accent : 'rgba(255,255,255,0.2)'}`, display:'inline-block',
+                boxShadow: mqttTls ? `0 0 8px ${accent}60` : 'none', transition:'all .25s ease' }}/>
+              {mqttTls ? 'TLS aktiv (Port 8883)' : 'TLS deaktiviert'}
+            </button>
+          </label>
+          {/* Topic info box */}
+          <div style={{ width:'100%', padding:'10px 14px', borderRadius:10,
+            background:'rgba(255,255,255,0.03)', border:`1px solid ${accent}18`,
+            fontSize:10, color:'rgba(248,250,252,0.35)', fontFamily:'monospace', lineHeight:1.7 }}>
+            <div style={{ color:accent, fontWeight:700, marginBottom:4 }}>📡 Subscribed Topics</div>
+            <div>{mqttTopic}/power &nbsp;·&nbsp; {mqttTopic}/soc</div>
+            <div>{mqttTopic}/status &nbsp;·&nbsp; {mqttTopic}/voltage</div>
+            <div style={{ marginTop:4, color:'rgba(248,250,252,0.2)' }}>Backend subscribt automatisch energy/#</div>
+          </div>
         </>}
 
         {/* Cloud fields */}
@@ -398,7 +501,7 @@ const ConnectPanel: React.FC<{
         </>}
 
         {/* Battery-specific */}
-        {slot.key==='battery' && !isCloud && <>
+        {slot.key==='battery' && !isCloud && !isMqtt && <>
           <FInput label="SoC (%)" accent={accent} type="number" value={soc} min={0} max={100}
             onChange={e=>setSoc(Number(e.target.value))} style={{ maxWidth:90 }}/>
           <FInput label="SoH (%)" accent={accent} type="number" value={soh} min={0} max={100}
@@ -412,7 +515,7 @@ const ConnectPanel: React.FC<{
         </>}
 
         {/* Inverter-specific */}
-        {slot.key==='inverter' && !isCloud && <>
+        {slot.key==='inverter' && !isCloud && !isMqtt && <>
           <FInput label="Leistung (kW)" accent={accent} type="number" value={power}
             onChange={e=>setPower(Number(e.target.value))} style={{ maxWidth:120 }}/>
           <FInput label="Spannung (V)" accent={accent} type="number" value={voltage}
@@ -424,13 +527,13 @@ const ConnectPanel: React.FC<{
         </>}
 
         {/* Wallbox-specific */}
-        {slot.key==='wallbox' && !isCloud && <>
+        {slot.key==='wallbox' && !isCloud && !isMqtt && <>
           <FInput label="Ladestrom (A)" accent={accent} type="number" value={chargeCurrent} min={6} max={32}
             onChange={e=>setChargeCurrent(Number(e.target.value))} style={{ maxWidth:120 }}/>
         </>}
 
         {/* Smart Meter-specific */}
-        {slot.key==='meter' && !isCloud && <>
+        {slot.key==='meter' && !isCloud && !isMqtt && <>
           <FInput label="Meter-ID" accent={accent} type="text" value={meterId}
             onChange={e=>setMeterId(e.target.value)} placeholder="z.B. 123456"/>
         </>}
@@ -656,7 +759,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 {/* ── Specs mini grid ── */}
                 <div style={{ flex:1, minWidth:190, display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 8px', marginRight:16 }}>
                   {[
-                    { label:'Protokoll', value: slot.protos.map(p=>({modbus:'Modbus',cloud:'Cloud',ocpp:'OCPP',sunspec:'SunSpec'}[p]||p)).join(' · ') },
+                    { label:'Protokoll', value: slot.protos.map(p=>({modbus:'Modbus',cloud:'Cloud',ocpp:'OCPP',sunspec:'SunSpec',mqtt:'MQTT'}[p]||p)).join(' · ') },
                     { label:'Standard', value: slot.standard },
                     { label:'Sicherheit', value:'TLS 1.3 · mTLS' },
                     { label:'Schnittstelle', value: device?.ip || slot.protocols_info },
@@ -676,7 +779,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap', justifyContent:'center' }}>
                       {slot.protos.map(p => (
                         <ProtoBadge key={p} accent={slot.accent}
-                          label={({modbus:'RTU',cloud:'API',ocpp:'OCPP',sunspec:'SunSpec'}[p]||p)}/>
+                          label={({modbus:'RTU',cloud:'API',ocpp:'OCPP',sunspec:'SunSpec',mqtt:'MQTT'}[p]||p)}/>
                       ))}
                     </div>
                   )}
