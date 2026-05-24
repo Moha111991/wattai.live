@@ -94,11 +94,7 @@ const DevicesDashboard = (): ReactElement => {
             Geräteverwaltung<br/>& Netzwerk
           </h1>
           <p style={{ margin:0, fontSize:'clamp(13px,1.4vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Echtzeitüberwachung aller verbundenen Geräte — Zähler, PV, Speicher und EV über MQTT/TLS.</p>
-          <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginTop:4 }}>
-            <button type="button" className="wai-btn-o" style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', animation:'wai-glow-o 5s ease-in-out infinite' }}>Gerät hinzufügen</button>
-            <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>Status prüfen</button>
-          </div>
-          <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
+          <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:8 }}>
             <span style={{ fontSize:13, fontFamily:'monospace', color:'#22c55e' }}>●</span>
             <span style={{ fontSize:12, color:'rgba(248,250,252,0.4)' }}>{devices.length} Gerät{devices.length!==1?'e':''} aktiv</span>
           </div>
