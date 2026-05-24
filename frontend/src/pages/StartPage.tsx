@@ -525,614 +525,884 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
 
 function PvVisual() {
   return (
-    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 180, display: 'block' }}>
+    <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 210, display: 'block' }}>
       <defs>
-        <radialGradient id="pv-sun-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ffde6b" stopOpacity="1" />
-          <stop offset="40%" stopColor="#ff9500" stopOpacity="0.8" />
+        <linearGradient id="pvbg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#040b1a" />
+          <stop offset="100%" stopColor="#02060f" />
+        </linearGradient>
+        <radialGradient id="pv-sun-aura" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff4a0" stopOpacity="1" />
+          <stop offset="35%" stopColor="#ff9500" stopOpacity="0.7" />
           <stop offset="100%" stopColor="#ff6b35" stopOpacity="0" />
         </radialGradient>
-        <linearGradient id="pv-panel-face" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#1e3a5f" />
-          <stop offset="100%" stopColor="#0a1628" />
+        <linearGradient id="pv-bar-fill" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff6b35" />
+          <stop offset="60%" stopColor="#ff9500" />
+          <stop offset="100%" stopColor="#ffe066" />
         </linearGradient>
-        <linearGradient id="pv-energy-line" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#ff9500" stopOpacity="0" />
-          <stop offset="50%" stopColor="#ff9500" stopOpacity="1" />
-          <stop offset="100%" stopColor="#ff9500" stopOpacity="0" />
+        <linearGradient id="pv-panel-f" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#0d2a50" />
+          <stop offset="100%" stopColor="#040e22" />
         </linearGradient>
-        <filter id="pv-glow-f">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <linearGradient id="pv-chart-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,149,0,0.28)" />
+          <stop offset="100%" stopColor="rgba(255,149,0,0)" />
+        </linearGradient>
+        <filter id="pvGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.5" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
+        </filter>
+        <filter id="pvSoftGlow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="7" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
         </filter>
       </defs>
 
-      {/* Sky gradient bg */}
-      <rect width="200" height="180" fill="url(#pv-sky)" />
-      <defs>
-        <linearGradient id="pv-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0a0f2e" />
-          <stop offset="100%" stopColor="#0d1a10" />
-        </linearGradient>
-      </defs>
+      {/* ── Background ── */}
+      <rect width="340" height="210" fill="url(#pvbg)" rx="10" />
 
-      {/* Sun */}
-      <circle cx="162" cy="28" r="22" fill="url(#pv-sun-glow)" opacity="0.9">
-        <animate attributeName="r" values="22;26;22" dur="8s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.9;1;0.9" dur="5s" repeatCount="indefinite" />
+      {/* HMI corner brackets */}
+      {([[4,4],[336,4],[4,206],[336,206]] as [number,number][]).map(([cx,cy],i)=>{
+        const sx = cx < 170 ? 1 : -1, sy = cy < 105 ? 1 : -1;
+        return <g key={i}>
+          <line x1={cx} y1={cy} x2={cx+sx*18} y2={cy} stroke="rgba(255,107,53,0.6)" strokeWidth="1.5"/>
+          <line x1={cx} y1={cy} x2={cx} y2={cy+sy*18} stroke="rgba(255,107,53,0.6)" strokeWidth="1.5"/>
+        </g>;
+      })}
+
+      {/* Top header bar */}
+      <rect x="4" y="4" width="332" height="28" rx="4" fill="rgba(255,107,53,0.05)" stroke="rgba(255,107,53,0.15)" strokeWidth="0.7" />
+      <text x="14" y="22" fill="rgba(255,149,0,0.9)" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.12em">PV-SOLAR MONITOR</text>
+      <circle cx="290" cy="18" r="4" fill="#22c55e">
+        <animate attributeName="opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite"/>
       </circle>
-      <circle cx="162" cy="28" r="11" fill="#ffde6b">
-        <animate attributeName="r" values="11;13;11" dur="6s" repeatCount="indefinite" />
+      <text x="298" y="22" fill="rgba(34,197,94,0.9)" fontSize="7" fontFamily="monospace">LIVE</text>
+      <text x="140" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">SYS·ID: WA-INV-01</text>
+
+      {/* ── Sun ── */}
+      <circle cx="294" cy="75" r="28" fill="url(#pv-sun-aura)" opacity="0.7">
+        <animate attributeName="r" values="28;34;28" dur="7s" repeatCount="indefinite"/>
       </circle>
+      <circle cx="294" cy="75" r="14" fill="#ffe87a" filter="url(#pvSoftGlow)">
+        <animate attributeName="r" values="14;16;14" dur="5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="294" cy="75" r="9" fill="#fff0a0"/>
       {/* Sun rays */}
-      {[0,30,60,90,120,150,180,210,240,270,300,330].map((a,i) => {
-        const rad = a * Math.PI / 180;
-        return (
-          <line key={i}
-            x1={162 + Math.cos(rad)*15} y1={28 + Math.sin(rad)*15}
-            x2={162 + Math.cos(rad)*24} y2={28 + Math.sin(rad)*24}
-            stroke="#ffde6b" strokeWidth="1.2" strokeLinecap="round" opacity="0.7">
-            <animate attributeName="opacity" values="0.7;0.2;0.7" dur={`${3+i%3}s`} begin={`${i*0.2}s`} repeatCount="indefinite" />
-          </line>
-        );
+      {Array.from({length:12},(_,i)=>{
+        const a=i*30*Math.PI/180, r1=17, r2=24;
+        return <line key={i} x1={294+Math.cos(a)*r1} y1={75+Math.sin(a)*r1} x2={294+Math.cos(a)*r2} y2={75+Math.sin(a)*r2}
+          stroke="#ffe87a" strokeWidth="1.4" strokeLinecap="round" opacity="0.8">
+          <animate attributeName="opacity" values="0.8;0.2;0.8" dur={`${2.5+i*0.18}s`} begin={`${i*0.2}s`} repeatCount="indefinite"/>
+        </line>;
       })}
 
-      {/* Ground line */}
-      <line x1="0" y1="148" x2="200" y2="148" stroke="rgba(255,107,53,0.15)" strokeWidth="1" />
-
-      {/* Isometric solar panel array — 6 panels in 3x2 */}
-      {[0,1,2,3,4,5].map(i => {
-        const col = i % 3, row = Math.floor(i / 3);
-        const px = 12 + col * 58, py = 78 + row * 34 - col * 8;
-        return (
-          <g key={i}>
-            {/* Panel face */}
-            <polygon points={`${px},${py} ${px+52},${py-8} ${px+52},${py+22} ${px},${py+30}`}
-              fill="url(#pv-panel-face)" stroke="rgba(30,120,180,0.6)" strokeWidth="0.8" />
-            {/* Panel cells grid */}
-            {[1,2,3].map(c => (
-              <line key={c} x1={px+c*13} y1={py-2-c*2} x2={px+c*13} y2={py+28-c*2}
-                stroke="rgba(100,180,255,0.25)" strokeWidth="0.5" />
-            ))}
-            {[1,2].map(r => (
-              <line key={r} x1={px} y1={py+r*10} x2={px+52} y2={py+r*10-8}
-                stroke="rgba(100,180,255,0.25)" strokeWidth="0.5" />
-            ))}
-            {/* Highlight shimmer */}
-            <polygon points={`${px},${py} ${px+52},${py-8} ${px+52},${py-2} ${px},${py+6}`}
-              fill="rgba(255,255,255,0.06)">
-              <animate attributeName="opacity" values="0.06;0.15;0.06" dur={`${7+i}s`} repeatCount="indefinite" />
-            </polygon>
-            {/* Panel top edge */}
-            <polygon points={`${px},${py} ${px+52},${py-8} ${px+56},${py-5} ${px+4},${py+3}`}
-              fill="rgba(80,140,200,0.2)" stroke="rgba(100,160,220,0.4)" strokeWidth="0.5" />
-            {/* Active glow */}
-            <polygon points={`${px},${py} ${px+52},${py-8} ${px+52},${py+22} ${px},${py+30}`}
-              fill="rgba(255,149,0,0.04)">
-              <animate attributeName="fill"
-                values="rgba(255,149,0,0.04);rgba(255,149,0,0.12);rgba(255,149,0,0.04)"
-                dur={`${9+i*1.5}s`} begin={`${i*1.1}s`} repeatCount="indefinite" />
-            </polygon>
-          </g>
-        );
+      {/* ── Isometric Solar Panel Array ── */}
+      {/* 4 panels in 2×2 isometric layout */}
+      {[0,1,2,3].map(i=>{
+        const col=i%2, row=Math.floor(i/2);
+        const ox=30+col*90, oy=60+row*52-col*14;
+        const pw=82, ph=14;
+        return <g key={i}>
+          {/* Panel face */}
+          <polygon points={`${ox},${oy} ${ox+pw},${oy-pw*0.12} ${ox+pw},${oy+ph} ${ox},${oy+ph+pw*0.12}`}
+            fill="url(#pv-panel-f)" stroke="rgba(30,130,200,0.55)" strokeWidth="0.8"/>
+          {/* Cell grid horizontal */}
+          {[1,2,3,4].map(r=>(
+            <line key={r} x1={ox} y1={oy+r*(ph/4)+r*pw*0.03} x2={ox+pw} y2={oy+r*(ph/4)-r*pw*0.01}
+              stroke="rgba(100,190,255,0.2)" strokeWidth="0.4"/>
+          ))}
+          {/* Cell grid vertical */}
+          {[1,2,3,4,5,6].map(c=>(
+            <line key={c} x1={ox+c*(pw/7)} y1={oy-c*1.7} x2={ox+c*(pw/7)} y2={oy+ph+c*0.4}
+              stroke="rgba(100,190,255,0.18)" strokeWidth="0.4"/>
+          ))}
+          {/* Top edge 3D */}
+          <polygon points={`${ox},${oy} ${ox+pw},${oy-pw*0.12} ${ox+pw+4},${oy-pw*0.12-3} ${ox+4},${oy-3}`}
+            fill="rgba(60,140,210,0.25)" stroke="rgba(120,180,255,0.4)" strokeWidth="0.5"/>
+          {/* Shimmer */}
+          <polygon points={`${ox},${oy} ${ox+pw},${oy-pw*0.12} ${ox+pw},${oy-pw*0.12+4} ${ox},${oy+4}`}
+            fill="rgba(255,255,255,0.07)">
+            <animate attributeName="opacity" values="0.07;0.18;0.07" dur={`${8+i*2}s`} repeatCount="indefinite"/>
+          </polygon>
+          {/* Active glow */}
+          <polygon points={`${ox},${oy} ${ox+pw},${oy-pw*0.12} ${ox+pw},${oy+ph} ${ox},${oy+ph+pw*0.12}`}
+            fill="rgba(255,149,0,0)">
+            <animate attributeName="fill" values="rgba(255,149,0,0);rgba(255,149,0,0.1);rgba(255,149,0,0)"
+              dur={`${10+i*2}s`} begin={`${i*1.5}s`} repeatCount="indefinite"/>
+          </polygon>
+        </g>;
       })}
 
-      {/* Energy flow arcs from panels to right */}
-      {['m-pv0','m-pv1','m-pv2'].map((id, i) => (
-        <g key={id}>
-          <path id={id} d={`M ${96+i*8} ${100-i*8} Q 150 ${60+i*10} 185 45`} fill="none" />
-          <circle r="3.5" fill="#ff9500" filter="url(#pv-glow-f)" opacity="0.9">
-            <animateMotion dur={`${3.5+i}s`} repeatCount="indefinite" begin={`${i*1.2}s`}>
-              <mpath xlinkHref={`#${id}`} />
+      {/* ── Energy flow particles: panels → right ── */}
+      {[0,1,2].map(i=>{
+        const pid=`pv-ep-${i}`;
+        return <g key={i}>
+          <path id={pid} d={`M ${90+i*10} ${90+i*12} Q 220 ${50+i*8} 285 65`} fill="none"/>
+          <circle r="3" fill="#ff9500" filter="url(#pvGlow)">
+            <animateMotion dur={`${3+i*0.9}s`} repeatCount="indefinite" begin={`${i*1.1}s`}>
+              <mpath xlinkHref={`#${pid}`}/>
             </animateMotion>
-            <animate attributeName="opacity" values="0;1;1;0" dur={`${3.5+i}s`} begin={`${i*1.2}s`} repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;1;1;0" dur={`${3+i*0.9}s`} begin={`${i*1.1}s`} repeatCount="indefinite"/>
           </circle>
+        </g>;
+      })}
+
+      {/* ── Power curve chart (bottom left) ── */}
+      <rect x="10" y="148" width="200" height="52" rx="4" fill="rgba(255,107,53,0.03)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.6"/>
+      <text x="16" y="160" fill="rgba(255,149,0,0.6)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.08em">ERTRAG TODAY · kWh</text>
+      {/* Chart gridlines */}
+      {[168,178,188].map(y=>(
+        <line key={y} x1="16" y1={y} x2="204" y2={y} stroke="rgba(255,107,53,0.07)" strokeWidth="0.5"/>
+      ))}
+      {/* Area fill */}
+      <polygon points="16,195 36,185 56,172 76,164 96,168 116,155 136,162 156,152 176,158 196,150 196,195"
+        fill="url(#pv-chart-fill)"/>
+      {/* Chart line */}
+      <polyline points="16,195 36,185 56,172 76,164 96,168 116,155 136,162 156,152 176,158 196,150"
+        stroke="#ff9500" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <animate attributeName="stroke-opacity" values="1;0.6;1" dur="6s" repeatCount="indefinite"/>
+      </polyline>
+      {/* Chart dots */}
+      {[[36,185],[76,164],[116,155],[156,152],[196,150]].map(([x,y],i)=>(
+        <circle key={i} cx={x} cy={y} r="2.5" fill="#ff9500" filter="url(#pvGlow)">
+          <animate attributeName="r" values="2.5;4;2.5" dur={`${5+i}s`} begin={`${i*0.7}s`} repeatCount="indefinite"/>
+        </circle>
+      ))}
+
+      {/* ── Metric panels (right side) ── */}
+      {[
+        {x:222,y:120,label:'LEISTUNG',val:'7.4 kW',bar:74,c:'#ff9500'},
+        {x:282,y:120,label:'EINSPEIS.',val:'2.1 kW',bar:42,c:'#3b82f6'},
+      ].map((m,i)=>(
+        <g key={i}>
+          <rect x={m.x} y={m.y} width="52" height="50" rx="4"
+            fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.18)" strokeWidth="0.6"/>
+          <text x={m.x+26} y={m.y+13} textAnchor="middle" fill="rgba(255,149,0,0.5)"
+            fontSize="5.5" fontFamily="monospace" letterSpacing="0.08em">{m.label}</text>
+          <text x={m.x+26} y={m.y+28} textAnchor="middle" fill={m.c}
+            fontSize="10" fontFamily="monospace" fontWeight="900">{m.val}</text>
+          {/* Mini bar */}
+          <rect x={m.x+6} y={m.y+36} width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.05)"/>
+          <rect x={m.x+6} y={m.y+36} width={m.bar*0.4} height="5" rx="2.5" fill={m.c} opacity="0.8">
+            <animate attributeName="width" values={`${m.bar*0.4};${m.bar*0.4+6};${m.bar*0.4}`} dur={`${9+i*3}s`} repeatCount="indefinite"/>
+          </rect>
+          <text x={m.x+26} y={m.y+48} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize="5" fontFamily="monospace">{m.bar}%</text>
         </g>
       ))}
 
-      {/* Power meter bar at bottom */}
-      <rect x="16" y="158" width="120" height="8" rx="4" fill="rgba(255,107,53,0.1)" stroke="rgba(255,107,53,0.2)" strokeWidth="0.5" />
-      <rect x="16" y="158" width="88" height="8" rx="4" fill="rgba(255,149,0,0.7)">
-        <animate attributeName="width" values="88;110;88" dur="12s" repeatCount="indefinite" />
-      </rect>
-      <text x="144" y="166" fontSize="8" fill="rgba(255,149,0,0.9)" fontFamily="monospace" fontWeight="bold">7.4 kW</text>
-      <text x="16" y="176" fontSize="7" fill="rgba(255,107,53,0.5)" fontFamily="monospace">PV-Leistung aktuell</text>
+      {/* ── Efficiency ring ── */}
+      <circle cx="254" cy="90" r="26" fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.8"/>
+      <circle cx="254" cy="90" r="26" fill="none" stroke="rgba(255,107,53,0.08)" strokeWidth="6"/>
+      <circle cx="254" cy="90" r="26" fill="none" stroke="#ff9500" strokeWidth="6"
+        strokeLinecap="round" strokeDasharray="103 64" strokeDashoffset="40" transform="rotate(-90 254 90)" opacity="0.85">
+        <animate attributeName="stroke-dasharray" values="103 64;116 51;103 64" dur="10s" repeatCount="indefinite"/>
+      </circle>
+      <text x="254" y="87" textAnchor="middle" fill="#ff9500" fontSize="13" fontFamily="monospace" fontWeight="900">94%</text>
+      <text x="254" y="98" textAnchor="middle" fill="rgba(255,149,0,0.5)" fontSize="5.5" fontFamily="monospace">EFF.</text>
 
-      {/* Yield line chart overlay */}
-      <polyline points="16,145 36,130 56,115 76,110 96,118 116,108 136,120 156,114"
-        stroke="rgba(255,149,0,0.55)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      <polyline points="16,145 36,130 56,115 76,110 96,118 116,108 136,120 156,114"
-        stroke="rgba(255,149,0,0.08)" strokeWidth="6" fill="none" strokeLinecap="round" />
+      {/* ── Inverter status (bottom right) ── */}
+      <rect x="222" y="174" width="112" height="28" rx="4" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.2)" strokeWidth="0.6"/>
+      <circle cx="232" cy="188" r="3.5" fill="#22c55e">
+        <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="240" y="184" fill="rgba(34,197,94,0.8)" fontSize="6.5" fontFamily="monospace" fontWeight="bold">INVERTER OK</text>
+      <text x="240" y="196" fill="rgba(255,255,255,0.3)" fontSize="5.5" fontFamily="monospace">Freq 50.01 Hz · Cos φ 1.00</text>
     </svg>
   );
 }
-
 function BatteryVisual() {
   return (
-    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 180, display: 'block' }}>
+    <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 210, display: 'block' }}>
       <defs>
-        <linearGradient id="bat-body-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a1030" />
-          <stop offset="100%" stopColor="#0a0618" />
+        <linearGradient id="batbg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#05050f"/>
+          <stop offset="100%" stopColor="#010108"/>
         </linearGradient>
-        <linearGradient id="bat-fill-grad" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stopColor="#ff4500" />
-          <stop offset="50%" stopColor="#ff9500" />
-          <stop offset="100%" stopColor="#22c55e" />
+        <linearGradient id="bat-cellG" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="#ff4500"/>
+          <stop offset="40%" stopColor="#ff9500"/>
+          <stop offset="100%" stopColor="#22c55e"/>
         </linearGradient>
-        <clipPath id="bat-fill-clip"><rect x="68" y="34" width="64" height="112" rx="3" /></clipPath>
-        <filter id="bat-glow-f">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <linearGradient id="bat-3dTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(60,40,100,0.95)"/>
+          <stop offset="100%" stopColor="rgba(30,20,60,0.8)"/>
+        </linearGradient>
+        <linearGradient id="bat-3dRight" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(20,10,40,0.95)"/>
+          <stop offset="100%" stopColor="rgba(10,5,20,0.9)"/>
+        </linearGradient>
+        <filter id="batGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
         </filter>
-        <filter id="bat-soft-glow">
-          <feGaussianBlur stdDeviation="8" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <filter id="batPulse" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="9" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
         </filter>
+        <clipPath id="bat-clipFront"><rect x="90" y="38" width="82" height="148" rx="5"/></clipPath>
       </defs>
 
-      {/* Ambient glow behind battery */}
-      <ellipse cx="100" cy="100" rx="55" ry="65" fill="rgba(255,107,53,0.07)">
-        <animate attributeName="rx" values="55;65;55" dur="8s" repeatCount="indefinite" />
-        <animate attributeName="ry" values="65;75;65" dur="8s" repeatCount="indefinite" />
-      </ellipse>
+      <rect width="340" height="210" fill="url(#batbg)" rx="10"/>
 
-      {/* Battery body — isometric 3D look */}
+      {/* Corner brackets */}
+      {([[4,4],[336,4],[4,206],[336,206]] as [number,number][]).map(([cx,cy],i)=>{
+        const sx=cx<170?1:-1, sy=cy<105?1:-1;
+        return <g key={i}>
+          <line x1={cx} y1={cy} x2={cx+sx*18} y2={cy} stroke="rgba(34,197,94,0.5)" strokeWidth="1.5"/>
+          <line x1={cx} y1={cy} x2={cx} y2={cy+sy*18} stroke="rgba(34,197,94,0.5)" strokeWidth="1.5"/>
+        </g>;
+      })}
+
+      {/* Header */}
+      <rect x="4" y="4" width="332" height="28" rx="4" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.15)" strokeWidth="0.7"/>
+      <text x="14" y="22" fill="rgba(34,197,94,0.85)" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.12em">BMS · BATTERY MONITOR</text>
+      <text x="140" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">HV-PACK 48 V · 15 kWh</text>
+      <circle cx="300" cy="18" r="4" fill="#22c55e">
+        <animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="308" y="22" fill="rgba(34,197,94,0.8)" fontSize="7" fontFamily="monospace">ONLINE</text>
+
+      {/* ── 3D Battery body ── */}
       {/* Right face */}
-      <polygon points="132,34 148,42 148,154 132,146"
-        fill="rgba(30,20,60,0.9)" stroke="rgba(255,107,53,0.25)" strokeWidth="0.8" />
+      <polygon points="172,38 192,48 192,186 172,176"
+        fill="url(#bat-3dRight)" stroke="rgba(34,197,94,0.25)" strokeWidth="0.8"/>
       {/* Top face */}
-      <polygon points="68,34 132,34 148,42 84,42"
-        fill="rgba(50,35,90,0.8)" stroke="rgba(255,107,53,0.3)" strokeWidth="0.8" />
+      <polygon points="90,38 172,38 192,48 110,48"
+        fill="url(#bat-3dTop)" stroke="rgba(34,197,94,0.3)" strokeWidth="0.8"/>
       {/* Front face */}
-      <rect x="68" y="34" width="64" height="112" rx="4"
-        fill="url(#bat-body-grad)" stroke="rgba(255,107,53,0.35)" strokeWidth="1.2" />
+      <rect x="90" y="38" width="82" height="148" rx="6"
+        fill="rgba(12,8,28,0.96)" stroke="rgba(34,197,94,0.5)" strokeWidth="1.5"/>
 
-      {/* Horizontal cell dividers */}
-      {[58, 82, 106].map(y => (
-        <line key={y} x1="69" y1={y} x2="131" y2={y} stroke="rgba(255,107,53,0.1)" strokeWidth="0.6" />
+      {/* Cell rows */}
+      {[70,95,120,145].map(y=>(
+        <line key={y} x1="91" y1={y} x2="171" y2={y} stroke="rgba(34,197,94,0.1)" strokeWidth="0.6"/>
       ))}
 
-      {/* Fill level (animated 30%→82%) */}
-      <rect x="69" y="34" width="62" height="112" rx="3" fill="url(#bat-fill-grad)" clipPath="url(#bat-fill-clip)">
-        <animate attributeName="y" values="105;56;105" dur="16s" repeatCount="indefinite" />
-        <animate attributeName="height" values="41;90;41" dur="16s" repeatCount="indefinite" />
+      {/* Fill level bar */}
+      <rect x="91" y="39" width="80" height="146" rx="5" fill="url(#bat-cellG)" clipPath="url(#bat-clipFront)">
+        <animate attributeName="y" values="110;68;110" dur="18s" repeatCount="indefinite"/>
+        <animate attributeName="height" values="74;116;74" dur="18s" repeatCount="indefinite"/>
       </rect>
 
-      {/* Fill shimmer */}
-      <rect x="69" y="34" width="30" height="112" rx="3" fill="rgba(255,255,255,0.04)" clipPath="url(#bat-fill-clip)">
-        <animate attributeName="opacity" values="0.04;0.10;0.04" dur="6s" repeatCount="indefinite" />
+      {/* Shimmer */}
+      <rect x="91" y="39" width="38" height="146" rx="5" fill="rgba(255,255,255,0.05)" clipPath="url(#bat-clipFront)">
+        <animate attributeName="opacity" values="0.05;0.14;0.05" dur="5s" repeatCount="indefinite"/>
       </rect>
 
-      {/* Terminal cap */}
-      <rect x="83" y="24" width="34" height="12" rx="3"
-        fill="rgba(40,30,70,0.9)" stroke="rgba(255,107,53,0.45)" strokeWidth="1" />
+      {/* Terminal */}
+      <rect x="108" y="24" width="46" height="16" rx="4"
+        fill="rgba(20,12,40,0.95)" stroke="rgba(34,197,94,0.5)" strokeWidth="1.2"/>
+      <rect x="118" y="28" width="26" height="8" rx="2" fill="rgba(34,197,94,0.15)"/>
 
-      {/* SOC percent label */}
-      <text x="100" y="95" textAnchor="middle" fill="#ff9500"
-        fontSize="22" fontFamily="monospace" fontWeight="900" filter="url(#bat-glow-f)">
-        78%
-        <animate attributeName="textContent" values="42%;55%;68%;78%;82%;78%" dur="16s" repeatCount="indefinite" />
-      </text>
-      <text x="100" y="108" textAnchor="middle" fill="rgba(255,149,0,0.5)"
-        fontSize="7" fontFamily="monospace" letterSpacing="0.08em">STATE OF CHARGE</text>
+      {/* SOC label on front */}
+      <text x="131" y="106" textAnchor="middle" fill="#22c55e" fontSize="24" fontFamily="monospace" fontWeight="900" filter="url(#batGlow)">78%</text>
+      <text x="131" y="122" textAnchor="middle" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.1em">STATE OF CHARGE</text>
 
       {/* Lightning bolt */}
-      <path d="M96 56 L90 74 L98 74 L94 92 L110 68 L102 68 L108 56 Z"
-        fill="rgba(255,220,50,0.9)" stroke="rgba(255,149,0,0.9)" strokeWidth="0.5" filter="url(#bat-glow-f)">
-        <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2.5s" repeatCount="indefinite" />
+      <path d="M127 58 L121 76 L129 76 L125 96 L141 70 L133 70 L139 58Z"
+        fill="rgba(255,220,50,0.9)" stroke="rgba(255,149,0,0.7)" strokeWidth="0.5" filter="url(#batGlow)">
+        <animate attributeName="opacity" values="0.9;0.25;0.9" dur="2.2s" repeatCount="indefinite"/>
       </path>
 
-      {/* Energy particles flowing in */}
-      {[0,1,2].map(i => (
-        <g key={i}>
-          <path id={`bat-in-${i}`} d={`M ${40+i*20} 10 Q ${60+i*10} 30 ${90+i*6} 34`} fill="none" />
-          <circle r="2.5" fill="#ff9500" filter="url(#bat-glow-f)">
-            <animateMotion dur={`${2.5+i*0.8}s`} repeatCount="indefinite" begin={`${i*0.9}s`}>
-              <mpath xlinkHref={`#bat-in-${i}`} />
-            </animateMotion>
-            <animate attributeName="opacity" values="0;1;1;0" dur={`${2.5+i*0.8}s`} begin={`${i*0.9}s`} repeatCount="indefinite" />
-          </circle>
-        </g>
-      ))}
-
-      {/* Discharge path out */}
-      <path id="bat-out-0" d="M 132 100 Q 165 100 180 80" fill="none" />
-      <circle r="2.5" fill="#22c55e" filter="url(#bat-glow-f)">
-        <animateMotion dur="3.5s" repeatCount="indefinite" begin="1.2s">
-          <mpath xlinkHref="#bat-out-0" />
-        </animateMotion>
-        <animate attributeName="opacity" values="0;1;1;0" dur="3.5s" begin="1.2s" repeatCount="indefinite" />
+      {/* ── SOC Arc meter (left panel) ── */}
+      <circle cx="45" cy="110" r="34" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.1)" strokeWidth="1"/>
+      <circle cx="45" cy="110" r="34" fill="none" stroke="rgba(34,197,94,0.08)" strokeWidth="9"/>
+      <circle cx="45" cy="110" r="34" fill="none" stroke="url(#bat-cellG)" strokeWidth="9"
+        strokeLinecap="round" strokeDasharray="147 66" strokeDashoffset="55" transform="rotate(-210 45 110)" opacity="0.9">
+        <animate attributeName="stroke-dasharray" values="147 66;162 51;147 66" dur="18s" repeatCount="indefinite"/>
       </circle>
+      <text x="45" y="105" textAnchor="middle" fill="#22c55e" fontSize="12" fontFamily="monospace" fontWeight="900">78%</text>
+      <text x="45" y="117" textAnchor="middle" fill="rgba(34,197,94,0.45)" fontSize="5.5" fontFamily="monospace">SOC</text>
+      <text x="45" y="152" textAnchor="middle" fill="rgba(255,149,0,0.6)" fontSize="7" fontFamily="monospace">+3.2 kW</text>
+      <text x="45" y="163" textAnchor="middle" fill="rgba(255,149,0,0.35)" fontSize="6" fontFamily="monospace">LADUNG</text>
 
-      {/* Bottom status labels */}
-      <text x="16" y="170" fill="rgba(255,149,0,0.6)" fontSize="7.5" fontFamily="monospace">⚡ Wird geladen · +3.2 kW</text>
-      <text x="16" y="180" fill="rgba(100,200,100,0.5)" fontSize="7" fontFamily="monospace">Tarifoptimiert · Tibber-Spot aktiv</text>
+      {/* ── Cell voltage mini bars (right panel) ── */}
+      <text x="216" y="50" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.08em">ZELLSPANNUNGEN</text>
+      {[3.82,3.81,3.85,3.79,3.83,3.80].map((v,i)=>{
+        const bar=(v-3.7)*200;
+        const c=v>3.83?'#22c55e':v>3.80?'#ff9500':'#ff6b35';
+        return <g key={i}>
+          <rect x="216" y={56+i*18} width="90" height="10" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(34,197,94,0.1)" strokeWidth="0.5"/>
+          <rect x="216" y={56+i*18} width={bar} height="10" rx="5" fill={c} opacity="0.75">
+            <animate attributeName="width" values={`${bar};${bar+3};${bar}`} dur={`${8+i*2}s`} repeatCount="indefinite"/>
+          </rect>
+          <text x="312" y={56+i*18+8} fill="rgba(255,255,255,0.4)" fontSize="6" fontFamily="monospace">C{i+1}:{v}V</text>
+        </g>;
+      })}
+
+      {/* Temp / charge status footer */}
+      <rect x="216" y="172" width="116" height="30" rx="4" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.15)" strokeWidth="0.6"/>
+      <text x="226" y="185" fill="rgba(255,149,0,0.7)" fontSize="7" fontFamily="monospace">Temp: 28.4°C  · Cycles: 312</text>
+      <text x="226" y="197" fill="rgba(34,197,94,0.55)" fontSize="7" fontFamily="monospace">Tibber Spot · Tarifoptimiert</text>
+
+      {/* Charging particles in */}
+      {[0,1,2].map(i=>{
+        const pid=`bat-in-${i}`;
+        return <g key={i}>
+          <path id={pid} d={`M ${20+i*25} 10 Q ${55+i*12} 25 ${115+i*8} 38`} fill="none"/>
+          <circle r="2.5" fill="#ff9500" filter="url(#batGlow)">
+            <animateMotion dur={`${2.5+i*0.7}s`} repeatCount="indefinite" begin={`${i*0.9}s`}>
+              <mpath xlinkHref={`#${pid}`}/>
+            </animateMotion>
+            <animate attributeName="opacity" values="0;1;1;0" dur={`${2.5+i*0.7}s`} begin={`${i*0.9}s`} repeatCount="indefinite"/>
+          </circle>
+        </g>;
+      })}
     </svg>
   );
 }
 
 function EvVisual() {
   return (
-    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 180, display: 'block' }}>
+    <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 210, display: 'block' }}>
       <defs>
-        <linearGradient id="ev-body-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a2060" />
-          <stop offset="100%" stopColor="#0a1230" />
+        <linearGradient id="evbg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#020a1a"/>
+          <stop offset="100%" stopColor="#010508"/>
         </linearGradient>
-        <linearGradient id="ev-charge-bar" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#ff6b35" />
-          <stop offset="100%" stopColor="#22c55e" />
+        <linearGradient id="ev-carBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#0e1e5a"/>
+          <stop offset="100%" stopColor="#060e2e"/>
         </linearGradient>
-        <filter id="ev-glow">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <linearGradient id="ev-chargebar" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff6b35"/>
+          <stop offset="50%" stopColor="#ff9500"/>
+          <stop offset="100%" stopColor="#22c55e"/>
+        </linearGradient>
+        <radialGradient id="ev-underbody" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="rgba(59,130,246,0.45)"/>
+          <stop offset="100%" stopColor="rgba(59,130,246,0)"/>
+        </radialGradient>
+        <filter id="evGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
+        </filter>
+        <filter id="evSoft" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="10" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
         </filter>
       </defs>
 
-      {/* Background grid lines */}
-      {[40,80,120,160].map(x => (
-        <line key={x} x1={x} y1="20" x2={x} y2="155" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5" />
+      <rect width="340" height="210" fill="url(#evbg)" rx="10"/>
+
+      {/* Corner brackets */}
+      {([[4,4],[336,4],[4,206],[336,206]] as [number,number][]).map(([cx,cy],i)=>{
+        const sx=cx<170?1:-1, sy=cy<105?1:-1;
+        return <g key={i}>
+          <line x1={cx} y1={cy} x2={cx+sx*18} y2={cy} stroke="rgba(59,130,246,0.55)" strokeWidth="1.5"/>
+          <line x1={cx} y1={cy} x2={cx} y2={cy+sy*18} stroke="rgba(59,130,246,0.55)" strokeWidth="1.5"/>
+        </g>;
+      })}
+
+      {/* Header */}
+      <rect x="4" y="4" width="332" height="28" rx="4" fill="rgba(59,130,246,0.05)" stroke="rgba(59,130,246,0.15)" strokeWidth="0.7"/>
+      <text x="14" y="22" fill="rgba(59,130,246,0.9)" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.12em">EV · V2H/V2G CHARGE HUB</text>
+      <text x="160" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">ISO 15118 · OCPP 2.0.1</text>
+      <circle cx="308" cy="18" r="4" fill="#3b82f6">
+        <animate attributeName="opacity" values="1;0.2;1" dur="2.5s" repeatCount="indefinite"/>
+      </circle>
+      <text x="316" y="22" fill="rgba(59,130,246,0.8)" fontSize="7" fontFamily="monospace">CHG</text>
+
+      {/* Background grid */}
+      {[60,100,140,180,220,260,300].map(x=>(
+        <line key={x} x1={x} y1="36" x2={x} y2="175" stroke="rgba(59,130,246,0.05)" strokeWidth="0.5"/>
       ))}
-      {[50,90,130].map(y => (
-        <line key={y} x1="10" y1={y} x2="190" y2={y} stroke="rgba(59,130,246,0.06)" strokeWidth="0.5" />
+      {[60,90,120,150].map(y=>(
+        <line key={y} x1="10" y1={y} x2="330" y2={y} stroke="rgba(59,130,246,0.05)" strokeWidth="0.5"/>
       ))}
 
-      {/* EV car body (side view) */}
-      <path d="M 24 110 L 24 82 Q 30 62 55 56 L 108 52 Q 134 52 148 66 L 162 82 L 162 110 Z"
-        fill="url(#ev-body-grad)" stroke="rgba(59,130,246,0.6)" strokeWidth="1.5" />
-      {/* Car roof */}
-      <path d="M 55 56 Q 60 40 78 36 L 120 36 Q 138 38 148 52 L 108 52 Z"
-        fill="rgba(20,40,100,0.9)" stroke="rgba(59,130,246,0.5)" strokeWidth="1" />
+      {/* ── EV car body (detailed side view) ── */}
+      {/* Body */}
+      <path d="M 40 138 L 40 105 Q 48 80 78 72 L 160 68 Q 195 68 212 86 L 228 105 L 228 138 Z"
+        fill="url(#ev-carBody)" stroke="rgba(59,130,246,0.7)" strokeWidth="1.8"/>
+      {/* Roof */}
+      <path d="M 78 72 Q 86 50 108 44 L 172 44 Q 196 46 212 68 L 160 68 Z"
+        fill="rgba(6,18,58,0.95)" stroke="rgba(59,130,246,0.55)" strokeWidth="1.2"/>
       {/* Windshield */}
-      <path d="M 80 37 Q 82 40 86 52 L 108 52 Q 120 48 122 38 Z"
-        fill="rgba(100,180,255,0.12)" stroke="rgba(100,200,255,0.3)" strokeWidth="0.6" />
-      {/* Side window */}
-      <path d="M 58 57 Q 62 48 76 44 L 80 53 Z"
-        fill="rgba(100,180,255,0.1)" stroke="rgba(100,200,255,0.25)" strokeWidth="0.5" />
+      <path d="M 110 44 Q 114 52 118 68 L 158 68 Q 168 58 170 44 Z"
+        fill="rgba(100,170,255,0.13)" stroke="rgba(100,200,255,0.35)" strokeWidth="0.7"/>
+      {/* Rear window */}
+      <path d="M 80 73 Q 86 56 98 50 L 111 44 Q 115 52 112 68 Z"
+        fill="rgba(100,170,255,0.1)" stroke="rgba(100,200,255,0.25)" strokeWidth="0.5"/>
       {/* Door line */}
-      <line x1="108" y1="52" x2="110" y2="108" stroke="rgba(59,130,246,0.3)" strokeWidth="0.8" />
-      {/* Wheels */}
-      <circle cx="62" cy="112" r="16" fill="rgba(8,12,30,0.95)" stroke="rgba(59,130,246,0.5)" strokeWidth="1.5" />
-      <circle cx="62" cy="112" r="8" fill="rgba(20,40,80,0.9)" stroke="rgba(59,130,246,0.4)" strokeWidth="0.8" />
-      <circle cx="62" cy="112" r="3" fill="rgba(59,130,246,0.7)" />
-      <circle cx="140" cy="112" r="16" fill="rgba(8,12,30,0.95)" stroke="rgba(59,130,246,0.5)" strokeWidth="1.5" />
-      <circle cx="140" cy="112" r="8" fill="rgba(20,40,80,0.9)" stroke="rgba(59,130,246,0.4)" strokeWidth="0.8" />
-      <circle cx="140" cy="112" r="3" fill="rgba(59,130,246,0.7)" />
-
-      {/* Neon underbody glow */}
-      <ellipse cx="93" cy="128" rx="68" ry="5" fill="rgba(59,130,246,0.18)">
-        <animate attributeName="opacity" values="0.18;0.35;0.18" dur="5s" repeatCount="indefinite" />
+      <line x1="158" y1="68" x2="160" y2="136" stroke="rgba(59,130,246,0.35)" strokeWidth="0.8"/>
+      {/* Side crease */}
+      <path d="M 48 120 Q 130 110 228 115" stroke="rgba(59,130,246,0.25)" strokeWidth="0.8" fill="none"/>
+      {/* Headlights */}
+      <ellipse cx="228" cy="108" rx="5" ry="3" fill="rgba(180,220,255,0.5)" stroke="rgba(200,235,255,0.7)" strokeWidth="0.5">
+        <animate attributeName="opacity" values="0.5;0.9;0.5" dur="3s" repeatCount="indefinite"/>
+      </ellipse>
+      {/* Taillights */}
+      <ellipse cx="42" cy="112" rx="4" ry="2.5" fill="rgba(255,60,40,0.4)" stroke="rgba(255,100,80,0.6)" strokeWidth="0.5">
+        <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.5s" repeatCount="indefinite"/>
       </ellipse>
 
-      {/* Charging port (right side) */}
-      <rect x="162" y="86" width="8" height="14" rx="2"
-        fill="rgba(255,107,53,0.3)" stroke="rgba(255,107,53,0.7)" strokeWidth="1">
-        <animate attributeName="fill" values="rgba(255,107,53,0.3);rgba(255,107,53,0.7);rgba(255,107,53,0.3)" dur="2s" repeatCount="indefinite" />
+      {/* Wheels */}
+      {[[80,142],[192,142]].map(([cx,cy],i)=>(
+        <g key={i}>
+          <circle cx={cx} cy={cy} r="20" fill="rgba(4,8,20,0.96)" stroke="rgba(59,130,246,0.55)" strokeWidth="1.8"/>
+          <circle cx={cx} cy={cy} r="11" fill="rgba(10,20,50,0.9)" stroke="rgba(59,130,246,0.4)" strokeWidth="0.8"/>
+          <circle cx={cx} cy={cy} r="4" fill="rgba(59,130,246,0.7)"/>
+          {/* Wheel spokes */}
+          {[0,60,120,180,240,300].map(a=>{
+            const r=a*Math.PI/180;
+            return <line key={a} x1={cx+Math.cos(r)*5} y1={cy+Math.sin(r)*5} x2={cx+Math.cos(r)*10} y2={cy+Math.sin(r)*10}
+              stroke="rgba(59,130,246,0.5)" strokeWidth="0.8"/>;
+          })}
+        </g>
+      ))}
+
+      {/* Underbody glow */}
+      <ellipse cx="134" cy="162" rx="88" ry="7" fill="url(#ev-underbody)">
+        <animate attributeName="opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite"/>
+      </ellipse>
+
+      {/* ── Charging port + cable ── */}
+      <rect x="228" y="108" width="10" height="18" rx="3"
+        fill="rgba(255,107,53,0.3)" stroke="rgba(255,107,53,0.8)" strokeWidth="1.2">
+        <animate attributeName="fill" values="rgba(255,107,53,0.3);rgba(255,107,53,0.7);rgba(255,107,53,0.3)" dur="1.8s" repeatCount="indefinite"/>
+      </rect>
+      {/* Cable to charger */}
+      <path d="M 238 117 C 258 117 266 100 280 95 L 300 95"
+        stroke="rgba(255,107,53,0.5)" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      {/* Charger box */}
+      <rect x="300" y="82" width="32" height="56" rx="5"
+        fill="rgba(10,8,22,0.95)" stroke="rgba(255,107,53,0.5)" strokeWidth="1.2"/>
+      <text x="316" y="103" textAnchor="middle" fill="rgba(255,149,0,0.8)" fontSize="9" fontFamily="monospace">⚡</text>
+      <text x="316" y="116" textAnchor="middle" fill="rgba(255,149,0,0.6)" fontSize="5.5" fontFamily="monospace">11 kW</text>
+      <text x="316" y="127" textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize="5" fontFamily="monospace">AC</text>
+      <rect x="306" y="130" width="20" height="4" rx="2" fill="rgba(255,107,53,0.1)"/>
+      <rect x="306" y="130" width="14" height="4" rx="2" fill="#ff9500" opacity="0.7">
+        <animate attributeName="width" values="14;18;14" dur="3s" repeatCount="indefinite"/>
       </rect>
 
-      {/* Charging cable */}
-      <path id="ev-cable" d="M 170 93 Q 185 93 190 75" fill="none" stroke="rgba(255,107,53,0.35)" strokeWidth="2.5" strokeLinecap="round" />
-
-      {/* V2H arrow — from car to house left */}
-      <path id="ev-v2h" d="M 24 90 Q 10 90 6 70" fill="none" />
-      <path d="M 24 90 Q 10 90 6 70" stroke="rgba(34,197,94,0.2)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
-      <circle r="3" fill="rgba(34,197,94,0.9)" filter="url(#ev-glow)">
+      {/* ── V2H arrow left ── */}
+      <path id="ev-v2h-path" d="M 40 117 Q 20 117 12 100" fill="none"/>
+      <path d="M 40 117 Q 20 117 12 100" stroke="rgba(34,197,94,0.25)" strokeWidth="2.2" strokeDasharray="5 5" fill="none"/>
+      <circle r="3.5" fill="#22c55e" filter="url(#evGlow)">
         <animateMotion dur="4s" repeatCount="indefinite" begin="0.5s">
-          <mpath xlinkHref="#ev-v2h" />
+          <mpath xlinkHref="#ev-v2h-path"/>
         </animateMotion>
-        <animate attributeName="opacity" values="0;1;1;0" dur="4s" begin="0.5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0;1;1;0" dur="4s" begin="0.5s" repeatCount="indefinite"/>
       </circle>
+      {/* HOME label */}
+      <rect x="4" y="84" width="32" height="20" rx="4" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.3)" strokeWidth="0.7"/>
+      <text x="20" y="94" textAnchor="middle" fill="rgba(34,197,94,0.8)" fontSize="6.5" fontFamily="monospace" fontWeight="bold">HOME</text>
+      <text x="20" y="103" textAnchor="middle" fill="rgba(34,197,94,0.5)" fontSize="5.5" fontFamily="monospace">2.4kW</text>
 
-      {/* Charge flow — grid to car */}
-      <path id="ev-charge-f" d="M 190 75 Q 185 93 170 93" fill="none" />
-      <circle r="3" fill="rgba(255,149,0,0.9)" filter="url(#ev-glow)">
-        <animateMotion dur="2.5s" repeatCount="indefinite">
-          <mpath xlinkHref="#ev-charge-f" />
-        </animateMotion>
-        <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite" />
+      {/* Charge particles: charger → car */}
+      {[0,1].map(i=>{
+        const pid=`ev-chg-${i}`;
+        return <g key={i}>
+          <path id={pid} d="M 300 95 C 280 95 258 117 238 117" fill="none"/>
+          <circle r="3" fill="#ff9500" filter="url(#evGlow)">
+            <animateMotion dur={`${2.2+i*0.8}s`} repeatCount="indefinite" begin={`${i*1.1}s`}>
+              <mpath xlinkHref={`#${pid}`}/>
+            </animateMotion>
+            <animate attributeName="opacity" values="0;1;1;0" dur={`${2.2+i*0.8}s`} begin={`${i*1.1}s`} repeatCount="indefinite"/>
+          </circle>
+        </g>;
+      })}
+
+      {/* ── SOC circular gauge ── */}
+      <circle cx="134" cy="55" r="20" fill="rgba(59,130,246,0.05)" stroke="rgba(59,130,246,0.1)" strokeWidth="1"/>
+      <circle cx="134" cy="55" r="20" fill="none" stroke="rgba(59,130,246,0.08)" strokeWidth="6"/>
+      <circle cx="134" cy="55" r="20" fill="none" stroke="url(#ev-chargebar)" strokeWidth="6"
+        strokeLinecap="round" strokeDasharray="85 41" strokeDashoffset="32" transform="rotate(-210 134 55)" opacity="0.9">
+        <animate attributeName="stroke-dasharray" values="85 41;95 31;85 41" dur="12s" repeatCount="indefinite"/>
       </circle>
+      <text x="134" y="52" textAnchor="middle" fill="#3b82f6" fontSize="10" fontFamily="monospace" fontWeight="900">68%</text>
+      <text x="134" y="62" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="5" fontFamily="monospace">SOC</text>
 
-      {/* Labels */}
-      <text x="4" y="60" fill="rgba(34,197,94,0.7)" fontSize="7" fontFamily="monospace" fontWeight="bold">HOME</text>
-      <text x="176" y="60" fill="rgba(255,149,0,0.7)" fontSize="7" fontFamily="monospace" fontWeight="bold">GRID</text>
-      <text x="100" y="47" textAnchor="middle" fill="rgba(59,130,246,0.6)" fontSize="7.5" fontFamily="monospace">ISO 15118 · OCPP 2.0.1</text>
-
-      {/* Charge state bar */}
-      <rect x="24" y="142" width="138" height="7" rx="3.5" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.2)" strokeWidth="0.5" />
-      <rect x="24" y="142" width="95" height="7" rx="3.5" fill="url(#ev-charge-bar)">
-        <animate attributeName="width" values="95;115;95" dur="10s" repeatCount="indefinite" />
+      {/* ── Charge bar ── */}
+      <rect x="20" y="175" width="300" height="9" rx="4.5" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.18)" strokeWidth="0.6"/>
+      <rect x="20" y="175" width="204" height="9" rx="4.5" fill="url(#ev-chargebar)">
+        <animate attributeName="width" values="204;224;204" dur="12s" repeatCount="indefinite"/>
       </rect>
-      <text x="100" y="160" textAnchor="middle" fill="rgba(255,149,0,0.65)" fontSize="7" fontFamily="monospace">SOC 68 % · Lädt mit 11 kW</text>
-      <text x="100" y="172" textAnchor="middle" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace">V2H aktiv · 2.4 kW ins Haus</text>
+      <text x="170" y="196" textAnchor="middle" fill="rgba(255,149,0,0.6)" fontSize="7" fontFamily="monospace">SOC 68% · Lädt mit 11 kW · Fertig 06:30</text>
+      <text x="170" y="207" textAnchor="middle" fill="rgba(34,197,94,0.45)" fontSize="6.5" fontFamily="monospace">V2H aktiv · 2.4 kW ins Haus gespeist</text>
     </svg>
   );
 }
 
 function SmartHomeVisual() {
   return (
-    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 180, display: 'block' }}>
+    <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 210, display: 'block' }}>
       <defs>
-        <radialGradient id="sh-hub-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(255,149,0,0.6)" />
-          <stop offset="100%" stopColor="rgba(255,149,0,0)" />
+        <linearGradient id="shbg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#05070a"/>
+          <stop offset="100%" stopColor="#020407"/>
+        </linearGradient>
+        <radialGradient id="sh-hubGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="rgba(255,149,0,0.7)"/>
+          <stop offset="100%" stopColor="rgba(255,149,0,0)"/>
         </radialGradient>
-        <filter id="sh-glow">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <filter id="shGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
+        </filter>
+        <filter id="shSoft" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="10" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
         </filter>
       </defs>
 
-      {/* House outline */}
-      <path d="M 72 110 L 72 72 L 100 50 L 128 72 L 128 110 Z"
-        fill="rgba(15,20,50,0.85)" stroke="rgba(255,107,53,0.45)" strokeWidth="1.5" />
-      {/* Roof */}
-      <path d="M 65 74 L 100 48 L 135 74"
-        fill="none" stroke="rgba(255,107,53,0.55)" strokeWidth="2" strokeLinejoin="round" />
-      {/* Door */}
-      <rect x="90" y="90" width="20" height="20" rx="2"
-        fill="rgba(255,107,53,0.1)" stroke="rgba(255,107,53,0.3)" strokeWidth="0.8" />
-      {/* Windows */}
-      <rect x="76" y="75" width="14" height="12" rx="2"
-        fill="rgba(255,149,0,0.15)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.8">
-        <animate attributeName="fill" values="rgba(255,149,0,0.15);rgba(255,149,0,0.35);rgba(255,149,0,0.15)" dur="6s" repeatCount="indefinite" />
-      </rect>
-      <rect x="110" y="75" width="14" height="12" rx="2"
-        fill="rgba(255,149,0,0.15)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.8">
-        <animate attributeName="fill" values="rgba(255,149,0,0.15);rgba(255,149,0,0.35);rgba(255,149,0,0.15)" dur="8s" begin="2s" repeatCount="indefinite" />
-      </rect>
-      {/* House glow */}
-      <path d="M 72 110 L 72 72 L 100 50 L 128 72 L 128 110 Z"
-        fill="rgba(255,107,53,0.04)">
-        <animate attributeName="fill" values="rgba(255,107,53,0.04);rgba(255,107,53,0.1);rgba(255,107,53,0.04)" dur="5s" repeatCount="indefinite" />
-      </path>
+      <rect width="340" height="210" fill="url(#shbg)" rx="10"/>
 
-      {/* Central hub */}
-      <circle cx="100" cy="82" r="10" fill="url(#sh-hub-glow)" />
-      <circle cx="100" cy="82" r="5" fill="rgba(255,149,0,0.9)" filter="url(#sh-glow)">
-        <animate attributeName="r" values="5;7;5" dur="4s" repeatCount="indefinite" />
-      </circle>
-
-      {/* Device nodes */}
-      {[
-        { x: 22, y: 40, label: 'HP', color: '#ff6b35', d: '0s' },
-        { x: 178, y: 40, label: 'WP', color: '#ff9500', d: '1.2s' },
-        { x: 18, y: 130, label: 'WM', color: '#3b82f6', d: '2.4s' },
-        { x: 182, y: 130, label: 'AC', color: '#22d3ee', d: '3.5s' },
-        { x: 100, y: 160, label: 'PV', color: '#22c55e', d: '0.8s' },
-        { x: 100, y: 22, label: 'BAT', color: '#a855f7', d: '1.8s' },
-      ].map((n, i) => {
-        const pathId = `sh-path-${i}`;
-        return (
-          <g key={i}>
-            {/* Connection line */}
-            <line x1={n.x} y1={n.y} x2="100" y2="82"
-              stroke={`${n.color}30`} strokeWidth="1.5" strokeDasharray="4 5" />
-            {/* Animated pulse on line */}
-            <path id={pathId} d={`M${n.x},${n.y} L100,82`} fill="none" />
-            <circle r="2.5" fill={n.color} filter="url(#sh-glow)">
-              <animateMotion dur={`${3+i*0.7}s`} repeatCount="indefinite" begin={n.d}>
-                <mpath xlinkHref={`#${pathId}`} />
-              </animateMotion>
-              <animate attributeName="opacity" values="0;1;1;0" dur={`${3+i*0.7}s`} begin={n.d} repeatCount="indefinite" />
-            </circle>
-            {/* Node circle */}
-            <circle cx={n.x} cy={n.y} r="13"
-              fill={`${n.color}12`} stroke={`${n.color}55`} strokeWidth="1.2">
-              <animate attributeName="r" values="13;17;13" dur={`${9+i*2}s`} begin={n.d} repeatCount="indefinite" />
-              <animate attributeName="opacity" values="1;0.4;1" dur={`${9+i*2}s`} begin={n.d} repeatCount="indefinite" />
-            </circle>
-            <circle cx={n.x} cy={n.y} r="6" fill={`${n.color}80`} stroke={n.color} strokeWidth="1">
-              <animate attributeName="opacity" values="0.8;1;0.8" dur="4s" begin={n.d} repeatCount="indefinite" />
-            </circle>
-            <text x={n.x} y={n.y + 3.5} textAnchor="middle"
-              fill="rgba(255,255,255,0.9)" fontSize="5.5" fontFamily="monospace" fontWeight="bold">{n.label}</text>
-          </g>
-        );
+      {/* Corner brackets */}
+      {([[4,4],[336,4],[4,206],[336,206]] as [number,number][]).map(([cx,cy],i)=>{
+        const sx=cx<170?1:-1, sy=cy<105?1:-1;
+        return <g key={i}>
+          <line x1={cx} y1={cy} x2={cx+sx*18} y2={cy} stroke="rgba(255,107,53,0.5)" strokeWidth="1.5"/>
+          <line x1={cx} y1={cy} x2={cx} y2={cy+sy*18} stroke="rgba(255,107,53,0.5)" strokeWidth="1.5"/>
+        </g>;
       })}
 
-      {/* Status footer */}
-      <text x="100" y="180" textAnchor="middle" fill="rgba(255,107,53,0.45)" fontSize="7" fontFamily="monospace">
-        6 Geräte optimiert · Einsparung: −2.1 kWh/d
+      {/* Header */}
+      <rect x="4" y="4" width="332" height="28" rx="4" fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.15)" strokeWidth="0.7"/>
+      <text x="14" y="22" fill="rgba(255,107,53,0.85)" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.12em">SMART HOME · ENERGY HUB</text>
+      <text x="180" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">6 Geräte optimiert</text>
+      <circle cx="308" cy="18" r="4" fill="#ff9500">
+        <animate attributeName="opacity" values="1;0.25;1" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <text x="316" y="22" fill="rgba(255,149,0,0.8)" fontSize="7" fontFamily="monospace">AUTO</text>
+
+      {/* ── House schematic ── */}
+      {/* Roof */}
+      <path d="M 100 55 L 170 30 L 240 55"
+        fill="none" stroke="rgba(255,107,53,0.55)" strokeWidth="2.2" strokeLinejoin="round" filter="url(#shGlow)"/>
+      {/* Roof fill */}
+      <path d="M 104 55 L 170 32 L 236 55 Z"
+        fill="rgba(255,107,53,0.04)"/>
+      {/* Walls */}
+      <rect x="100" y="55" width="140" height="100" rx="2"
+        fill="rgba(10,12,25,0.85)" stroke="rgba(255,107,53,0.3)" strokeWidth="1.2"/>
+      {/* Door */}
+      <rect x="154" y="115" width="32" height="40" rx="2"
+        fill="rgba(255,107,53,0.08)" stroke="rgba(255,107,53,0.25)" strokeWidth="0.8"/>
+      <circle cx="181" cy="135" r="2" fill="rgba(255,107,53,0.4)"/>
+      {/* Windows */}
+      {[[112,65],[196,65],[112,95],[196,95]].map(([x,y],i)=>(
+        <rect key={i} x={x} y={y} width="24" height="18" rx="2"
+          fill="rgba(255,149,0,0.1)" stroke="rgba(255,149,0,0.35)" strokeWidth="0.7">
+          <animate attributeName="fill" values="rgba(255,149,0,0.1);rgba(255,149,0,0.28);rgba(255,149,0,0.1)"
+            dur={`${6+i*2}s`} begin={`${i*1.5}s`} repeatCount="indefinite"/>
+        </rect>
+      ))}
+      {/* Cross lines in windows */}
+      {[[112,65],[196,65],[112,95],[196,95]].map(([x,y],i)=>(
+        <g key={i}>
+          <line x1={x+12} y1={y} x2={x+12} y2={y+18} stroke="rgba(255,149,0,0.2)" strokeWidth="0.5"/>
+          <line x1={x} y1={y+9} x2={x+24} y2={y+9} stroke="rgba(255,149,0,0.2)" strokeWidth="0.5"/>
+        </g>
+      ))}
+
+      {/* Chimney */}
+      <rect x="198" y="36" width="14" height="24" fill="rgba(10,12,25,0.9)" stroke="rgba(255,107,53,0.25)" strokeWidth="0.7"/>
+
+      {/* ── Central AI hub ── */}
+      <circle cx="170" cy="90" r="16" fill="url(#sh-hubGlow)" filter="url(#shSoft)"/>
+      <circle cx="170" cy="90" r="10" fill="rgba(255,149,0,0.2)" stroke="rgba(255,149,0,0.8)" strokeWidth="1.5">
+        <animate attributeName="r" values="10;13;10" dur="4s" repeatCount="indefinite"/>
+        <animate attributeName="stroke-opacity" values="0.8;0.3;0.8" dur="4s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="170" cy="90" r="5" fill="rgba(255,149,0,0.95)" filter="url(#shGlow)"/>
+
+      {/* ── Device nodes (outside house) ── */}
+      {[
+        {x:30,y:55,label:'HP',sub:'Wärme',c:'#ff6b35',d:'0s'},
+        {x:310,y:55,label:'PV',sub:'7.4kW',c:'#facc15',d:'1.2s'},
+        {x:14,y:130,label:'WM',sub:'Pause',c:'#3b82f6',d:'2.4s'},
+        {x:316,y:130,label:'AC',sub:'20°C',c:'#22d3ee',d:'3.5s'},
+        {x:80,y:185,label:'BAT',sub:'78%',c:'#22c55e',d:'0.8s'},
+        {x:260,y:185,label:'EV',sub:'68%',c:'#a855f7',d:'1.8s'},
+      ].map((n,i)=>{
+        const pid=`sh-conn-${i}`;
+        return <g key={i}>
+          {/* Connection line */}
+          <line x1={n.x} y1={n.y} x2="170" y2="90"
+            stroke={`${n.c}25`} strokeWidth="1.5" strokeDasharray="5 6"/>
+          {/* Animated data pulse */}
+          <path id={pid} d={`M${n.x},${n.y} L170,90`} fill="none"/>
+          <circle r="2.8" fill={n.c} filter="url(#shGlow)">
+            <animateMotion dur={`${3.2+i*0.6}s`} repeatCount="indefinite" begin={n.d}>
+              <mpath xlinkHref={`#${pid}`}/>
+            </animateMotion>
+            <animate attributeName="opacity" values="0;1;1;0" dur={`${3.2+i*0.6}s`} begin={n.d} repeatCount="indefinite"/>
+          </circle>
+          {/* Node */}
+          <circle cx={n.x} cy={n.y} r="16" fill={`${n.c}0f`} stroke={`${n.c}55`} strokeWidth="1.3">
+            <animate attributeName="r" values="16;20;16" dur={`${9+i*2}s`} begin={n.d} repeatCount="indefinite"/>
+            <animate attributeName="stroke-opacity" values="0.33;0.8;0.33" dur={`${9+i*2}s`} begin={n.d} repeatCount="indefinite"/>
+          </circle>
+          <circle cx={n.x} cy={n.y} r="8" fill={`${n.c}22`} stroke={n.c} strokeWidth="1.2"/>
+          <text x={n.x} y={n.y-1} textAnchor="middle" fill="rgba(255,255,255,0.9)" fontSize="6" fontFamily="monospace" fontWeight="bold">{n.label}</text>
+          <text x={n.x} y={n.y+9} textAnchor="middle" fill={n.c} fontSize="5.5" fontFamily="monospace">{n.sub}</text>
+        </g>;
+      })}
+
+      {/* ── Savings ticker ── */}
+      <rect x="4" y="186" width="332" height="20" rx="4" fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.6"/>
+      <text x="170" y="200" textAnchor="middle" fill="rgba(255,107,53,0.55)" fontSize="7" fontFamily="monospace">
+        Einsparung heute: −2.1 kWh · CO₂ vermieden: 0.92 kg · Optimierung aktiv
       </text>
     </svg>
   );
 }
 
 function KiVisual() {
-  const inputs = [{ y: 30, l: 'PV' }, { y: 70, l: 'BAT' }, { y: 110, l: 'GRID' }, { y: 150, l: 'WTR' }];
-  const hidden1 = [20, 50, 80, 110, 140, 165];
-  const hidden2 = [35, 75, 115, 150];
-  const outputs = [{ y: 55, l: 'LOAD', c: '#22c55e' }, { y: 100, l: 'SELL', c: '#3b82f6' }, { y: 145, l: 'STORE', c: '#a855f7' }];
+  const inputs = [{y:42,l:'PV',v:'7.4kW'},{y:78,l:'BAT',v:'78%'},{y:114,l:'GRID',v:'0.3€'},{y:150,l:'WTR',v:'22°C'},{y:186,l:'LOAD',v:'2.1kW'}];
+  const h1 = [30,58,86,114,142,170,198];
+  const h2 = [50,82,114,146,178];
+  const outputs = [{y:60,l:'CHARGE',c:'#22c55e'},{y:100,l:'SELL',c:'#3b82f6'},{y:140,l:'STORE',c:'#a855f7'},{y:180,l:'SHIFT',c:'#ff9500'}];
   return (
-    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 180, display: 'block' }}>
+    <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 210, display: 'block' }}>
       <defs>
-        <filter id="ki-glow">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <linearGradient id="kibg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#060412"/>
+          <stop offset="100%" stopColor="#020109"/>
+        </linearGradient>
+        <filter id="kiGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.5" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
         </filter>
-        <filter id="ki-soft">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        <filter id="kiSoft" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.5" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
         </filter>
       </defs>
 
-      {/* Input → Hidden1 connections */}
-      {inputs.map(inp => hidden1.map(hy => (
-        <line key={`${inp.y}-${hy}`} x1="30" y1={inp.y} x2="80" y2={hy}
-          stroke="rgba(255,107,53,0.12)" strokeWidth="0.5">
-          <animate attributeName="opacity" values="0.12;0.35;0.12"
-            dur={`${5+(inp.y+hy)%6}s`} repeatCount="indefinite" />
-        </line>
-      )))}
-      {/* Hidden1 → Hidden2 */}
-      {hidden1.map(h1 => hidden2.map(h2 => (
-        <line key={`${h1}-${h2}`} x1="80" y1={h1} x2="130" y2={h2}
-          stroke="rgba(255,149,0,0.1)" strokeWidth="0.5">
-          <animate attributeName="opacity" values="0.1;0.3;0.1"
-            dur={`${6+(h1+h2)%5}s`} repeatCount="indefinite" />
-        </line>
-      )))}
-      {/* Hidden2 → Output */}
-      {hidden2.map(h2 => outputs.map(o => (
-        <line key={`${h2}-${o.y}`} x1="130" y1={h2} x2="172" y2={o.y}
-          stroke={`${o.c}22`} strokeWidth="0.7">
-          <animate attributeName="opacity" values="0.13;0.4;0.13"
-            dur={`${7+(h2+o.y)%4}s`} repeatCount="indefinite" />
-        </line>
-      )))}
+      <rect width="340" height="210" fill="url(#kibg)" rx="10"/>
 
-      {/* Animated signals */}
-      {[
-        { from: [30, 30], to: [80, 50], t: '4s', d: '0s', c: '#ff6b35' },
-        { from: [30, 70], to: [80, 110], t: '5s', d: '1.5s', c: '#ff9500' },
-        { from: [30, 110], to: [80, 20], t: '4.5s', d: '0.8s', c: '#ff6b35' },
-        { from: [80, 50], to: [130, 75], t: '4s', d: '0.5s', c: '#ff9500' },
-        { from: [80, 140], to: [130, 115], t: '5s', d: '2s', c: '#ff6b35' },
-        { from: [130, 35], to: [172, 55], t: '3.5s', d: '1s', c: '#22c55e' },
-        { from: [130, 115], to: [172, 100], t: '4s', d: '2.5s', c: '#3b82f6' },
-        { from: [130, 150], to: [172, 145], t: '5s', d: '0.2s', c: '#a855f7' },
-      ].map((p, i) => {
-        const pid = `ki-p-${i}`;
-        return (
-          <g key={i}>
-            <path id={pid} d={`M${p.from[0]},${p.from[1]} L${p.to[0]},${p.to[1]}`} fill="none" />
-            <circle r="2.8" fill={p.c} filter="url(#ki-soft)">
-              <animateMotion dur={p.t} repeatCount="indefinite" begin={p.d}>
-                <mpath xlinkHref={`#${pid}`} />
-              </animateMotion>
-              <animate attributeName="opacity" values="0;1;1;0" dur={p.t} begin={p.d} repeatCount="indefinite" />
-            </circle>
-          </g>
-        );
+      {/* Corner brackets */}
+      {([[4,4],[336,4],[4,206],[336,206]] as [number,number][]).map(([cx,cy],i)=>{
+        const sx=cx<170?1:-1, sy=cy<105?1:-1;
+        return <g key={i}>
+          <line x1={cx} y1={cy} x2={cx+sx*18} y2={cy} stroke="rgba(167,139,250,0.5)" strokeWidth="1.5"/>
+          <line x1={cx} y1={cy} x2={cx} y2={cy+sy*18} stroke="rgba(167,139,250,0.5)" strokeWidth="1.5"/>
+        </g>;
       })}
 
-      {/* Input nodes */}
-      {inputs.map((n, i) => (
-        <g key={i}>
-          <circle cx="30" cy={n.y} r="9" fill="rgba(255,107,53,0.12)" stroke="rgba(255,107,53,0.5)" strokeWidth="1">
-            <animate attributeName="r" values="9;12;9" dur={`${8+i*2}s`} repeatCount="indefinite" />
-            <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur={`${8+i*2}s`} repeatCount="indefinite" />
+      {/* Header */}
+      <rect x="4" y="4" width="332" height="28" rx="4" fill="rgba(124,58,237,0.05)" stroke="rgba(167,139,250,0.2)" strokeWidth="0.7"/>
+      <text x="14" y="22" fill="rgba(167,139,250,0.85)" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.12em">DQN · KI ENERGY AGENT</text>
+      <text x="175" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">Konfidenz: 94%</text>
+      <circle cx="308" cy="18" r="4" fill="#a855f7">
+        <animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="316" y="22" fill="rgba(167,139,250,0.8)" fontSize="7" fontFamily="monospace">INFER</text>
+
+      {/* ── Network connections: input→h1 ── */}
+      {inputs.map(inp=>h1.map(hy=>(
+        <line key={`${inp.y}-${hy}`} x1="56" y1={inp.y} x2="130" y2={hy}
+          stroke="rgba(255,107,53,0.1)" strokeWidth="0.45">
+          <animate attributeName="opacity" values="0.1;0.35;0.1" dur={`${5+(inp.y+hy)%7}s`} repeatCount="indefinite"/>
+        </line>
+      )))}
+      {/* h1→h2 */}
+      {h1.map(h1y=>h2.map(h2y=>(
+        <line key={`${h1y}-${h2y}`} x1="130" y1={h1y} x2="200" y2={h2y}
+          stroke="rgba(255,149,0,0.09)" strokeWidth="0.45">
+          <animate attributeName="opacity" values="0.09;0.3;0.09" dur={`${6+(h1y+h2y)%6}s`} repeatCount="indefinite"/>
+        </line>
+      )))}
+      {/* h2→output */}
+      {h2.map(h2y=>outputs.map(o=>(
+        <line key={`${h2y}-${o.y}`} x1="200" y1={h2y} x2="268" y2={o.y}
+          stroke={`${o.c}20`} strokeWidth="0.6">
+          <animate attributeName="opacity" values="0.12;0.45;0.12" dur={`${7+(h2y+o.y)%5}s`} repeatCount="indefinite"/>
+        </line>
+      )))}
+
+      {/* Animated signal particles */}
+      {[
+        {from:[56,42],to:[130,58],t:'3.8s',d:'0s',c:'#ff6b35'},
+        {from:[56,114],to:[130,114],t:'4.5s',d:'1.2s',c:'#ff9500'},
+        {from:[56,186],to:[130,170],t:'4s',d:'0.5s',c:'#ff6b35'},
+        {from:[130,58],to:[200,82],t:'3.5s',d:'0.8s',c:'#ff9500'},
+        {from:[130,170],to:[200,146],t:'4.2s',d:'2s',c:'#a855f7'},
+        {from:[200,50],to:[268,60],t:'3.2s',d:'1s',c:'#22c55e'},
+        {from:[200,114],to:[268,100],t:'4s',d:'2.2s',c:'#3b82f6'},
+        {from:[200,178],to:[268,180],t:'5s',d:'0.3s',c:'#ff9500'},
+      ].map((p,i)=>{
+        const pid=`ki-sig-${i}`;
+        return <g key={i}>
+          <path id={pid} d={`M${p.from[0]},${p.from[1]} L${p.to[0]},${p.to[1]}`} fill="none"/>
+          <circle r="2.8" fill={p.c} filter="url(#kiSoft)">
+            <animateMotion dur={p.t} repeatCount="indefinite" begin={p.d}>
+              <mpath xlinkHref={`#${pid}`}/>
+            </animateMotion>
+            <animate attributeName="opacity" values="0;1;1;0" dur={p.t} begin={p.d} repeatCount="indefinite"/>
           </circle>
-          <text x="30" y={n.y + 3.5} textAnchor="middle" fill="rgba(255,149,0,0.9)"
-            fontSize="6" fontFamily="monospace" fontWeight="bold">{n.l}</text>
-        </g>
-      ))}
+        </g>;
+      })}
 
-      {/* Hidden layer 1 nodes */}
-      {hidden1.map((y, i) => (
-        <circle key={i} cx="80" cy={y} r="7" fill="rgba(255,107,53,0.08)" stroke="rgba(255,107,53,0.35)" strokeWidth="0.8">
-          <animate attributeName="fill" values="rgba(255,107,53,0.08);rgba(255,107,53,0.28);rgba(255,107,53,0.08)"
-            dur={`${5+i}s`} repeatCount="indefinite" />
-        </circle>
-      ))}
-
-      {/* Hidden layer 2 nodes */}
-      {hidden2.map((y, i) => (
-        <circle key={i} cx="130" cy={y} r="8" fill="rgba(255,149,0,0.06)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.8">
-          <animate attributeName="fill" values="rgba(255,149,0,0.06);rgba(255,149,0,0.25);rgba(255,149,0,0.06)"
-            dur={`${6+i}s`} repeatCount="indefinite" />
-        </circle>
-      ))}
-
-      {/* Output nodes */}
-      {outputs.map((o, i) => (
+      {/* ── Input nodes ── */}
+      {inputs.map((n,i)=>(
         <g key={i}>
-          <circle cx="172" cy={o.y} r="10" fill={`${o.c}18`} stroke={o.c} strokeWidth="1.2" filter="url(#ki-soft)" />
-          <text x="172" y={o.y + 3.5} textAnchor="middle" fill="rgba(255,255,255,0.85)"
-            fontSize="5.5" fontFamily="monospace" fontWeight="bold">{o.l}</text>
+          <circle cx="56" cy={n.y} r="12" fill="rgba(255,107,53,0.1)" stroke="rgba(255,107,53,0.5)" strokeWidth="1">
+            <animate attributeName="r" values="12;15;12" dur={`${8+i*2}s`} repeatCount="indefinite"/>
+            <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur={`${8+i*2}s`} repeatCount="indefinite"/>
+          </circle>
+          <text x="56" y={n.y-2} textAnchor="middle" fill="rgba(255,149,0,0.9)" fontSize="6" fontFamily="monospace" fontWeight="bold">{n.l}</text>
+          <text x="56" y={n.y+8} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="5.5" fontFamily="monospace">{n.v}</text>
         </g>
       ))}
 
-      {/* Layer labels */}
-      <text x="30" y="175" textAnchor="middle" fill="rgba(255,107,53,0.35)" fontSize="6" fontFamily="monospace">INPUT</text>
-      <text x="80" y="175" textAnchor="middle" fill="rgba(255,107,53,0.35)" fontSize="6" fontFamily="monospace">H1·6</text>
-      <text x="130" y="175" textAnchor="middle" fill="rgba(255,149,0,0.35)" fontSize="6" fontFamily="monospace">H2·4</text>
-      <text x="172" y="175" textAnchor="middle" fill="rgba(100,200,100,0.45)" fontSize="6" fontFamily="monospace">DQN-OUT</text>
+      {/* ── Hidden layer 1 ── */}
+      {h1.map((y,i)=>(
+        <circle key={i} cx="130" cy={y} r="8" fill="rgba(255,107,53,0.07)" stroke="rgba(255,107,53,0.4)" strokeWidth="0.8">
+          <animate attributeName="fill" values="rgba(255,107,53,0.07);rgba(255,107,53,0.3);rgba(255,107,53,0.07)"
+            dur={`${5+i}s`} repeatCount="indefinite"/>
+        </circle>
+      ))}
+      <text x="130" y="208" textAnchor="middle" fill="rgba(255,107,53,0.3)" fontSize="6" fontFamily="monospace">H1·7</text>
 
-      {/* Confidence bar */}
-      <rect x="8" y="8" width="55" height="6" rx="3" fill="rgba(34,197,94,0.1)" stroke="rgba(34,197,94,0.25)" strokeWidth="0.5" />
-      <rect x="8" y="8" width="46" height="6" rx="3" fill="rgba(34,197,94,0.6)">
-        <animate attributeName="width" values="46;52;46" dur="8s" repeatCount="indefinite" />
-      </rect>
-      <text x="66" y="14" fill="rgba(34,197,94,0.8)" fontSize="7" fontFamily="monospace">94%</text>
+      {/* ── Hidden layer 2 ── */}
+      {h2.map((y,i)=>(
+        <circle key={i} cx="200" cy={y} r="9" fill="rgba(255,149,0,0.06)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.8">
+          <animate attributeName="fill" values="rgba(255,149,0,0.06);rgba(255,149,0,0.28);rgba(255,149,0,0.06)"
+            dur={`${6+i}s`} repeatCount="indefinite"/>
+        </circle>
+      ))}
+      <text x="200" y="208" textAnchor="middle" fill="rgba(255,149,0,0.3)" fontSize="6" fontFamily="monospace">H2·5</text>
+
+      {/* ── Output nodes with confidence bars ── */}
+      {outputs.map((o,i)=>(
+        <g key={i}>
+          <circle cx="268" cy={o.y} r="11" fill={`${o.c}15`} stroke={o.c} strokeWidth="1.3" filter="url(#kiSoft)">
+            <animate attributeName="r" values="11;14;11" dur={`${8+i*1.5}s`} repeatCount="indefinite"/>
+          </circle>
+          <text x="268" y={o.y+4} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="5.5" fontFamily="monospace" fontWeight="bold">{o.l}</text>
+          {/* Confidence bar */}
+          <rect x="284" y={o.y-5} width="46" height="7" rx="3.5" fill="rgba(255,255,255,0.04)" stroke={`${o.c}40`} strokeWidth="0.5"/>
+          <rect x="284" y={o.y-5} width={[38,28,22,18][i]} height="7" rx="3.5" fill={o.c} opacity="0.7">
+            <animate attributeName="width" values={`${[38,28,22,18][i]};${[38,28,22,18][i]+4};${[38,28,22,18][i]}`} dur={`${8+i*2}s`} repeatCount="indefinite"/>
+          </rect>
+          <text x="334" y={o.y+3} fill={o.c} fontSize="6" fontFamily="monospace">{['94','74','58','47'][i]}%</text>
+        </g>
+      ))}
+
+      {/* ── Reward curve (bottom left) ── */}
+      <rect x="10" y="188" width="100" height="18" rx="3" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.15)" strokeWidth="0.5"/>
+      <polyline points="14,200 24,196 34,198 44,193 54,191 64,188 74,190 84,186 94,184 104,182"
+        stroke="#22c55e" strokeWidth="1.2" fill="none" strokeLinecap="round">
+        <animate attributeName="stroke-opacity" values="1;0.5;1" dur="4s" repeatCount="indefinite"/>
+      </polyline>
+      <text x="12" y="203" fill="rgba(34,197,94,0.45)" fontSize="5.5" fontFamily="monospace">Reward ↑</text>
+
+      {/* Input/output labels */}
+      <text x="56" y="208" textAnchor="middle" fill="rgba(255,107,53,0.3)" fontSize="6" fontFamily="monospace">INPUT</text>
+      <text x="268" y="208" textAnchor="middle" fill="rgba(100,200,100,0.3)" fontSize="6" fontFamily="monospace">OUTPUT</text>
     </svg>
   );
 }
 
 function FleetVisual() {
   const vehicles = [
-    { x: 8,  y: 16, soc: 72, chg: true,  label: 'EV-01', w: 78 },
-    { x: 104, y: 16, soc: 41, chg: false, label: 'EV-02', w: 45 },
-    { x: 8,  y: 78, soc: 88, chg: false, label: 'EV-03', w: 90 },
-    { x: 104, y: 78, soc: 15, chg: true,  label: 'EV-04', w: 18 },
-    { x: 8,  y: 140, soc: 63, chg: true,  label: 'EV-05', w: 65 },
-    { x: 104, y: 140, soc: 54, chg: false, label: 'EV-06', w: 55 },
+    {x:8,  y:36, soc:72, chg:true,  label:'EV-01', model:'Tesla M3', kw:'+11.0'},
+    {x:120,y:36, soc:41, chg:false, label:'EV-02', model:'VW ID.4',  kw:'idle'},
+    {x:232,y:36, soc:88, chg:false, label:'EV-03', model:'BMW iX3',  kw:'idle'},
+    {x:8,  y:118,soc:15, chg:true,  label:'EV-04', model:'Audi Q4',  kw:'+22.0'},
+    {x:120,y:118,soc:63, chg:true,  label:'EV-05', model:'Hyundai',  kw:'+11.0'},
+    {x:232,y:118,soc:54, chg:false, label:'EV-06', model:'Polestar', kw:'idle'},
   ];
   return (
-    <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', height: 180, display: 'block' }}>
+    <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 210, display: 'block' }}>
       <defs>
-        <linearGradient id="fleet-bar-lo" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#ff4500" /><stop offset="100%" stopColor="#ff6b35" />
+        <linearGradient id="flbg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#030810"/>
+          <stop offset="100%" stopColor="#010408"/>
         </linearGradient>
-        <linearGradient id="fleet-bar-hi" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#ff9500" /><stop offset="100%" stopColor="#22c55e" />
+        <linearGradient id="fl-barLo" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff4500"/><stop offset="100%" stopColor="#ff6b35"/>
         </linearGradient>
-        <filter id="fleet-glow"><feGaussianBlur stdDeviation="2.5" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" /></filter>
+        <linearGradient id="fl-barHi" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ff9500"/><stop offset="100%" stopColor="#22c55e"/>
+        </linearGradient>
+        <filter id="flGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/>
+        </filter>
       </defs>
 
-      {vehicles.map((v, i) => {
-        const isLo = v.soc < 30;
-        const barColor = isLo ? 'url(#fleet-bar-lo)' : 'url(#fleet-bar-hi)';
-        const accentCol = isLo ? 'rgba(255,80,0,0.7)' : 'rgba(255,149,0,0.6)';
-        return (
-          <g key={i}>
-            {/* Card bg */}
-            <rect x={v.x} y={v.y} width="88" height="54" rx="6"
-              fill="rgba(10,6,22,0.85)" stroke={isLo ? 'rgba(255,80,0,0.4)' : 'rgba(255,107,53,0.2)'} strokeWidth="0.8">
-              <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur={`${7+i}s`} repeatCount="indefinite" />
-            </rect>
+      <rect width="340" height="210" fill="url(#flbg)" rx="10"/>
 
-            {/* Vehicle label */}
-            <text x={v.x + 8} y={v.y + 14} fill={accentCol} fontSize="8" fontFamily="monospace" fontWeight="bold">{v.label}</text>
-
-            {/* Charging indicator */}
-            {v.chg && (
-              <text x={v.x + 64} y={v.y + 14} fill="rgba(255,220,50,0.9)" fontSize="10" fontFamily="monospace">
-                ⚡
-                <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite" />
-              </text>
-            )}
-
-            {/* SOC bar bg */}
-            <rect x={v.x + 8} y={v.y + 22} width="72" height="8" rx="4"
-              fill="rgba(255,255,255,0.05)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.5" />
-            {/* SOC bar fill */}
-            <rect x={v.x + 8} y={v.y + 22} width={v.w * 0.72} height="8" rx="4" fill={barColor}>
-              <animate attributeName="width" values={`${v.w*0.72};${v.w*0.72+5};${v.w*0.72}`} dur={`${11+i*2}s`} repeatCount="indefinite" />
-            </rect>
-
-            {/* SOC label */}
-            <text x={v.x + 8} y={v.y + 44} fill={accentCol} fontSize="7.5" fontFamily="monospace">{v.soc}% SOC</text>
-            <text x={v.x + 60} y={v.y + 44} fill="rgba(100,200,255,0.5)" fontSize="6" fontFamily="monospace">{v.chg ? '+11kW' : 'idle'}</text>
-          </g>
-        );
+      {/* Corner brackets */}
+      {([[4,4],[336,4],[4,206],[336,206]] as [number,number][]).map(([cx,cy],i)=>{
+        const sx=cx<170?1:-1, sy=cy<105?1:-1;
+        return <g key={i}>
+          <line x1={cx} y1={cy} x2={cx+sx*18} y2={cy} stroke="rgba(255,107,53,0.5)" strokeWidth="1.5"/>
+          <line x1={cx} y1={cy} x2={cx} y2={cy+sy*18} stroke="rgba(255,107,53,0.5)" strokeWidth="1.5"/>
+        </g>;
       })}
 
-      {/* KI dispatch overlay beam */}
-      <rect x="0" y="0" width="6" height="180"
-        fill="linear-gradient(to bottom,transparent,rgba(255,107,53,0.5),transparent)" opacity="0.6">
-        <animate attributeName="x" values="-6;204;-6" dur="6s" repeatCount="indefinite" />
+      {/* Header */}
+      <rect x="4" y="4" width="332" height="28" rx="4" fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.15)" strokeWidth="0.7"/>
+      <text x="14" y="22" fill="rgba(255,107,53,0.85)" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.12em">FLEET EMS · CHARGE DISPATCH</text>
+      <text x="205" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">6 EV · 3 CHG</text>
+      <circle cx="308" cy="18" r="4" fill="#ff9500">
+        <animate attributeName="opacity" values="1;0.2;1" dur="2.2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="316" y="22" fill="rgba(255,149,0,0.8)" fontSize="7" fontFamily="monospace">LIVE</text>
+
+      {/* Vehicle cards */}
+      {vehicles.map((v,i)=>{
+        const isLo=v.soc<30;
+        const ac=isLo?'rgba(255,80,0,0.75)':'rgba(255,149,0,0.65)';
+        const bar=(v.soc/100)*92;
+        const barFill=isLo?'url(#fl-barLo)':'url(#fl-barHi)';
+        return <g key={i}>
+          {/* Card */}
+          <rect x={v.x} y={v.y} width="104" height="70" rx="6"
+            fill="rgba(6,10,22,0.9)" stroke={isLo?'rgba(255,60,0,0.5)':'rgba(255,107,53,0.22)'} strokeWidth="0.9">
+            <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur={`${7+i}s`} repeatCount="indefinite"/>
+          </rect>
+
+          {/* Label row */}
+          <text x={v.x+8} y={v.y+16} fill={ac} fontSize="8.5" fontFamily="monospace" fontWeight="bold">{v.label}</text>
+          <text x={v.x+56} y={v.y+16} fill="rgba(255,255,255,0.25)" fontSize="6.5" fontFamily="monospace">{v.model}</text>
+
+          {/* Charging bolt */}
+          {v.chg && (
+            <text x={v.x+90} y={v.y+16} fill="rgba(255,220,50,0.9)" fontSize="11" fontFamily="monospace">
+              ⚡
+              <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/>
+            </text>
+          )}
+
+          {/* SOC bar */}
+          <rect x={v.x+8} y={v.y+26} width="88" height="10" rx="5" fill="rgba(255,255,255,0.05)" stroke="rgba(255,107,53,0.1)" strokeWidth="0.4"/>
+          <rect x={v.x+8} y={v.y+26} width={bar} height="10" rx="5" fill={barFill}>
+            <animate attributeName="width" values={`${bar};${Math.min(bar+6,88)};${bar}`} dur={`${11+i*2}s`} repeatCount="indefinite"/>
+          </rect>
+          <text x={v.x+8+bar+3} y={v.y+34} fill="rgba(255,255,255,0.35)" fontSize="5.5" fontFamily="monospace">{v.soc}%</text>
+
+          {/* Power row */}
+          <text x={v.x+8} y={v.y+52} fill={ac} fontSize="8" fontFamily="monospace" fontWeight="bold">{v.soc}% SOC</text>
+          <text x={v.x+68} y={v.y+52} fill={v.chg?'rgba(34,197,94,0.7)':'rgba(255,255,255,0.25)'} fontSize="7.5" fontFamily="monospace">{v.kw}</text>
+
+          {/* Status dot */}
+          <circle cx={v.x+96} cy={v.y+52} r="3.5" fill={v.chg?'#22c55e':'rgba(255,255,255,0.15)'}>
+            {v.chg&&<animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>}
+          </circle>
+        </g>;
+      })}
+
+      {/* ── Fleet aggregate footer ── */}
+      <rect x="4" y="196" width="332" height="11" rx="3" fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.5"/>
+      {/* Aggregate charge bar */}
+      <rect x="6" y="198" width="268" height="7" rx="3.5" fill="rgba(255,255,255,0.04)"/>
+      <rect x="6" y="198" width="178" height="7" rx="3.5" fill="url(#fl-barHi)" opacity="0.7">
+        <animate attributeName="width" values="178;190;178" dur="12s" repeatCount="indefinite"/>
+      </rect>
+      <text x="288" y="205" fill="rgba(255,149,0,0.55)" fontSize="6.5" fontFamily="monospace">Ø 55% SOC</text>
+
+      {/* KI sweep beam */}
+      <rect x="-6" y="0" width="5" height="210" rx="2"
+        fill="rgba(255,107,53,0.18)" filter="url(#flGlow)">
+        <animate attributeName="x" values="-6;341;-6" dur="5s" repeatCount="indefinite"/>
       </rect>
     </svg>
   );
 }
+
 
 const VISUAL_MAP: Record<string, () => React.ReactElement> = {
   'pv-optimierung': PvVisual,
@@ -1496,7 +1766,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
                     }} />
 
                     {/* SVG visual */}
-                    <div style={{ padding:'16px 16px 0', opacity: 1 }}>
+                    <div style={{ padding:'8px 8px 0', opacity: 1 }}>
                       {Visual ? <Visual /> : null}
                     </div>
 
