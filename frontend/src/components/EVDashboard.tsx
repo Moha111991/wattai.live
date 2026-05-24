@@ -82,11 +82,7 @@ const EVDashboard = () => {
             Intelligente<br/>Ladesteuerung
           </h1>
           <p style={{ margin:0, fontSize:'clamp(13px,1.4vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Bidirektionales Laden, V2H/V2G-Integration und Echtzeit-Monitoring für Ihr Elektrofahrzeug.</p>
-          <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginTop:4 }}>
-            <button type="button" className="wai-btn-o" style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', letterSpacing:'0.02em', animation:'wai-glow-o 5s ease-in-out infinite' }}>Laden starten</button>
-            <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>V2H aktivieren</button>
-          </div>
-          <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:4 }}>
+          <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
             {[['ISO 15118','#ff9500'],['OCPP 2.0.1','#3b82f6'],['Bidirektional','#22c55e']].map(([l,c])=>(
               <span key={l} style={{ fontSize:11, fontFamily:'monospace', fontWeight:600, color:c, background:`${c}12`, border:`1px solid ${c}30`, borderRadius:999, padding:'4px 12px' }}>{l}</span>
             ))}
