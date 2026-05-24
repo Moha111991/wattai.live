@@ -200,9 +200,10 @@ export default function Dashboard() {
             KI-gestützte<br/>Energieplattform
           </h1>
           <p style={{ margin:0, fontSize:'clamp(13px,1.4vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Live-Status, Lastmanagement und Energieflussanalyse — alles in einer Steuerungsoberfläche.</p>
-          <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginTop:4 }}>
-            <button type="button" className="wai-btn-o" style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', letterSpacing:'0.02em', animation:'wai-glow-o 5s ease-in-out infinite' }}>Echtzeit-Ansicht</button>
-            <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>Verlauf</button>
+          <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
+            {[['WebSocket · Live','#22c55e'],['MQTT / TLS','#ff9500'],['KI-Optimierung','#3b82f6'],['CO₂-Analyse','#a855f7']].map(([l,c])=>(
+              <span key={l} style={{ fontSize:11, fontFamily:'monospace', fontWeight:600, color:c, background:`${c}12`, border:`1px solid ${c}30`, borderRadius:999, padding:'4px 12px' }}>{l}</span>
+            ))}
           </div>
         </div>
 
