@@ -797,8 +797,8 @@ function BatteryVisual() {
       <text x="131" y="106" textAnchor="middle" fill="#22c55e" fontSize="24" fontFamily="monospace" fontWeight="900" filter="url(#batGlow)">78%</text>
       <text x="131" y="122" textAnchor="middle" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.1em">STATE OF CHARGE</text>
 
-      {/* Lightning bolt */}
-      <path d="M127 58 L121 76 L129 76 L125 96 L141 70 L133 70 L139 58Z"
+      {/* Lightning bolt – top-right of battery face, clear of SOC text */}
+      <path d="M150 42 L144 58 L152 58 L148 76 L164 52 L156 52 L162 42Z"
         fill="rgba(255,220,50,0.9)" stroke="rgba(255,149,0,0.7)" strokeWidth="0.5" filter="url(#batGlow)">
         <animate attributeName="opacity" values="0.9;0.25;0.9" dur="2.2s" repeatCount="indefinite"/>
       </path>
@@ -825,14 +825,14 @@ function BatteryVisual() {
           <rect x="216" y={56+i*18} width={bar} height="10" rx="5" fill={c} opacity="0.75">
             <animate attributeName="width" values={`${bar};${bar+3};${bar}`} dur={`${8+i*2}s`} repeatCount="indefinite"/>
           </rect>
-          <text x="312" y={56+i*18+8} fill="rgba(255,255,255,0.4)" fontSize="6" fontFamily="monospace">C{i+1}:{v}V</text>
+          <text x="308" y={56+i*18+8} fill="rgba(255,255,255,0.4)" fontSize="5.5" fontFamily="monospace">{i+1}:{v}V</text>
         </g>;
       })}
 
       {/* Temp / charge status footer */}
       <rect x="216" y="172" width="116" height="30" rx="4" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.15)" strokeWidth="0.6"/>
-      <text x="226" y="185" fill="rgba(255,149,0,0.7)" fontSize="7" fontFamily="monospace">Temp: 28.4°C  · Cycles: 312</text>
-      <text x="226" y="197" fill="rgba(34,197,94,0.55)" fontSize="7" fontFamily="monospace">Tibber Spot · Tarifoptimiert</text>
+      <text x="226" y="185" fill="rgba(255,149,0,0.7)" fontSize="7" fontFamily="monospace">28.4°C · Zyklen: 312</text>
+      <text x="226" y="197" fill="rgba(34,197,94,0.55)" fontSize="7" fontFamily="monospace">Tibber · Tarifoptimiert</text>
 
       {/* Charging particles in */}
       {[0,1,2].map(i=>{
@@ -1002,15 +1002,15 @@ function EvVisual() {
         </g>;
       })}
 
-      {/* ── SOC circular gauge ── */}
-      <circle cx="134" cy="55" r="20" fill="rgba(59,130,246,0.05)" stroke="rgba(59,130,246,0.1)" strokeWidth="1"/>
-      <circle cx="134" cy="55" r="20" fill="none" stroke="rgba(59,130,246,0.08)" strokeWidth="6"/>
-      <circle cx="134" cy="55" r="20" fill="none" stroke="url(#ev-chargebar)" strokeWidth="6"
-        strokeLinecap="round" strokeDasharray="85 41" strokeDashoffset="32" transform="rotate(-210 134 55)" opacity="0.9">
-        <animate attributeName="stroke-dasharray" values="85 41;95 31;85 41" dur="12s" repeatCount="indefinite"/>
+      {/* ── SOC circular gauge (top-right, clear of car roof) ── */}
+      <circle cx="260" cy="55" r="18" fill="rgba(59,130,246,0.05)" stroke="rgba(59,130,246,0.1)" strokeWidth="1"/>
+      <circle cx="260" cy="55" r="18" fill="none" stroke="rgba(59,130,246,0.08)" strokeWidth="6"/>
+      <circle cx="260" cy="55" r="18" fill="none" stroke="url(#ev-chargebar)" strokeWidth="6"
+        strokeLinecap="round" strokeDasharray="76 37" strokeDashoffset="29" transform="rotate(-210 260 55)" opacity="0.9">
+        <animate attributeName="stroke-dasharray" values="76 37;86 27;76 37" dur="12s" repeatCount="indefinite"/>
       </circle>
-      <text x="134" y="52" textAnchor="middle" fill="#3b82f6" fontSize="10" fontFamily="monospace" fontWeight="900">68%</text>
-      <text x="134" y="62" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="5" fontFamily="monospace">SOC</text>
+      <text x="260" y="52" textAnchor="middle" fill="#3b82f6" fontSize="10" fontFamily="monospace" fontWeight="900">68%</text>
+      <text x="260" y="62" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="5" fontFamily="monospace">SOC</text>
 
       {/* ── Charge bar ── */}
       <rect x="20" y="175" width="300" height="9" rx="4.5" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.18)" strokeWidth="0.6"/>
@@ -1109,10 +1109,10 @@ function SmartHomeVisual() {
       {[
         {x:30,y:55,label:'HP',sub:'Wärme',c:'#ff6b35',d:'0s'},
         {x:310,y:55,label:'PV',sub:'7.4kW',c:'#facc15',d:'1.2s'},
-        {x:14,y:130,label:'WM',sub:'Pause',c:'#3b82f6',d:'2.4s'},
+        {x:26,y:130,label:'WM',sub:'Pause',c:'#3b82f6',d:'2.4s'},
         {x:316,y:130,label:'AC',sub:'20°C',c:'#22d3ee',d:'3.5s'},
-        {x:80,y:185,label:'BAT',sub:'78%',c:'#22c55e',d:'0.8s'},
-        {x:260,y:185,label:'EV',sub:'68%',c:'#a855f7',d:'1.8s'},
+        {x:80,y:172,label:'BAT',sub:'78%',c:'#22c55e',d:'0.8s'},
+        {x:260,y:172,label:'EV',sub:'68%',c:'#a855f7',d:'1.8s'},
       ].map((n,i)=>{
         const pid=`sh-conn-${i}`;
         return <g key={i}>
@@ -1279,13 +1279,13 @@ function KiVisual() {
         </g>
       ))}
 
-      {/* ── Reward curve (bottom left) ── */}
-      <rect x="10" y="188" width="100" height="18" rx="3" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.15)" strokeWidth="0.5"/>
-      <polyline points="14,200 24,196 34,198 44,193 54,191 64,188 74,190 84,186 94,184 104,182"
+      {/* ── Reward curve (bottom-right, clear of input nodes) ── */}
+      <rect x="228" y="188" width="104" height="18" rx="3" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.15)" strokeWidth="0.5"/>
+      <polyline points="232,202 242,198 252,200 262,195 272,193 282,190 292,192 302,188 312,186 322,184"
         stroke="#22c55e" strokeWidth="1.2" fill="none" strokeLinecap="round">
         <animate attributeName="stroke-opacity" values="1;0.5;1" dur="4s" repeatCount="indefinite"/>
       </polyline>
-      <text x="12" y="203" fill="rgba(34,197,94,0.45)" fontSize="5.5" fontFamily="monospace">Reward ↑</text>
+      <text x="230" y="203" fill="rgba(34,197,94,0.45)" fontSize="5.5" fontFamily="monospace">Reward ↑</text>
 
       {/* Input/output labels */}
       <text x="56" y="208" textAnchor="middle" fill="rgba(255,107,53,0.3)" fontSize="6" fontFamily="monospace">INPUT</text>
