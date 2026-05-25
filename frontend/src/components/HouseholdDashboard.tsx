@@ -570,19 +570,45 @@ function HausautomationPanel() {
   );
 }
 
+type WsStatus = 'connecting' | 'live' | 'offline';
+
 const HouseholdDashboard = () => {
   const [state, setState] = useState<SysState>({});
+  const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
+  const [lastUpdate, setLastUpdate] = useState<string>('–');
 
   useEffect(() => {
-    // Try both /ws and bare WS_URL
     let ws: WebSocket;
-    try {
-      const url = WS_URL ? (WS_URL.endsWith('/ws') ? WS_URL : `${WS_URL}/ws`) : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
-      ws = new WebSocket(url);
-      ws.onmessage = e => { try { setState(JSON.parse(e.data)); } catch {} };
-      ws.onerror = () => { /* silent */ };
-    } catch { return; }
-    return () => { try { ws.close(); } catch {} };
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+
+    const connect = () => {
+      setWsStatus('connecting');
+      try {
+        const url = WS_URL ? (WS_URL.endsWith('/ws') ? WS_URL : `${WS_URL}/ws`) : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+        ws = new WebSocket(url);
+        ws.onopen = () => setWsStatus('live');
+        ws.onmessage = e => {
+          try {
+            setState(JSON.parse(e.data));
+            setLastUpdate(new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit', second:'2-digit' }));
+          } catch {}
+        };
+        ws.onerror = () => setWsStatus('offline');
+        ws.onclose = () => {
+          setWsStatus('offline');
+          reconnectTimer = setTimeout(connect, 5000);
+        };
+      } catch {
+        setWsStatus('offline');
+        reconnectTimer = setTimeout(connect, 5000);
+      }
+    };
+
+    connect();
+    return () => {
+      clearTimeout(reconnectTimer);
+      try { ws.close(); } catch {}
+    };
   }, []);
 
   const iotNodes = [
@@ -654,6 +680,21 @@ const HouseholdDashboard = () => {
             <span style={{ width:7, height:7, borderRadius:'50%', background:'#ff6b35', boxShadow:'0 0 8px rgba(255,107,53,0.7)', display:'inline-block', animation:'wai-breathe 4s ease-in-out infinite' }}/>
             <span style={{ fontSize:10, color:'rgba(255,149,0,0.9)', letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 }}>Haushalt · Heimspeicher · IoT</span>
           </div>
+          {/* WebSocket Live-Status */}
+          <div style={{ display:'inline-flex', alignItems:'center', gap:7, borderRadius:999, padding:'5px 14px', width:'fit-content',
+            background: wsStatus === 'live' ? 'rgba(34,197,94,0.08)' : wsStatus === 'connecting' ? 'rgba(255,149,0,0.08)' : 'rgba(239,68,68,0.08)',
+            border: `1px solid ${wsStatus === 'live' ? 'rgba(34,197,94,0.3)' : wsStatus === 'connecting' ? 'rgba(255,149,0,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+            {wsStatus === 'live' && <span style={{ width:7, height:7, borderRadius:'50%', background:'#22c55e', display:'inline-block', animation:'wai-pulse-green 2s ease-in-out infinite' }}/>}
+            {wsStatus === 'connecting' && <span style={{ width:8, height:8, borderRadius:'50%', border:'1.5px solid #ff9500', borderTopColor:'transparent', display:'inline-block', animation:'wai-spin-slow 0.7s linear infinite' }}/>}
+            {wsStatus === 'offline' && <span style={{ width:7, height:7, borderRadius:'50%', background:'#ef4444', display:'inline-block', animation:'wai-pulse-red 2s ease-in-out infinite' }}/>}
+            <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase',
+              color: wsStatus === 'live' ? '#22c55e' : wsStatus === 'connecting' ? '#ff9500' : '#ef4444' }}>
+              {wsStatus === 'live' ? 'Live' : wsStatus === 'connecting' ? 'Verbinde…' : 'Offline – Retry in 5s'}
+            </span>
+            {wsStatus === 'live' && lastUpdate !== '–' && (
+              <span style={{ fontSize:9, color:'rgba(34,197,94,0.55)', fontFamily:'monospace' }}>{lastUpdate}</span>
+            )}
+          </div>
           <h1 style={{ fontSize:'clamp(26px,3.8vw,52px)', fontWeight:900, lineHeight:1.06, letterSpacing:'-0.03em', margin:0, background:'linear-gradient(135deg,#fff5f0 0%,#ff9500 40%,#ff6b35 65%,#3b82f6 100%)', backgroundSize:'300% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'wai-shimmer 9s linear infinite' }}>
             Haushalt &<br/>Heimspeicher
           </h1>
@@ -664,9 +705,14 @@ const HouseholdDashboard = () => {
               { label:'Netz', value:`${(state.grid_power??0).toFixed(1)} kW`, c:'#3b82f6' },
               { label:'Speicher', value:`${state.battery_soc??0} %`, c:'#22c55e' },
             ].map(({label,value,c})=>(
-              <div key={label} style={{ background:`${c}08`, border:`1px solid ${c}20`, borderRadius:10, padding:'8px 14px', minWidth:80 }}>
+              <div key={label} style={{ background:`${c}08`, border:`1px solid ${wsStatus === 'offline' ? 'rgba(239,68,68,0.15)' : `${c}20`}`, borderRadius:10, padding:'8px 14px', minWidth:80, transition:'border-color 0.4s' }}>
                 <div style={{ fontSize:9, color:`${c}80`, letterSpacing:'0.15em', textTransform:'uppercase' }}>{label}</div>
-                <div style={{ fontSize:16, fontWeight:800, color:c, fontFamily:'monospace' }}>{value}</div>
+                <div style={{ fontSize:16, fontWeight:800, color: wsStatus === 'offline' ? 'rgba(248,250,252,0.2)' : c, fontFamily:'monospace', transition:'color 0.4s' }}>
+                  {wsStatus === 'offline' ? '– –' : value}
+                </div>
+                {wsStatus === 'live' && (
+                  <div style={{ width:4, height:4, borderRadius:'50%', background:c, marginTop:4, animation:'wai-breathe 3s ease-in-out infinite' }}/>
+                )}
               </div>
             ))}
           </div>
