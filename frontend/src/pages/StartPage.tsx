@@ -1304,9 +1304,8 @@ function FleetVisual() {
     {x:232,y:118,soc:54, chg:false, label:'EV-06', model:'Polestar', kw:'idle'},
   ];
   return (
-    <div style={{position:'relative'}}>
-      <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
-        style={{ width: '100%', height: 210, display: 'block' }}>
+    <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '100%', height: 210, display: 'block' }}>
       <defs>
         <linearGradient id="flbg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#030810"/>
@@ -1401,31 +1400,6 @@ function FleetVisual() {
         <animate attributeName="x" values="-6;341;-6" dur="5s" repeatCount="indefinite"/>
       </rect>
     </svg>
-    {/* Business Leistungsbox */}
-    <div style={{
-      position:'absolute', right:0, top:0, width:320, maxWidth:'60vw', background:'rgba(167,139,250,0.13)',
-      border:'2px solid #a78bfa', borderRadius:18, padding:'22px 28px', zIndex:10, boxShadow:'0 8px 32px #0002',
-      color:'#e0e7ff', fontFamily:'monospace', fontSize:15, fontWeight:500, lineHeight:1.7
-    }}>
-      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
-        <span style={{fontSize:22, fontWeight:900, color:'#a78bfa'}}>Business</span>
-        <span style={{fontSize:13, background:'#a78bfa22', color:'#a78bfa', borderRadius:8, padding:'2px 10px', fontWeight:700}}>49 € / Standort / Monat</span>
-      </div>
-      <ul style={{margin:'0 0 10px 0',padding:'0 0 0 18px'}}>
-        <li>✅ <b>Alles aus Pro</b></li>
-        <li>🏭 <b>Flottenmanagement</b> (unbegrenzt EVs, Standorte & Gruppen)</li>
-        <li>📡 <b>KI-Dispatch & Lastspitzen-Management</b></li>
-        <li>🔗 <b>API-Zugang & Webhooks</b> (REST, MQTT, OpenAPI 3.1)</li>
-        <li>🔒 <b>SSO & Mandantenfähigkeit</b></li>
-        <li>📋 <b>Compliance- & Audit-Reporting</b> (ISO 27001, DSGVO)</li>
-        <li>🛠 <b>SLA, Alerting & dedizierter Support</b></li>
-        <li>🤝 <b>OEM- & Installateurkanal</b></li>
-      </ul>
-      <a href="mailto:kontakt@wattai.live?subject=Business%20Anfrage" style={{
-        display:'inline-block',marginTop:8,padding:'8px 22px',background:'#a78bfa',color:'#181028',borderRadius:999,fontWeight:700,fontSize:15,textDecoration:'none',boxShadow:'0 2px 12px #a78bfa55',letterSpacing:'0.04em'
-      }}>Jetzt Kontakt aufnehmen</a>
-    </div>
-    </div>
   );
 }
 
