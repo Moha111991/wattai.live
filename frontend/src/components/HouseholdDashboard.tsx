@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import BatteryWidget from './BatteryWidget';
-import PlanGate from './PlanGate';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -151,10 +150,38 @@ const HouseholdDashboard = () => {
         <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500)' }}/>
           <div style={{ padding:'24px' }}>
-            <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:18 }}>Hausautomation</div>
-            <PlanGate feature="smarthome.automation" featureName="Hausautomation" requiredPlan="pro">
-              <p style={{ margin:0, color:'rgba(248,250,252,0.4)', fontSize:13 }}>Automations-Features werden hier geladen…</p>
-            </PlanGate>
+            <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:18 }}>Hausautomation <span style={{ fontSize:10, background:'rgba(255,149,0,0.12)', color:'#ff9500', borderRadius:8, padding:'2px 10px', marginLeft:8, letterSpacing:'0.08em' }}>PRO</span></div>
+            {/* IoT Geräte-Workflow */}
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {[
+                { icon:'🔥', label:'Wärmepumpe', proto:'SG-Ready · KNX', status:'Verschoben auf 11:00 Uhr (PV-Überschuss)', color:'#ff6b35' },
+                { icon:'🫧', label:'Waschmaschine', proto:'Zigbee', status:'Startet um 13:30 Uhr (günstigster Tarif)', color:'#3b82f6' },
+                { icon:'💨', label:'Trockner', proto:'Z-Wave', status:'Wartet auf PV-Signal', color:'#a855f7' },
+                { icon:'🍽️', label:'Spülmaschine', proto:'Home Assistant · REST', status:'Aktiv – läuft gerade', color:'#22c55e' },
+                { icon:'❄️', label:'Klimaanlage', proto:'openHAB · KNX', status:'Standby – Tarifoptimierung aktiv', color:'#22d3ee' },
+              ].map((d, i) => (
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:14, background:`${d.color}0a`, border:`1px solid ${d.color}25`, borderRadius:12, padding:'10px 16px' }}>
+                  <span style={{ fontSize:22 }}>{d.icon}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
+                      <span style={{ fontWeight:700, fontSize:14, color:'#f8fafc' }}>{d.label}</span>
+                      <span style={{ fontSize:10, color:d.color, background:`${d.color}18`, borderRadius:6, padding:'1px 8px', fontFamily:'monospace', fontWeight:600 }}>{d.proto}</span>
+                    </div>
+                    <div style={{ fontSize:12, color:'rgba(248,250,252,0.5)' }}>{d.status}</div>
+                  </div>
+                  <div style={{ width:8, height:8, borderRadius:'50%', background:d.color, boxShadow:`0 0 6px ${d.color}` }} />
+                </div>
+              ))}
+            </div>
+            {/* Protokolle */}
+            <div style={{ marginTop:16, display:'flex', flexWrap:'wrap', gap:8 }}>
+              {['KNX','Zigbee','Z-Wave','Home Assistant','openHAB','Loxone','SG-Ready','MQTT','REST'].map(p => (
+                <span key={p} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'3px 11px', fontSize:11, color:'rgba(248,250,252,0.7)', fontFamily:'monospace', fontWeight:600 }}>{p}</span>
+              ))}
+            </div>
+            <div style={{ marginTop:12, fontSize:11, color:'rgba(255,149,0,0.6)', borderTop:'1px solid rgba(255,149,0,0.08)', paddingTop:10 }}>
+              🇩🇪 DSGVO-konform · IT-Sicherheitsgesetz · EN 50631-1 · Verschlüsselte Datenübertragung
+            </div>
           </div>
         </div>
       </div>
