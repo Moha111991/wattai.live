@@ -195,9 +195,14 @@ export type ResolvedFeatureFlags = {
   fleetUnlocked: boolean;
 };
 
+// ─── DEV OVERRIDE ────────────────────────────────────────────────────────────
+// Set to 'pro' | 'business' to test gated features locally.
+// Reset to 'free' before going to production.
+const DEV_DEFAULT_PLAN: PlanId = 'pro';
+
 export function normalizePlan(rawPlan: string | null | undefined): PlanId {
   if (!rawPlan) {
-    return 'free';
+    return DEV_DEFAULT_PLAN;
   }
   const key = rawPlan.trim().toLowerCase();
   return PLAN_ALIASES[key] ?? 'free';
@@ -205,7 +210,7 @@ export function normalizePlan(rawPlan: string | null | undefined): PlanId {
 
 export function getStoredPlan(): PlanId {
   if (typeof window === 'undefined') {
-    return 'free';
+    return DEV_DEFAULT_PLAN;
   }
   return normalizePlan(window.localStorage.getItem(PLAN_STORAGE_KEY));
 }
