@@ -707,8 +707,8 @@ const HouseholdDashboard = () => {
             ].map(({label,value,c})=>(
               <div key={label} style={{ background:`${c}08`, border:`1px solid ${wsStatus === 'offline' ? 'rgba(239,68,68,0.15)' : `${c}20`}`, borderRadius:10, padding:'8px 14px', minWidth:80, transition:'border-color 0.4s' }}>
                 <div style={{ fontSize:9, color:`${c}80`, letterSpacing:'0.15em', textTransform:'uppercase' }}>{label}</div>
-                <div style={{ fontSize:16, fontWeight:800, color: wsStatus === 'offline' ? 'rgba(248,250,252,0.2)' : c, fontFamily:'monospace', transition:'color 0.4s' }}>
-                  {wsStatus === 'offline' ? '– –' : value}
+                <div style={{ fontSize:16, fontWeight:800, color: wsStatus !== 'live' ? 'rgba(248,250,252,0.2)' : c, fontFamily:'monospace', transition:'color 0.4s' }}>
+                  {wsStatus !== 'live' ? '– –' : value}
                 </div>
                 {wsStatus === 'live' && (
                   <div style={{ width:4, height:4, borderRadius:'50%', background:c, marginTop:4, animation:'wai-breathe 3s ease-in-out infinite' }}/>
