@@ -1818,70 +1818,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════
-          CTA BANNER
-      ══════════════════════════════════════════════ */}
-      <Fade>
-        <section style={{ ...sec, position:'relative', zIndex:1 }}>
-          <div style={{
-            position:'relative', borderRadius:24, overflow:'hidden',
-            border:'1px solid rgba(255,107,53,0.2)',
-            background:'rgba(4,6,20,0.7)',
-            padding:'clamp(48px,6vw,80px) clamp(24px,5vw,64px)',
-            backdropFilter:'blur(24px)',
-          }}>
-            {/* Orange atmosphere top-right */}
-            <div aria-hidden="true" style={{
-              position:'absolute', top:-80, right:-80, width:400, height:400,
-              borderRadius:'50%',
-              background:'radial-gradient(circle,rgba(255,107,53,0.14),transparent 65%)',
-              pointerEvents:'none',
-            }} />
-            {/* Blue atmosphere bottom-left */}
-            <div aria-hidden="true" style={{
-              position:'absolute', bottom:-80, left:-80, width:380, height:380,
-              borderRadius:'50%',
-              background:'radial-gradient(circle,rgba(30,64,175,0.12),transparent 65%)',
-              pointerEvents:'none',
-            }} />
-            {/* Top accent bar */}
-            <div style={{
-              position:'absolute', top:0, left:0, right:0, height:2,
-              background:'linear-gradient(90deg,transparent,#ff6b35,#ff9500,#3b82f6,transparent)',
-            }} />
-
-            <div style={{ position:'relative', zIndex:1, textAlign:'center' }}>
-              <SectionHeadline
-                label="Kostenlos starten"
-                title="Kostenlos starten — jetzt upgraden wenn du bereit bist"
-                subtitle="Kein Abo-Zwang, keine Kreditkarte nötig. Einfach registrieren und loslegen."
-                accentColor={T.orange}
-              />
-              <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap' }}>
-                <button type="button" onClick={onAuthClick} className="wai-cta-o"
-                  style={{
-                    background:'linear-gradient(90deg,#ff6b35,#ff9500)',
-                    color:'#0a0305', border:'none', borderRadius:999,
-                    padding:'15px 36px', fontWeight:800, fontSize:16, cursor:'pointer',
-                    boxShadow:'0 0 48px rgba(255,107,53,0.35)',
-                    letterSpacing:'0.02em',
-                  }}>
-                  Kostenlos registrieren
-                </button>
-                <button type="button" onClick={onUpgradeClick} className="wai-cta-g"
-                  style={{
-                    background:'transparent', color:'rgba(255,149,0,0.9)',
-                    border:'1px solid rgba(255,107,53,0.3)', borderRadius:999,
-                    padding:'15px 36px', fontWeight:700, fontSize:16, cursor:'pointer',
-                    backdropFilter:'blur(12px)', letterSpacing:'0.02em',
-                  }}>
-                  Pläne vergleichen
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </Fade>
+      // ...existing code...
       {/* ── Tech Details Modal ── */}
       {techModal && (
         <TechModal
