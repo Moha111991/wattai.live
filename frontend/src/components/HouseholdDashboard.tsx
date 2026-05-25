@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import BatteryWidget from './BatteryWidget';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
 const WS_URL = import.meta.env.VITE_WS_URL || '';
 
 const WAI = `
@@ -21,6 +20,245 @@ const WAI = `
 `;
 
 interface SysState { grid_power?: number; pv_power?: number; battery_soc?: number; home_power?: number; battery_power_kw?: number; battery_capacity_kwh?: number; }
+
+// ── IoT Hausautomation Types ─────────────────────────────────────────────────
+const DEVICES = [
+  { id:'wp',  icon:'🔥', label:'Wärmepumpe',  watt:2200, proto:'KNX', color:'#ff6b35' },
+  { id:'wm',  icon:'🫧', label:'Waschmaschine',watt:1800, proto:'Zigbee', color:'#3b82f6' },
+  { id:'tr',  icon:'💨', label:'Trockner',     watt:2000, proto:'Z-Wave', color:'#a855f7' },
+  { id:'sp',  icon:'🍽️', label:'Spülmaschine', watt:1200, proto:'Home Assistant', color:'#22c55e' },
+  { id:'ac',  icon:'❄️', label:'Klimaanlage',  watt:1500, proto:'openHAB', color:'#22d3ee' },
+  { id:'lx',  icon:'💡', label:'Smart Licht',  watt:80,   proto:'Loxone', color:'#fbbf24' },
+];
+const PROTOCOLS = ['KNX','Zigbee','Z-Wave','Home Assistant','openHAB','Loxone'];
+const AUTOMATIONS = [
+  { id:'pv',   label:'PV-Überschuss',  desc:'Startet automatisch bei Solarüberschuss' },
+  { id:'tarif',label:'Günstigster Tarif',desc:'Nutzt den günstigsten Netztarif (Tibber/aWATTar)' },
+  { id:'zeit', label:'Zeitfenster',     desc:'Startet in definiertem Zeitfenster' },
+  { id:'sg',   label:'SG-Ready',        desc:'Steuersignal vom Netzbetreiber' },
+];
+
+type DeviceState = { coupled: boolean; automation: string; active: boolean; kwh: number; schedule: string; };
+
+function HausautomationPanel() {
+  const [step, setStep] = useState<1|2|3|4|5>(1);
+  const [selectedDevice, setSelectedDevice] = useState<string>('');
+  const [selectedProto, setSelectedProto] = useState<string>('');
+  const [selectedAuto, setSelectedAuto] = useState<string>('pv');
+  const [schedule, setSchedule] = useState<string>('11:00');
+  const [deviceStates, setDeviceStates] = useState<Record<string, DeviceState>>(() =>
+    Object.fromEntries(DEVICES.map(d => [d.id, { coupled: false, automation:'pv', active: false, kwh: +(Math.random()*3).toFixed(2), schedule:'11:00' }]))
+  );
+  const [coupling, setCoupling] = useState(false);
+  const [coupled, setCoupled] = useState(false);
+
+  const dev = DEVICES.find(d => d.id === selectedDevice);
+
+  const handleCouple = useCallback(() => {
+    if (!selectedDevice || !selectedProto) return;
+    setCoupling(true);
+    setTimeout(() => {
+      setCoupling(false);
+      setCoupled(true);
+      setDeviceStates(prev => ({ ...prev, [selectedDevice]: { ...prev[selectedDevice], coupled: true } }));
+      setStep(4);
+    }, 1800);
+  }, [selectedDevice, selectedProto]);
+
+  const handleActivate = useCallback(() => {
+    if (!selectedDevice) return;
+    setDeviceStates(prev => ({ ...prev, [selectedDevice]: { ...prev[selectedDevice], automation: selectedAuto, active: true, schedule } }));
+    setStep(5);
+  }, [selectedDevice, selectedAuto, schedule]);
+
+  const handleReset = useCallback(() => {
+    setStep(1); setSelectedDevice(''); setSelectedProto(''); setCoupled(false); setCoupling(false);
+  }, []);
+
+  const STEPS = ['Gerät wählen','Protokoll','Koppeln','Automatisierung','Live-Status'];
+
+  return (
+    <div style={{ fontFamily:'monospace' }}>
+      {/* Step indicator */}
+      <div style={{ display:'flex', gap:0, marginBottom:24, borderRadius:12, overflow:'hidden', border:'1px solid rgba(255,149,0,0.15)' }}>
+        {STEPS.map((s, i) => {
+          const n = (i + 1) as 1|2|3|4|5;
+          const done = step > n;
+          const active = step === n;
+          return (
+            <div key={s} style={{ flex:1, padding:'8px 4px', textAlign:'center', fontSize:10, fontWeight:700,
+              background: done ? 'rgba(34,197,94,0.12)' : active ? 'rgba(255,149,0,0.14)' : 'rgba(255,255,255,0.03)',
+              color: done ? '#22c55e' : active ? '#ff9500' : 'rgba(248,250,252,0.3)',
+              borderRight: i < 4 ? '1px solid rgba(255,149,0,0.1)' : undefined,
+              letterSpacing:'0.06em', transition:'all 0.4s',
+            }}>
+              {done ? '✓ ' : `${n}. `}{s}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Step 1: Device Selection */}
+      {step === 1 && (
+        <div>
+          <div style={{ fontSize:13, color:'rgba(248,250,252,0.6)', marginBottom:12 }}>Gerät auswählen:</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))', gap:10 }}>
+            {DEVICES.map(d => (
+              <button key={d.id} type="button" onClick={() => { setSelectedDevice(d.id); setSelectedProto(d.proto); setStep(2); }}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:12,
+                  background: selectedDevice === d.id ? `${d.color}18` : 'rgba(255,255,255,0.04)',
+                  border: `1.5px solid ${selectedDevice === d.id ? d.color : 'rgba(255,255,255,0.08)'}`,
+                  color:'#f8fafc', cursor:'pointer', transition:'all 0.3s', textAlign:'left' }}>
+                <span style={{ fontSize:20 }}>{d.icon}</span>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:13 }}>{d.label}</div>
+                  <div style={{ fontSize:10, color:'rgba(248,250,252,0.4)' }}>{d.watt} W</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Protocol */}
+      {step === 2 && dev && (
+        <div>
+          <div style={{ fontSize:13, color:'rgba(248,250,252,0.6)', marginBottom:4 }}>
+            <b style={{ color: dev.color }}>{dev.icon} {dev.label}</b> — Protokoll wählen:
+          </div>
+          <div style={{ fontSize:11, color:'rgba(248,250,252,0.35)', marginBottom:12 }}>Empfohlen: <b style={{ color:'#ff9500' }}>{dev.proto}</b></div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
+            {PROTOCOLS.map(p => (
+              <button key={p} type="button" onClick={() => setSelectedProto(p)}
+                style={{ padding:'8px 18px', borderRadius:10,
+                  background: selectedProto === p ? 'rgba(255,149,0,0.18)' : 'rgba(255,255,255,0.04)',
+                  border: `1.5px solid ${selectedProto === p ? '#ff9500' : 'rgba(255,255,255,0.1)'}`,
+                  color: selectedProto === p ? '#ff9500' : 'rgba(248,250,252,0.6)',
+                  fontWeight:600, fontSize:13, cursor:'pointer', transition:'all 0.3s' }}>
+                {p}
+              </button>
+            ))}
+          </div>
+          <div style={{ display:'flex', gap:10 }}>
+            <button type="button" onClick={() => setStep(1)} style={{ padding:'10px 22px', borderRadius:10, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(248,250,252,0.5)', fontSize:13, cursor:'pointer' }}>← Zurück</button>
+            <button type="button" onClick={() => selectedProto && setStep(3)} style={{ padding:'10px 22px', borderRadius:10, background: selectedProto ? 'rgba(255,149,0,0.18)' : 'rgba(255,255,255,0.04)', border:`1.5px solid ${selectedProto ? '#ff9500' : 'rgba(255,255,255,0.1)'}`, color: selectedProto ? '#ff9500' : 'rgba(248,250,252,0.4)', fontWeight:700, fontSize:13, cursor:'pointer', transition:'all 0.3s' }}>Weiter →</button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Koppeln */}
+      {step === 3 && dev && (
+        <div>
+          <div style={{ fontSize:13, color:'rgba(248,250,252,0.6)', marginBottom:12 }}>
+            Gerät <b style={{ color: dev.color }}>{dev.icon} {dev.label}</b> via <b style={{ color:'#ff9500' }}>{selectedProto}</b> koppeln:
+          </div>
+          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,149,0,0.15)', borderRadius:12, padding:'16px 20px', marginBottom:16 }}>
+            <div style={{ fontSize:12, color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>
+              1. Stellen Sie sicher, dass das Gerät eingeschaltet ist.<br/>
+              2. Aktivieren Sie den Kopplungsmodus am Gerät (ggf. Taste 3 Sek. halten).<br/>
+              3. Klicken Sie auf <b style={{ color:'#ff9500' }}>„Koppeln starten"</b> — WattAI sucht automatisch.
+            </div>
+          </div>
+          {coupling && (
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, color:'#ff9500', fontSize:13 }}>
+              <span style={{ display:'inline-block', width:14, height:14, borderRadius:'50%', border:'2px solid #ff9500', borderTopColor:'transparent', animation:'wai-spin-slow 0.7s linear infinite' }}/>
+              Suche Gerät via {selectedProto}…
+            </div>
+          )}
+          {coupled && <div style={{ color:'#22c55e', fontSize:13, marginBottom:12 }}>✓ Gerät erfolgreich gekoppelt!</div>}
+          <div style={{ display:'flex', gap:10 }}>
+            <button type="button" onClick={() => setStep(2)} style={{ padding:'10px 22px', borderRadius:10, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(248,250,252,0.5)', fontSize:13, cursor:'pointer' }}>← Zurück</button>
+            <button type="button" onClick={handleCouple} disabled={coupling}
+              style={{ padding:'10px 22px', borderRadius:10, background: coupling ? 'rgba(255,149,0,0.06)' : 'linear-gradient(90deg,#ff6b35,#ff9500)', border:'none', color:'#0a0305', fontWeight:800, fontSize:13, cursor: coupling ? 'wait' : 'pointer' }}>
+              {coupling ? 'Koppeln…' : 'Koppeln starten'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: Automation */}
+      {step === 4 && dev && (
+        <div>
+          <div style={{ fontSize:13, color:'rgba(248,250,252,0.6)', marginBottom:12 }}>
+            Automatisierung für <b style={{ color: dev.color }}>{dev.icon} {dev.label}</b> aktivieren:
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
+            {AUTOMATIONS.map(a => (
+              <button key={a.id} type="button" onClick={() => setSelectedAuto(a.id)}
+                style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'12px 16px', borderRadius:12, textAlign:'left',
+                  background: selectedAuto === a.id ? 'rgba(255,149,0,0.12)' : 'rgba(255,255,255,0.04)',
+                  border:`1.5px solid ${selectedAuto === a.id ? '#ff9500' : 'rgba(255,255,255,0.08)'}`,
+                  color:'#f8fafc', cursor:'pointer', transition:'all 0.3s' }}>
+                <div style={{ width:16, height:16, borderRadius:'50%', marginTop:2, flexShrink:0,
+                  background: selectedAuto === a.id ? '#ff9500' : 'rgba(255,255,255,0.12)',
+                  border:`2px solid ${selectedAuto === a.id ? '#ff9500' : 'rgba(255,255,255,0.2)'}` }}/>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:13 }}>{a.label}</div>
+                  <div style={{ fontSize:11, color:'rgba(248,250,252,0.45)', marginTop:2 }}>{a.desc}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+          {selectedAuto === 'zeit' && (
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+              <span style={{ fontSize:12, color:'rgba(248,250,252,0.5)' }}>Startuhrzeit:</span>
+              <input type="time" value={schedule} onChange={e => setSchedule(e.target.value)}
+                style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,149,0,0.3)', borderRadius:8, padding:'6px 12px', color:'#ff9500', fontSize:14, fontFamily:'monospace', outline:'none' }}/>
+            </div>
+          )}
+          <div style={{ display:'flex', gap:10 }}>
+            <button type="button" onClick={() => setStep(3)} style={{ padding:'10px 22px', borderRadius:10, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(248,250,252,0.5)', fontSize:13, cursor:'pointer' }}>← Zurück</button>
+            <button type="button" onClick={handleActivate} style={{ padding:'10px 22px', borderRadius:10, background:'linear-gradient(90deg,#22c55e,#3b82f6)', border:'none', color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>Automatisierung aktivieren ✓</button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 5: Live Status */}
+      {step === 5 && (
+        <div>
+          <div style={{ fontSize:13, color:'#22c55e', marginBottom:16, fontWeight:700 }}>✓ Alle aktiven Automationen – Live-Status</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {DEVICES.filter(d => deviceStates[d.id].active || d.id === selectedDevice).map(d => {
+              const ds = deviceStates[d.id];
+              const autoLabel = AUTOMATIONS.find(a => a.id === ds.automation)?.label ?? '–';
+              return (
+                <div key={d.id} style={{ display:'flex', alignItems:'center', gap:14, background:`${d.color}0a`, border:`1px solid ${d.color}25`, borderRadius:12, padding:'10px 16px' }}>
+                  <span style={{ fontSize:22 }}>{d.icon}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
+                      <span style={{ fontWeight:700, fontSize:14, color:'#f8fafc' }}>{d.label}</span>
+                      <span style={{ fontSize:10, color:d.color, background:`${d.color}18`, borderRadius:6, padding:'1px 8px', fontFamily:'monospace', fontWeight:600 }}>{d.proto}</span>
+                      <span style={{ fontSize:10, color:'#ff9500', background:'rgba(255,149,0,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:600 }}>{autoLabel}</span>
+                    </div>
+                    <div style={{ display:'flex', gap:16 }}>
+                      <span style={{ fontSize:12, color:'rgba(248,250,252,0.4)' }}>Verbrauch: <b style={{ color:d.color }}>{ds.kwh} kWh</b></span>
+                      {ds.schedule && ds.automation === 'zeit' && <span style={{ fontSize:12, color:'rgba(248,250,252,0.4)' }}>Start: <b style={{ color:'#ff9500' }}>{ds.schedule}</b></span>}
+                    </div>
+                  </div>
+                  <div style={{ width:8, height:8, borderRadius:'50%', background:'#22c55e', boxShadow:'0 0 6px #22c55e', animation:'wai-breathe 2.5s ease-in-out infinite' }}/>
+                </div>
+              );
+            })}
+          </div>
+          <button type="button" onClick={handleReset} style={{ marginTop:16, padding:'10px 22px', borderRadius:10, background:'rgba(255,149,0,0.1)', border:'1px solid rgba(255,149,0,0.25)', color:'#ff9500', fontWeight:700, fontSize:13, cursor:'pointer' }}>+ Weiteres Gerät hinzufügen</button>
+        </div>
+      )}
+
+      {/* Protocols + Legal */}
+      <div style={{ marginTop:24, borderTop:'1px solid rgba(255,149,0,0.08)', paddingTop:16 }}>
+        <div style={{ fontSize:11, color:'rgba(255,149,0,0.6)', marginBottom:8, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase' }}>Unterstützte Protokolle</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:14 }}>
+          {['KNX','Zigbee','Z-Wave','Home Assistant','openHAB','Loxone','SG-Ready','MQTT','REST'].map(p => (
+            <span key={p} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'3px 11px', fontSize:11, color:'rgba(248,250,252,0.7)', fontFamily:'monospace', fontWeight:600 }}>{p}</span>
+          ))}
+        </div>
+        <div style={{ fontSize:11, color:'rgba(255,149,0,0.55)', lineHeight:1.7 }}>
+          🇩🇪 <b>Rechtlicher Hinweis (Deutschland):</b> Die Integration von IoT-Geräten erfolgt gemäß <b>DSGVO</b> und <b>IT-Sicherheitsgesetz</b>. Alle Daten werden verschlüsselt übertragen. Kompatibel mit deutschen Smart-Home-Standards (EN 50631-1).
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const HouseholdDashboard = () => {
   const [state, setState] = useState<SysState>({});
@@ -151,37 +389,7 @@ const HouseholdDashboard = () => {
           <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500)' }}/>
           <div style={{ padding:'24px' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:18 }}>Hausautomation <span style={{ fontSize:10, background:'rgba(255,149,0,0.12)', color:'#ff9500', borderRadius:8, padding:'2px 10px', marginLeft:8, letterSpacing:'0.08em' }}>PRO</span></div>
-            {/* IoT Geräte-Workflow */}
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {[
-                { icon:'🔥', label:'Wärmepumpe', proto:'SG-Ready · KNX', status:'Verschoben auf 11:00 Uhr (PV-Überschuss)', color:'#ff6b35' },
-                { icon:'🫧', label:'Waschmaschine', proto:'Zigbee', status:'Startet um 13:30 Uhr (günstigster Tarif)', color:'#3b82f6' },
-                { icon:'💨', label:'Trockner', proto:'Z-Wave', status:'Wartet auf PV-Signal', color:'#a855f7' },
-                { icon:'🍽️', label:'Spülmaschine', proto:'Home Assistant · REST', status:'Aktiv – läuft gerade', color:'#22c55e' },
-                { icon:'❄️', label:'Klimaanlage', proto:'openHAB · KNX', status:'Standby – Tarifoptimierung aktiv', color:'#22d3ee' },
-              ].map((d, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:14, background:`${d.color}0a`, border:`1px solid ${d.color}25`, borderRadius:12, padding:'10px 16px' }}>
-                  <span style={{ fontSize:22 }}>{d.icon}</span>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
-                      <span style={{ fontWeight:700, fontSize:14, color:'#f8fafc' }}>{d.label}</span>
-                      <span style={{ fontSize:10, color:d.color, background:`${d.color}18`, borderRadius:6, padding:'1px 8px', fontFamily:'monospace', fontWeight:600 }}>{d.proto}</span>
-                    </div>
-                    <div style={{ fontSize:12, color:'rgba(248,250,252,0.5)' }}>{d.status}</div>
-                  </div>
-                  <div style={{ width:8, height:8, borderRadius:'50%', background:d.color, boxShadow:`0 0 6px ${d.color}` }} />
-                </div>
-              ))}
-            </div>
-            {/* Protokolle */}
-            <div style={{ marginTop:16, display:'flex', flexWrap:'wrap', gap:8 }}>
-              {['KNX','Zigbee','Z-Wave','Home Assistant','openHAB','Loxone','SG-Ready','MQTT','REST'].map(p => (
-                <span key={p} style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'3px 11px', fontSize:11, color:'rgba(248,250,252,0.7)', fontFamily:'monospace', fontWeight:600 }}>{p}</span>
-              ))}
-            </div>
-            <div style={{ marginTop:12, fontSize:11, color:'rgba(255,149,0,0.6)', borderTop:'1px solid rgba(255,149,0,0.08)', paddingTop:10 }}>
-              🇩🇪 DSGVO-konform · IT-Sicherheitsgesetz · EN 50631-1 · Verschlüsselte Datenübertragung
-            </div>
+            <HausautomationPanel />
           </div>
         </div>
       </div>
