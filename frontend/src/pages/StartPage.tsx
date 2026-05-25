@@ -1851,7 +1851,6 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
         </div>
       </section>
 
-      // ...existing code...
       {/* ── Tech Details Modal ── */}
       {techModal && (
         <TechModal
