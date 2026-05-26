@@ -10,13 +10,7 @@ import TopNav from "./components/TopNav";
 import AuthModal from "./components/AuthModal";
 import UpgradeModal from "./components/UpgradeModal";
 import CookieConsent from "./components/CookieConsent";
-import DashboardHeader3D from "./components/headers/DashboardHeader3D";
-import EVHeader3D from "./components/headers/EVHeader3D";
-import DevicesHeader3D from "./components/headers/DevicesHeader3D";
-import SmartHomeHeader3D from "./components/headers/SmartHomeHeader3D";
-import AIHeader3D from "./components/headers/AIHeader3D";
 import { PlanProvider, usePlan } from "./context/PlanContext";
-import { getHeaderImageHeight } from "./utils/headerImageHeight";
 import StartPage from "./pages/StartPage";
 import ProduktePage from "./pages/ProduktePage";
 import AboutPage from "./pages/AboutPage";
@@ -97,24 +91,7 @@ function AppShell() {
   const appStoreUrl = import.meta.env.VITE_APP_STORE_URL || 'https://apps.apple.com/';
   const playStoreUrl = import.meta.env.VITE_PLAY_STORE_URL || 'https://play.google.com/store/apps';
 
-  // Render 3D Header Component based on tab
-  const renderHeaderComponent = () => {
-    switch (tab) {
-      case 'main':
-        return <DashboardHeader3D />;
-      case 'ev':
-        return <EVHeader3D />;
-      case 'devices':
-        return <DevicesHeader3D />;
-      case 'house':
-        return <SmartHomeHeader3D />;
-      case 'ki':
-        return <AIHeader3D />;
-      default:
-        return <DashboardHeader3D />;
-    }
-  };
-
+  // If fleet tab was unlocked and the fleet tab is removed, go back to main
   const appShellStyle: CSSProperties = {
     minHeight: '100dvh',
     width: '100%',
@@ -132,21 +109,6 @@ function AppShell() {
     padding: 0,
     boxSizing: 'border-box',
   };
-
-  const headerStyle: CSSProperties = {
-    textAlign: 'center',
-    marginBottom: 0,
-    width: '100%',
-    overflow: 'hidden',
-    position: 'relative',
-    padding: 0,
-    lineHeight: 0,
-    borderRadius: 0,
-    border: 'none',
-    boxShadow: 'none',
-  };
-
-  const headerImageHeight = getHeaderImageHeight(tab, isMobile);
 
   const navStyle: CSSProperties = {
     marginBottom: 'clamp(1rem, 1.8vw, 1.4rem)',
@@ -249,13 +211,6 @@ function AppShell() {
         </>
       ) : (
         <>
-      {/* Header Image */}
-      <header style={headerStyle}>
-        <div style={{ width: '100%', height: headerImageHeight }}>
-          {renderHeaderComponent()}
-        </div>
-      </header>
-
       {/* Main Content Container with Padding */}
       <div style={{
         padding: 'clamp(10px, 1.6vw, 20px) clamp(10px, 2.4vw, 30px)',
