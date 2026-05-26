@@ -1249,37 +1249,6 @@ function SmartHomeVisual() {
         Einsparung heute: −2.1 kWh · CO₂ vermieden: 0.92 kg · Optimierung aktiv
       </text>
       </svg>
-      {/* Hausautomation Pro-Workflow */}
-      <div style={{
-        margin:'32px auto 0', maxWidth:480, background:'rgba(30,41,59,0.85)', border:'1.5px solid #ff950055',
-        borderRadius:18, boxShadow:'0 4px 32px #0002', padding:'28px 32px', color:'#f8fafc', fontFamily:'monospace',
-      }}>
-        <div style={{fontSize:19, fontWeight:900, color:'#ff9500', marginBottom:8, letterSpacing:'0.01em'}}>Hausautomation <span style={{fontSize:13, background:'#ff950022', color:'#ff9500', borderRadius:8, padding:'2px 10px', fontWeight:700, marginLeft:8}}>Pro</span></div>
-        <div style={{fontSize:15, color:'#f8fafc', marginBottom:14}}>
-          Steuern Sie <b>Wärmepumpe</b>, <b>Waschmaschine</b>, <b>Trockner</b>, <b>Spülmaschine</b> und mehr automatisch in günstige Zeitfenster.<br/>
-          <span style={{color:'#ff9500'}}>IoT-Workflow:</span>
-        </div>
-        <ol style={{margin:'0 0 16px 18px',padding:0,fontSize:14,lineHeight:1.7}}>
-          <li>Gerät auswählen (z.B. Wärmepumpe, Waschmaschine)</li>
-          <li>Protokoll wählen: <b>KNX</b>, <b>Zigbee</b>, <b>Z-Wave</b>, <b>Home Assistant</b>, <b>openHAB</b>, <b>Loxone</b></li>
-          <li>Gerät koppeln &amp; freigeben</li>
-          <li>Automatisierung aktivieren (z.B. Zeitfenster, PV-Überschuss, Tarif)</li>
-          <li>Live-Status &amp; Verbrauch überwachen</li>
-        </ol>
-        <div style={{fontSize:13, color:'#fbbf24', marginBottom:10, fontWeight:700}}>Unterstützte Protokolle:</div>
-        <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:14}}>
-          <span style={{background:'#fff1',color:'#fff',borderRadius:8,padding:'4px 12px',fontWeight:600}}>KNX</span>
-          <span style={{background:'#fff1',color:'#fff',borderRadius:8,padding:'4px 12px',fontWeight:600}}>Zigbee</span>
-          <span style={{background:'#fff1',color:'#fff',borderRadius:8,padding:'4px 12px',fontWeight:600}}>Z-Wave</span>
-          <span style={{background:'#fff1',color:'#fff',borderRadius:8,padding:'4px 12px',fontWeight:600}}>Home Assistant</span>
-          <span style={{background:'#fff1',color:'#fff',borderRadius:8,padding:'4px 12px',fontWeight:600}}>openHAB</span>
-          <span style={{background:'#fff1',color:'#fff',borderRadius:8,padding:'4px 12px',fontWeight:600}}>Loxone</span>
-        </div>
-        <div style={{fontSize:12, color:'#fbbf24', marginBottom:6, fontWeight:700}}>Rechtlicher Hinweis (Deutschland):</div>
-        <div style={{fontSize:12, color:'#f8fafc', opacity:0.8}}>
-          Die Integration von IoT-Geräten erfolgt gemäß <b>DSGVO</b> und <b>IT-Sicherheitsgesetz</b>. Alle Daten werden verschlüsselt übertragen. Kompatibel mit deutschen Smart-Home-Standards.
-        </div>
-      </div>
     </div>
   );
 }
