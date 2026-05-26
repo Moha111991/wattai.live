@@ -93,7 +93,7 @@ const EVDashboard = () => {
             <circle r="3" fill="rgba(255,149,0,0.9)" filter="url(#ev-glow)"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath xlinkHref="#ev-charge-f"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite"/></circle>
             <text x="4" y="60" fill="rgba(34,197,94,0.7)" fontSize="7" fontFamily="monospace" fontWeight="bold">HOME</text>
             <text x="176" y="60" fill="rgba(255,149,0,0.7)" fontSize="7" fontFamily="monospace" fontWeight="bold">GRID</text>
-            <text x="100" y="47" textAnchor="middle" fill="rgba(59,130,246,0.6)" fontSize="7.5" fontFamily="monospace">ISO 15118 · OCPP 2.0.1</text>
+            <text x="100" y="18" textAnchor="middle" fill="rgba(59,130,246,0.6)" fontSize="7.5" fontFamily="monospace">ISO 15118 · OCPP 2.0.1</text>
             <rect x="24" y="142" width="138" height="7" rx="3.5" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.2)" strokeWidth="0.5"/>
             <rect x="24" y="142" width="95" height="7" rx="3.5" fill="url(#ev-charge-bar)"><animate attributeName="width" values="95;115;95" dur="10s" repeatCount="indefinite"/></rect>
             <text x="100" y="160" textAnchor="middle" fill="rgba(255,149,0,0.65)" fontSize="7" fontFamily="monospace">SOC 68 % · Lädt mit 11 kW</text>

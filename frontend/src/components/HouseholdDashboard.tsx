@@ -663,10 +663,15 @@ const HouseholdDashboard = () => {
             <rect x="78" y="95" width="14" height="15" rx="1" fill="rgba(100,200,255,0.18)" stroke="rgba(100,200,255,0.3)" strokeWidth="0.6"/>
             <rect x="84" y="95" width="2" height="15" fill="rgba(100,200,255,0.15)"/>
             <ellipse cx="100" cy="128" rx="44" ry="4" fill="rgba(34,197,94,0.12)"><animate attributeName="opacity" values="0.12;0.25;0.12" dur="5s" repeatCount="indefinite"/></ellipse>
-            {iotNodes.map(({label,x,y,c})=>(
+            {iotNodes.map(({label,x,y,c})=>{
+              // Label außerhalb des Kreises: rechts wenn x<100, links wenn x>=100, unten wenn y>=140
+              const lx = x < 100 ? x - 13 : x > 100 ? x + 13 : x;
+              const ly = y >= 140 ? y + 18 : y - 12;
+              const anchor = x < 100 ? 'end' : x > 100 ? 'start' : 'middle';
+              return (
               <g key={label}>
                 <circle cx={x} cy={y} r="8" fill="rgba(22,30,65,0.88)" stroke={c} strokeWidth="1.2"/>
-                <text x={x} y={y+3} textAnchor="middle" fill={c} fontSize="5.5" fontFamily="monospace" fontWeight="bold">{label}</text>
+                <text x={lx} y={ly} textAnchor={anchor} fill={c} fontSize="6" fontFamily="monospace" fontWeight="bold">{label}</text>
                 <circle r="2.5" fill={c} filter="url(#hh-glow)" opacity="0.8">
                   <animateMotion dur="3s" repeatCount="indefinite">
                     <mpath xlinkHref={"#hh-path-" + label}/>
@@ -676,7 +681,8 @@ const HouseholdDashboard = () => {
                 <path id={"hh-path-" + label} d={`M 100 90 L ${x} ${y}`} fill="none"/>
                 <line x1="100" y1="90" x2={x} y2={y} stroke={`${c}25`} strokeWidth="1"/>
               </g>
-            ))}
+              );
+            })}
             <circle cx="100" cy="90" r="6" fill="rgba(22,30,65,0.9)" stroke="rgba(255,107,53,0.5)" strokeWidth="1"/>
             <text x="100" y="170" textAnchor="middle" fill="rgba(255,149,0,0.4)" fontSize="7" fontFamily="monospace">Haushalt · Heimspeicher · IoT</text>
           </svg>

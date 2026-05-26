@@ -91,7 +91,7 @@ const DevicesDashboard = (): ReactElement => {
                 </g>
               );
             })}
-            <text x="100" y="170" textAnchor="middle" fill="rgba(255,149,0,0.4)" fontSize="7" fontFamily="monospace">MQTT · TLS 1.3 · ISO 21434</text>
+            <text x="100" y="178" textAnchor="middle" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">MQTT · TLS 1.3 · ISO 21434</text>
           </svg>
         }
       />

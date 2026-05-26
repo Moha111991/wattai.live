@@ -65,19 +65,23 @@ const NeuralNetSVG = ({ conf }: { conf: number }) => {
     {color:'rgba(59,130,246,0.95)',path:'M30,155 L78,91 L126,25 L174,60',dur:'3.5s',begin:'0.4s'},
   ];
   return (
-    <svg viewBox="0 0 200 180" style={{ width:'100%', height:'100%' }} fill="none">
+    <svg viewBox="0 0 200 190" style={{ width:'100%', height:'100%' }} fill="none">
       <defs>
         <filter id="ki-glow3"><feGaussianBlur stdDeviation="3" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
         <linearGradient id="ki-grad3" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#ff6b35"/><stop offset="50%" stopColor="#ff9500"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
       </defs>
-      {[['INPUT',30],['HIDDEN',78],['HIDDEN',126],['OUTPUT',174]].map(([l,x])=>(
-        <text key={String(l)} x={Number(x)} y="16" textAnchor="middle" fill="rgba(59,130,246,0.4)" fontSize="5.5" fontFamily="monospace" letterSpacing="1">{String(l)}</text>
+      {/* Layer-Labels oben — klar lesbar mit Hintergrund */}
+      {([['INPUT',30,'#ff6b35'],['HIDDEN',78,'#3b82f6'],['HIDDEN',126,'#3b82f6'],['OUTPUT',174,'#22c55e']] as [string,number,string][]).map(([l,x,col],idx)=>(
+        <g key={idx}>
+          <rect x={x-16} y="4" width={32} height="11" rx="3" fill="rgba(10,14,35,0.85)" stroke={`${col}50`} strokeWidth="0.8"/>
+          <text x={x} y="12.5" textAnchor="middle" fill={col} fontSize="6" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">{l}</text>
+        </g>
       ))}
       {layers.flatMap(([x,n],li)=>li<layers.length-1?Array.from({length:n},(_,i)=>Array.from({length:layers[li+1][1]},(_,j)=>(
-        <line key={`c${li}-${i}-${j}`} x1={x} y1={22+i*(136/(n-1||1))} x2={layers[li+1][0]} y2={22+j*(136/(layers[li+1][1]-1||1))} stroke="rgba(59,130,246,0.07)" strokeWidth="0.8"/>
+        <line key={`c${li}-${i}-${j}`} x1={x} y1={28+i*(136/(n-1||1))} x2={layers[li+1][0]} y2={28+j*(136/(layers[li+1][1]-1||1))} stroke="rgba(59,130,246,0.07)" strokeWidth="0.8"/>
       ))):[])}
       {layers.map(([x,n])=>Array.from({length:n},(_,i)=>{
-        const y=22+i*(136/(n-1||1));
+        const y=28+i*(136/(n-1||1));
         const c=x===30?'rgba(255,107,53,0.85)':x===174?'rgba(34,197,94,0.85)':'rgba(59,130,246,0.75)';
         return <circle key={`n${x}-${i}`} cx={x} cy={y} r="8" fill="rgba(10,14,35,0.92)" stroke={c} strokeWidth="1.5" filter="url(#ki-glow3)"><animate attributeName="opacity" values="0.55;1;0.55" dur={`${2.2+i*0.35}s`} repeatCount="indefinite"/></circle>;
       }))}
@@ -87,11 +91,12 @@ const NeuralNetSVG = ({ conf }: { conf: number }) => {
           <animate attributeName="opacity" values="0;1;1;0" dur={s.dur} begin={s.begin} repeatCount="indefinite"/>
         </circle>
       ))}
-      <rect x="15" y="162" width="170" height="5" rx="2.5" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.15)" strokeWidth="0.5"/>
-      <rect x="15" y="162" width={170*Math.min(1,conf)} height="5" rx="2.5" fill="url(#ki-grad3)">
+      {/* DQN Konfidenz-Balken mit Label */}
+      <text x="100" y="172" textAnchor="middle" fill="rgba(255,149,0,0.75)" fontSize="6.5" fontFamily="monospace" fontWeight="bold">DQN · Konfidenz {Math.round(Math.min(1,conf)*100)}% · RL-Agent v2.1</text>
+      <rect x="15" y="175" width="170" height="6" rx="3" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.2)" strokeWidth="0.6"/>
+      <rect x="15" y="175" width={170*Math.min(1,conf)} height="6" rx="3" fill="url(#ki-grad3)">
         <animate attributeName="width" from="0" to={String(170*Math.min(1,conf))} dur="2.2s" fill="freeze"/>
       </rect>
-      <text x="100" y="175" textAnchor="middle" fill="rgba(255,149,0,0.5)" fontSize="6.5" fontFamily="monospace">DQN · Konfidenz {Math.round(Math.min(1,conf)*100)}% · RL-Agent v2.1</text>
     </svg>
   );
 };
