@@ -1,4 +1,5 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useEffect, useRef, useState } from 'react';
+import TabHeader from './TabHeader';
 import DeviceManager from './DeviceManager';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -39,69 +40,62 @@ const DevicesDashboard = (): ReactElement => {
     <div style={{ background:'transparent', paddingBottom:48, width:'100%' }}>
       <style>{WAI}</style>
 
-      {/* ── 4K CINEMATIC HEADER ─────────────────────────────────────────── */}
-      <div style={{ position:'relative', width:'100%', minHeight:'clamp(260px,30vw,360px)', overflow:'hidden', background:'linear-gradient(160deg,#020617 0%,#04060e 100%)', borderBottom:'1px solid rgba(255,107,53,0.1)', marginBottom:32 }}>
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)', zIndex:3 }}/>
-        <div style={{ position:'absolute', top:'-30%', left:'-5%', width:'55%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(255,107,53,0.1),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', top:'-30%', right:'-5%', width:'45%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(30,64,175,0.1),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(255,107,53,0.18),transparent)', animation:'wai-scan 22s linear infinite', pointerEvents:'none', zIndex:2 }}/>
-        {[0,1,2,3,4].map(i=>(
-          <div key={i} style={{ position:'absolute', width:1.5, height:1.5, borderRadius:'50%', left:`${(i*43+9)%100}%`, top:`${(i*71+13)%100}%`, background:i%2===0?'#ff6b35':'#3b82f6', animation:`wai-drift ${32+(i%5)*4}s ease-in-out ${i*2.2}s infinite`, opacity:0.16, pointerEvents:'none' }}/>
-        ))}
-
-        {/* Device topology SVG */}
-        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'60%', opacity:0.88 }}>
+      <TabHeader
+        badge="Geräteverwaltung · MQTT/TLS"
+        title={['Geräteverwaltung', '& Netzwerk']}
+        subtitle="Echtzeitverwaltung aller Energiegeräte via MQTT über TLS mit zertifikatsbasierter Authentifizierung."
+        accentColor="#ff6b35"
+        gradientFrom="#ff6b35"
+        gradientTo="#a855f7"
+        tags={[['MQTT/TLS','#ff9500'],['ISO 21434','#a855f7'],['Echtzeit','#22c55e'],['Zero-Trust','#3b82f6']]}
+        stats={[
+          { label:'Geräte', value:String(devices.length), unit:'online', color:'#22c55e', icon:'📡' },
+          { label:'MQTT', value:'TLS 1.3', unit:'', color:'#ff9500', icon:'🔐' },
+          { label:'Latenz', value:'12', unit:'ms', color:'#3b82f6', icon:'⚡' },
+        ]}
+        ticker={[
+          { label:'Geräte', value:`${devices.length} online`, color:'#22c55e' },
+          { label:'MQTT', value:'TLS gesichert', color:'#ff9500' },
+          { label:'Latenz', value:'12 ms', color:'#3b82f6' },
+          { label:'ISO 21434', value:'konform', color:'#a855f7' },
+          { label:'Zero-Trust', value:'aktiv', color:'#ff6b35' },
+        ]}
+        visual={
           <svg viewBox="0 0 200 180" style={{ width:'100%', height:'100%' }} fill="none">
             <defs>
               <filter id="dev-glow"><feGaussianBlur stdDeviation="3" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
             </defs>
-            {/* Hub */}
-            <circle cx="100" cy="90" r="18" fill="rgba(22,30,65,0.88)" stroke="rgba(255,107,53,0.7)" strokeWidth="1.5" filter="url(#dev-glow)"/>
-            <circle cx="100" cy="90" r="18" fill="none" stroke="rgba(255,107,53,0.4)" strokeWidth="1.5">
-              <animate attributeName="r" values="18;36" dur="3s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0.3;0" dur="3s" repeatCount="indefinite"/>
+            {[40,80,120,160].map(x=><line key={x} x1={x} y1="20" x2={x} y2="155" stroke="rgba(255,107,53,0.06)" strokeWidth="0.5"/>)}
+            {[50,90,130].map(y=><line key={y} x1="10" y1={y} x2="190" y2={y} stroke="rgba(255,107,53,0.06)" strokeWidth="0.5"/>)}
+            <circle cx="100" cy="90" r="18" fill="rgba(22,30,65,0.88)" stroke="rgba(255,107,53,0.5)" strokeWidth="1.5"/>
+            <circle cx="100" cy="90" r="18" fill="none" stroke="rgba(255,107,53,0.25)" strokeWidth="28">
+              <animate attributeName="r" values="18;40" dur="3s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.25;0" dur="3s" repeatCount="indefinite"/>
             </circle>
-            <text x="100" y="93" textAnchor="middle" fill="#ff9500" fontSize="7" fontFamily="monospace" fontWeight="bold">EMS</text>
-            {/* 4 device nodes */}
+            <text x="100" y="93" textAnchor="middle" fill="#ff9500" fontSize="7" fontFamily="monospace" fontWeight="bold">HUB</text>
             {nodes.map(({label,angle,color})=>{
               const rad = (angle-90)*Math.PI/180;
               const nx = 100+62*Math.cos(rad);
               const ny = 90+62*Math.sin(rad);
+              const pathId = `dev-path-${label}`;
               return (
                 <g key={label}>
-                  <line x1="100" y1="90" x2={nx} y2={ny} stroke={`${color}30`} strokeWidth="1.2" strokeDasharray="4 3"/>
-                  <circle cx={nx} cy={ny} r="14" fill="rgba(22,30,65,0.88)" stroke={color} strokeWidth="1.5" filter="url(#dev-glow)"/>
+                  <path id={pathId} d={`M 100 90 L ${nx} ${ny}`} fill="none"/>
+                  <line x1="100" y1="90" x2={nx} y2={ny} stroke={`${color}30`} strokeWidth="1.2"/>
+                  <circle cx={nx} cy={ny} r="14" fill="rgba(22,30,65,0.88)" stroke={color} strokeWidth="1.5"/>
                   <text x={nx} y={ny+3} textAnchor="middle" fill={color} fontSize="7" fontFamily="monospace" fontWeight="bold">{label}</text>
-                  {/* signal pulse */}
                   <circle r="3" fill={color} filter="url(#dev-glow)" opacity="0.9">
-                    <animateMotion dur={`${3+nodes.indexOf({label,angle,color})*0.8}s`} repeatCount="indefinite" begin={`${nodes.indexOf({label,angle,color})*0.7}s`} path={`M100,90 L${nx},${ny}`}/>
-                    <animate attributeName="opacity" values="0;1;1;0" dur={`${3+nodes.indexOf({label,angle,color})*0.8}s`} repeatCount="indefinite"/>
+                    <animateMotion dur="3s" repeatCount="indefinite"><mpath xlinkHref={`#${pathId}`}/></animateMotion>
+                    <animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite"/>
                   </circle>
                 </g>
               );
             })}
-            <text x="100" y="170" textAnchor="middle" fill="rgba(255,149,0,0.4)" fontSize="6.5" fontFamily="monospace">{devices.length} Geräte verbunden · MQTT · TLS</text>
+            <text x="100" y="170" textAnchor="middle" fill="rgba(255,149,0,0.4)" fontSize="7" fontFamily="monospace">MQTT · TLS 1.3 · ISO 21434</text>
           </svg>
-        </div>
+        }
+      />
 
-        {/* Left content */}
-        <div style={{ position:'relative', zIndex:2, padding:'clamp(28px,4vw,52px) clamp(20px,3vw,48px)', display:'flex', flexDirection:'column', gap:16, maxWidth:'clamp(260px,46%,520px)' }}>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,107,53,0.08)', border:'1px solid rgba(255,107,53,0.28)', borderRadius:999, padding:'6px 16px', width:'fit-content', backdropFilter:'blur(12px)' }}>
-            <span style={{ width:7, height:7, borderRadius:'50%', background:'#ff6b35', boxShadow:'0 0 8px rgba(255,107,53,0.7)', display:'inline-block', animation:'wai-breathe 4s ease-in-out infinite' }}/>
-            <span style={{ fontSize:10, color:'rgba(255,149,0,0.9)', letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 }}>Geräteverwaltung · MQTT</span>
-          </div>
-          <h1 style={{ fontSize:'clamp(26px,3.8vw,52px)', fontWeight:900, lineHeight:1.06, letterSpacing:'-0.03em', margin:0, background:'linear-gradient(135deg,#fff5f0 0%,#ff9500 40%,#ff6b35 65%,#3b82f6 100%)', backgroundSize:'300% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'wai-shimmer 9s linear infinite' }}>
-            Geräteverwaltung<br/>& Netzwerk
-          </h1>
-          <p style={{ margin:0, fontSize:'clamp(13px,1.4vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Echtzeitüberwachung aller verbundenen Geräte — Zähler, PV, Speicher und EV über MQTT/TLS.</p>
-          <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:8 }}>
-            <span style={{ fontSize:13, fontFamily:'monospace', color:'#22c55e' }}>●</span>
-            <span style={{ fontSize:12, color:'rgba(248,250,252,0.4)' }}>{devices.length} Gerät{devices.length!==1?'e':''} aktiv</span>
-          </div>
-        </div>
-
-        <div aria-hidden="true" style={{ position:'absolute', zIndex:1, top:'50%', left:'50%', width:460, height:460, marginTop:-230, marginLeft:-230, borderRadius:'50%', border:'1px solid rgba(59,130,246,0.05)', animation:'wai-spin-slow 70s linear infinite', pointerEvents:'none' }}/>
-      </div>
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
       <div style={{ padding:'0 clamp(12px,2vw,24px)' }}>

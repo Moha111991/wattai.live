@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import TabHeader from './TabHeader';
 import PlanGate from './PlanGate';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -131,35 +132,32 @@ const KIDashboard = () => {
       <style>{WAI}</style>
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:0, opacity:.35 }}/>
 
-      {/* HEADER */}
-      <div style={{ position:'relative', zIndex:1, width:'100%', minHeight:'clamp(300px,32vw,400px)', overflow:'hidden', background:'linear-gradient(160deg,#020617 0%,#04060e 100%)', borderBottom:'1px solid rgba(255,107,53,0.1)', marginBottom:32 }}>
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)', zIndex:3 }}/>
-        <div style={{ position:'absolute', top:'-30%', left:'-5%', width:'55%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(255,107,53,0.1),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', top:'-30%', right:'-5%', width:'45%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(30,64,175,0.12),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(255,107,53,0.2),transparent)', animation:'wai-scan 18s linear infinite', pointerEvents:'none', zIndex:2 }}/>
-        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'58%', opacity:.9 }}>
-          <NeuralNetSVG conf={conf}/>
-        </div>
-        <div style={{ position:'relative', zIndex:2, padding:'clamp(32px,4vw,56px) clamp(24px,3vw,52px)', display:'flex', flexDirection:'column', gap:16, maxWidth:'clamp(280px,46%,560px)' }}>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,107,53,0.08)', border:'1px solid rgba(255,107,53,0.28)', borderRadius:999, padding:'6px 16px', width:'fit-content', backdropFilter:'blur(12px)' }}>
-            <span style={{ width:7, height:7, borderRadius:'50%', background:'#ff6b35', boxShadow:'0 0 8px rgba(255,107,53,0.8)', display:'inline-block', animation:'wai-breathe 3s ease-in-out infinite' }}/>
-            <span style={{ fontSize:10, color:'rgba(255,149,0,0.9)', letterSpacing:'0.16em', textTransform:'uppercase', fontWeight:700 }}>KI-Command Center · DQN v2.1 · Live</span>
-          </div>
-          <h1 style={{ fontSize:'clamp(28px,4vw,56px)', fontWeight:900, lineHeight:1.04, letterSpacing:'-0.035em', margin:0, background:'linear-gradient(135deg,#fff5f0 0%,#ff9500 38%,#ff6b35 62%,#3b82f6 100%)', backgroundSize:'300% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'wai-shimmer 8s linear infinite' }}>
-            KI-Empfehlung<br/>& Optimierung
-          </h1>
-          <p style={{ margin:0, fontSize:'clamp(13px,1.3vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Deep-Q-Network + LSTM analysiert Echtzeitstrom und liefert optimale<br/>Lade-, Speicher- und Einspeisestrategien für Ihr E-Auto-Ökosystem.</p>
-          <div style={{ display:'flex', gap:20, flexWrap:'wrap', marginTop:4 }}>
-            {[{label:'Ersparnis/Jahr',value:`€ ${liveMetrics.savings}`,color:'#22c55e'},{label:'CO₂ eingespart',value:`${liveMetrics.co2} kg`,color:'#3b82f6'},{label:'Effizienz',value:`${liveMetrics.efficiency}%`,color:'#ff9500'}].map(({label,value,color})=>(
-              <div key={label}><div style={{ fontSize:22, fontWeight:900, color, fontFamily:'monospace' }}>{value}</div><div style={{ fontSize:9, color:'rgba(248,250,252,0.35)', letterSpacing:'0.14em', textTransform:'uppercase', marginTop:2 }}>{label}</div></div>
-            ))}
-          </div>
-          <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginTop:4 }}>
-            <button type="button" className="wai-btn-o" onClick={fetchRec} disabled={loading} style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', animation:'wai-glow-o 5s ease-in-out infinite' }}>{loading?'⟳ Analysiere…':'🧠 Empfehlung laden'}</button>
-            <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>📈 Verlauf</button>
-          </div>
-        </div>
-        <div aria-hidden="true" style={{ position:'absolute', zIndex:1, top:'50%', left:'50%', width:500, height:500, marginTop:-250, marginLeft:-250, borderRadius:'50%', border:'1px solid rgba(59,130,246,0.04)', animation:'wai-spin-slow 80s linear infinite', pointerEvents:'none' }}/>
+      <TabHeader
+        badge="KI-Command Center · DQN v2.1"
+        title={['KI-Empfehlung', '& Optimierung']}
+        subtitle="Deep-Q-Network + LSTM analysiert Echtzeitstrom und liefert optimale Lade-, Speicher- und Einspeisestrategien für Ihr E-Auto-Ökosystem."
+        accentColor="#a855f7"
+        gradientFrom="#ff6b35"
+        gradientTo="#3b82f6"
+        tags={[['DQN v2.1','#a855f7'],['LSTM','#ff9500'],['ISO 21434','#3b82f6'],['Edge AI','#22c55e']]}
+        stats={[
+          { label:'Ersparnis/Jahr', value:`€ ${liveMetrics.savings}`, color:'#22c55e', icon:'💰' },
+          { label:'CO₂ eingespart', value:`${liveMetrics.co2}`, unit:'kg', color:'#3b82f6', icon:'🌿' },
+          { label:'Effizienz', value:`${liveMetrics.efficiency}`, unit:'%', color:'#ff9500', icon:'⚡' },
+        ]}
+        ticker={[
+          { label:'DQN-Agent', value:'aktiv', color:'#22c55e' },
+          { label:'Konfidenz', value:`${Math.round(conf * 100)}%`, color:'#a855f7' },
+          { label:'Ersparnis', value:`€ ${liveMetrics.savings}/Jahr`, color:'#22c55e' },
+          { label:'CO₂', value:`${liveMetrics.co2} kg gespart`, color:'#3b82f6' },
+          { label:'Solar-Eigenverbrauch', value:`${liveMetrics.efficiency}%`, color:'#ff9500' },
+        ]}
+        visual={<NeuralNetSVG conf={conf}/>}
+      />
+      {/* KI Action Buttons */}
+      <div style={{ display:'flex', gap:12, flexWrap:'wrap', padding:'0 clamp(12px,2vw,24px)', marginTop:-16, marginBottom:24, position:'relative', zIndex:2 }}>
+        <button type="button" className="wai-btn-o" onClick={fetchRec} disabled={loading} style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', animation:'wai-glow-o 5s ease-in-out infinite' }}>{loading?'⟳ Analysiere…':'🧠 Empfehlung laden'}</button>
+        <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>📈 Verlauf</button>
       </div>
 
       {/* CONTENT */}

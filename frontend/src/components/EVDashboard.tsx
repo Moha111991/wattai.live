@@ -1,3 +1,5 @@
+import { useState, useEffect, useRef } from 'react';
+import TabHeader from './TabHeader';
 import '../styles/ev-dashboard.css';
 import ElektroautoV2H from './ElektroautoV2H';
 import EVChargeControl from './EVChargeControl';
@@ -19,22 +21,47 @@ const WAI = `
 `;
 
 const EVDashboard = () => {
+  const [wsStatus, setWsStatus] = useState<'connecting'|'live'|'offline'>('connecting');
+  const wsRef = useRef<WebSocket | null>(null);
+  useEffect(() => {
+    const WS_BASE = import.meta.env.VITE_WS_URL || '';
+    const connect = () => {
+      if (wsRef.current) return;
+      const ws = new WebSocket(WS_BASE);
+      wsRef.current = ws;
+      ws.onopen = () => setWsStatus('live');
+      ws.onerror = () => { setWsStatus('offline'); ws.close(); };
+      ws.onclose = () => { setWsStatus('offline'); wsRef.current = null; setTimeout(connect, 4000); };
+    };
+    connect();
+    return () => wsRef.current?.close();
+  }, []);
   return (
     <div style={{ background:'transparent', paddingBottom:48, width:'100%' }}>
       <style>{WAI}</style>
 
-      {/* ── 4K CINEMATIC HEADER ─────────────────────────────────────────── */}
-      <div style={{ position:'relative', width:'100%', minHeight:'clamp(260px,30vw,360px)', overflow:'hidden', background:'linear-gradient(160deg,#020617 0%,#04060e 100%)', borderBottom:'1px solid rgba(255,107,53,0.1)', marginBottom:32 }}>
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)', zIndex:3 }}/>
-        <div style={{ position:'absolute', top:'-30%', left:'-5%', width:'55%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(255,107,53,0.1),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', top:'-30%', right:'-5%', width:'45%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(30,64,175,0.1),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(255,107,53,0.18),transparent)', animation:'wai-scan 22s linear infinite', pointerEvents:'none', zIndex:2 }}/>
-        {[0,1,2,3,4].map(i=>(
-          <div key={i} style={{ position:'absolute', width:1.5, height:1.5, borderRadius:'50%', left:`${(i*43+9)%100}%`, top:`${(i*71+13)%100}%`, background:i%2===0?'#ff6b35':'#3b82f6', animation:`wai-drift ${32+(i%5)*4}s ease-in-out ${i*2.2}s infinite`, opacity:0.16, pointerEvents:'none' }}/>
-        ))}
-
-        {/* EV Visual — ported from StartPage EvVisual() */}
-        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'60%', opacity:0.88 }}>
+      <TabHeader
+        badge="Elektroauto · V2H/V2G"
+        title={['Intelligente', 'Ladesteuerung']}
+        subtitle="Bidirektionales Laden, V2H/V2G-Integration und Echtzeit-Monitoring für Ihr Elektrofahrzeug."
+        accentColor="#3b82f6"
+        gradientFrom="#3b82f6"
+        gradientTo="#22c55e"
+        tags={[['ISO 15118','#ff9500'],['OCPP 2.0.1','#3b82f6'],['Bidirektional','#22c55e'],['V2H aktiv','#a855f7']]}
+        stats={[
+          { label:'SOC', value:'68', unit:'%', color:'#3b82f6', icon:'🔋' },
+          { label:'Ladeleistung', value:'11.0', unit:'kW', color:'#22c55e', icon:'⚡' },
+          { label:'V2H', value:'2.4', unit:'kW', color:'#ff9500', icon:'🏠' },
+        ]}
+        wsStatus={wsStatus}
+        ticker={[
+          { label:'SOC', value:'68%', color:'#3b82f6' },
+          { label:'Lädt mit', value:'11 kW', color:'#22c55e' },
+          { label:'V2H', value:'2.4 kW ins Haus', color:'#ff9500' },
+          { label:'ISO 15118', value:'aktiv', color:'#a855f7' },
+          { label:'OCPP 2.0.1', value:'verbunden', color:'#3b82f6' },
+        ]}
+        visual={
           <svg viewBox="0 0 200 180" style={{ width:'100%', height:'100%' }} fill="none">
             <defs>
               <linearGradient id="ev-body-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a2060"/><stop offset="100%" stopColor="#0a1230"/></linearGradient>
@@ -46,7 +73,6 @@ const EVDashboard = () => {
             <path d="M 24 110 L 24 82 Q 30 62 55 56 L 108 52 Q 134 52 148 66 L 162 82 L 162 110 Z" fill="url(#ev-body-grad)" stroke="rgba(59,130,246,0.6)" strokeWidth="1.5"/>
             <path d="M 55 56 Q 60 40 78 36 L 120 36 Q 138 38 148 52 L 108 52 Z" fill="rgba(20,40,100,0.9)" stroke="rgba(59,130,246,0.5)" strokeWidth="1"/>
             <path d="M 80 37 Q 82 40 86 52 L 108 52 Q 120 48 122 38 Z" fill="rgba(100,180,255,0.12)" stroke="rgba(100,200,255,0.3)" strokeWidth="0.6"/>
-            <path d="M 58 57 Q 62 48 76 44 L 80 53 Z" fill="rgba(100,180,255,0.1)" stroke="rgba(100,200,255,0.25)" strokeWidth="0.5"/>
             <line x1="108" y1="52" x2="110" y2="108" stroke="rgba(59,130,246,0.3)" strokeWidth="0.8"/>
             <circle cx="62" cy="112" r="16" fill="rgba(8,12,30,0.95)" stroke="rgba(59,130,246,0.5)" strokeWidth="1.5"/>
             <circle cx="62" cy="112" r="8" fill="rgba(20,40,80,0.9)" stroke="rgba(59,130,246,0.4)" strokeWidth="0.8"/>
@@ -70,27 +96,8 @@ const EVDashboard = () => {
             <text x="100" y="160" textAnchor="middle" fill="rgba(255,149,0,0.65)" fontSize="7" fontFamily="monospace">SOC 68 % · Lädt mit 11 kW</text>
             <text x="100" y="172" textAnchor="middle" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace">V2H aktiv · 2.4 kW ins Haus</text>
           </svg>
-        </div>
-
-        {/* Left content */}
-        <div style={{ position:'relative', zIndex:2, padding:'clamp(28px,4vw,52px) clamp(20px,3vw,48px)', display:'flex', flexDirection:'column', gap:16, maxWidth:'clamp(260px,46%,520px)' }}>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,107,53,0.08)', border:'1px solid rgba(255,107,53,0.28)', borderRadius:999, padding:'6px 16px', width:'fit-content', backdropFilter:'blur(12px)' }}>
-            <span style={{ width:7, height:7, borderRadius:'50%', background:'#ff6b35', boxShadow:'0 0 8px rgba(255,107,53,0.7)', display:'inline-block', animation:'wai-breathe 4s ease-in-out infinite' }}/>
-            <span style={{ fontSize:10, color:'rgba(255,149,0,0.9)', letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 }}>Elektroauto · V2H/V2G</span>
-          </div>
-          <h1 style={{ fontSize:'clamp(26px,3.8vw,52px)', fontWeight:900, lineHeight:1.06, letterSpacing:'-0.03em', margin:0, background:'linear-gradient(135deg,#fff5f0 0%,#ff9500 40%,#ff6b35 65%,#3b82f6 100%)', backgroundSize:'300% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'wai-shimmer 9s linear infinite' }}>
-            Intelligente<br/>Ladesteuerung
-          </h1>
-          <p style={{ margin:0, fontSize:'clamp(13px,1.4vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Bidirektionales Laden, V2H/V2G-Integration und Echtzeit-Monitoring für Ihr Elektrofahrzeug.</p>
-          <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:8 }}>
-            {[['ISO 15118','#ff9500'],['OCPP 2.0.1','#3b82f6'],['Bidirektional','#22c55e']].map(([l,c])=>(
-              <span key={l} style={{ fontSize:11, fontFamily:'monospace', fontWeight:600, color:c, background:`${c}12`, border:`1px solid ${c}30`, borderRadius:999, padding:'4px 12px' }}>{l}</span>
-            ))}
-          </div>
-        </div>
-
-        <div aria-hidden="true" style={{ position:'absolute', zIndex:1, top:'50%', left:'50%', width:460, height:460, marginTop:-230, marginLeft:-230, borderRadius:'50%', border:'1px solid rgba(59,130,246,0.05)', animation:'wai-spin-slow 70s linear infinite', pointerEvents:'none' }}/>
-      </div>
+        }
+      />
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
       <div style={{ padding:'0 clamp(12px,2vw,24px)', display:'flex', flexDirection:'column', gap:16 }}>

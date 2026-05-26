@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import TabHeader from './TabHeader';
 import BatteryWidget from './BatteryWidget';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 
@@ -623,103 +624,65 @@ const HouseholdDashboard = () => {
     <div style={{ background:'transparent', paddingBottom:48, width:'100%' }}>
       <style>{WAI}</style>
 
-      {/* ── 4K CINEMATIC HEADER ─────────────────────────────────────────── */}
-      <div style={{ position:'relative', width:'100%', minHeight:'clamp(260px,30vw,360px)', overflow:'hidden', background:'linear-gradient(160deg,#020617 0%,#04060e 100%)', borderBottom:'1px solid rgba(255,107,53,0.1)', marginBottom:32 }}>
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)', zIndex:3 }}/>
-        <div style={{ position:'absolute', top:'-30%', left:'-5%', width:'55%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(255,107,53,0.1),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', top:'-30%', right:'-5%', width:'45%', height:'170%', borderRadius:'50%', background:'radial-gradient(circle,rgba(30,64,175,0.1),transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,rgba(255,107,53,0.18),transparent)', animation:'wai-scan 22s linear infinite', pointerEvents:'none', zIndex:2 }}/>
-        {[0,1,2,3,4].map(i=>(
-          <div key={i} style={{ position:'absolute', width:1.5, height:1.5, borderRadius:'50%', left:`${(i*43+9)%100}%`, top:`${(i*71+13)%100}%`, background:i%2===0?'#ff6b35':'#3b82f6', animation:`wai-drift ${32+(i%5)*4}s ease-in-out ${i*2.2}s infinite`, opacity:0.16, pointerEvents:'none' }}/>
-        ))}
-
-        {/* Smart home SVG (SmartHomeVisual port) */}
-        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:'60%', opacity:0.88 }}>
+      <TabHeader
+        badge="Haushalt · Heimspeicher · IoT"
+        title={['Haushalt &', 'Heimspeicher']}
+        subtitle="Echtzeit-Energiefluss, Heimspeicher-Optimierung und intelligente IoT-Hausautomation."
+        accentColor="#ff6b35"
+        gradientFrom="#ff6b35"
+        gradientTo="#22c55e"
+        wsStatus={wsStatus}
+        tags={[['Heimspeicher','#22c55e'],['PV-Kopplung','#ff9500'],['IoT','#3b82f6'],['V2H','#a855f7']]}
+        stats={[
+          { label:'PV', value:wsStatus !== 'live' ? '– –' : `${(state.pv_power??0).toFixed(1)}`, unit:'kW', color:'#ff9500', icon:'☀️' },
+          { label:'Netz', value:wsStatus !== 'live' ? '– –' : `${(state.grid_power??0).toFixed(1)}`, unit:'kW', color:'#3b82f6', icon:'🔌' },
+          { label:'Speicher', value:wsStatus !== 'live' ? '– –' : `${state.battery_soc??0}`, unit:'%', color:'#22c55e', icon:'🔋' },
+        ]}
+        ticker={[
+          { label:'PV', value:wsStatus === 'live' ? `${(state.pv_power??0).toFixed(1)} kW` : '– –', color:'#ff9500' },
+          { label:'Netz', value:wsStatus === 'live' ? `${(state.grid_power??0).toFixed(1)} kW` : '– –', color:'#3b82f6' },
+          { label:'Speicher', value:wsStatus === 'live' ? `${state.battery_soc??0} %` : '– –', color:'#22c55e' },
+          { label:'IoT', value:`${iotNodes.length} Geräte`, color:'#a855f7' },
+          { label:'Status', value:wsStatus === 'live' ? 'Live' : wsStatus === 'connecting' ? 'Verbinde…' : 'Offline', color:wsStatus === 'live' ? '#22c55e' : '#ff6b35' },
+        ]}
+        visual={
           <svg viewBox="0 0 200 180" style={{ width:'100%', height:'100%' }} fill="none">
             <defs>
+              <linearGradient id="hh-roof-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a3020"/><stop offset="100%" stopColor="#0a1a10"/></linearGradient>
               <filter id="hh-glow"><feGaussianBlur stdDeviation="3" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
-              <linearGradient id="hh-roof" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff6b35" stopOpacity="0.7"/><stop offset="100%" stopColor="#1e40af" stopOpacity="0.5"/></linearGradient>
             </defs>
-            {/* House walls */}
-            <rect x="55" y="70" width="90" height="75" fill="rgba(22,30,65,0.82)" stroke="rgba(255,107,53,0.4)" strokeWidth="1.2"/>
-            {/* Roof */}
-            <polygon points="45,70 100,28 155,70" fill="url(#hh-roof)" stroke="rgba(255,107,53,0.5)" strokeWidth="1"/>
-            {/* Central hub (inside house) */}
-            <circle cx="100" cy="107" r="11" fill="rgba(22,30,65,0.88)" stroke="rgba(255,107,53,0.8)" strokeWidth="1.5" filter="url(#hh-glow)">
-              <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
-            </circle>
-            <text x="100" y="110" textAnchor="middle" fill="#ff9500" fontSize="6" fontFamily="monospace" fontWeight="bold">HUB</text>
-            {/* Windows */}
-            <rect x="66" y="80" width="20" height="16" rx="2" fill="rgba(255,149,0,0.08)" stroke="rgba(255,149,0,0.35)" strokeWidth="0.8">
-              <animate attributeName="fill" values="rgba(255,149,0,0.08);rgba(255,149,0,0.18);rgba(255,149,0,0.08)" dur="5s" repeatCount="indefinite"/>
-            </rect>
-            <rect x="114" y="80" width="20" height="16" rx="2" fill="rgba(255,149,0,0.08)" stroke="rgba(255,149,0,0.35)" strokeWidth="0.8">
-              <animate attributeName="fill" values="rgba(255,149,0,0.08);rgba(255,149,0,0.18);rgba(255,149,0,0.08)" dur="5s" begin="1.2s" repeatCount="indefinite"/>
-            </rect>
-            {/* Door */}
-            <rect x="87" y="115" width="26" height="30" rx="2" fill="rgba(30,64,175,0.15)" stroke="rgba(59,130,246,0.3)" strokeWidth="0.8"/>
-            {/* IoT nodes outside */}
+            {[40,80,120,160].map(x=><line key={x} x1={x} y1="20" x2={x} y2="155" stroke="rgba(255,107,53,0.05)" strokeWidth="0.5"/>)}
+            {[50,90,130].map(y=><line key={y} x1="10" y1={y} x2="190" y2={y} stroke="rgba(255,107,53,0.05)" strokeWidth="0.5"/>)}
+            <path d="M 60 110 L 60 75 L 100 45 L 140 75 L 140 110 Z" fill="url(#hh-roof-grad)" stroke="rgba(34,197,94,0.4)" strokeWidth="1.5"/>
+            <path d="M 56 77 L 100 44 L 144 77 Z" fill="rgba(20,50,30,0.9)" stroke="rgba(34,197,94,0.5)" strokeWidth="1"/>
+            {[0,1,2].map(i=>(
+              <rect key={i} x={65+i*23} y={82} width={18} height={10} rx="1" fill="rgba(255,149,0,0.18)" stroke="rgba(255,149,0,0.4)" strokeWidth="0.7">
+                <animate attributeName="fill" values="rgba(255,149,0,0.18);rgba(255,149,0,0.35);rgba(255,149,0,0.18)" dur={`${3+i}s`} repeatCount="indefinite"/>
+              </rect>
+            ))}
+            <rect x="78" y="95" width="14" height="15" rx="1" fill="rgba(100,200,255,0.18)" stroke="rgba(100,200,255,0.3)" strokeWidth="0.6"/>
+            <rect x="84" y="95" width="2" height="15" fill="rgba(100,200,255,0.15)"/>
+            <ellipse cx="100" cy="128" rx="44" ry="4" fill="rgba(34,197,94,0.12)"><animate attributeName="opacity" values="0.12;0.25;0.12" dur="5s" repeatCount="indefinite"/></ellipse>
             {iotNodes.map(({label,x,y,c})=>(
               <g key={label}>
-                <line x1="100" y1="107" x2={x} y2={y} stroke={`${c}25`} strokeWidth="1" strokeDasharray="3 3"/>
-                <circle cx={x} cy={y} r="11" fill="rgba(22,30,65,0.88)" stroke={c} strokeWidth="1.2" filter="url(#hh-glow)"/>
-                <text x={x} y={y+3} textAnchor="middle" fill={c} fontSize="5.5" fontFamily="monospace">{label.slice(0,5)}</text>
-                <circle r="2" fill={c} opacity="0.9">
-                  <animateMotion dur="3.5s" repeatCount="indefinite" path={`M100,107 L${x},${y}`}/>
-                  <animate attributeName="opacity" values="0;1;0" dur="3.5s" repeatCount="indefinite"/>
+                <circle cx={x} cy={y} r="8" fill="rgba(22,30,65,0.88)" stroke={c} strokeWidth="1.2"/>
+                <text x={x} y={y+3} textAnchor="middle" fill={c} fontSize="5.5" fontFamily="monospace" fontWeight="bold">{label}</text>
+                <circle r="2.5" fill={c} filter="url(#hh-glow)" opacity="0.8">
+                  <animateMotion dur="3s" repeatCount="indefinite">
+                    <mpath xlinkHref={"#hh-path-" + label}/>
+                  </animateMotion>
+                  <animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite"/>
                 </circle>
+                <path id={"hh-path-" + label} d={`M 100 90 L ${x} ${y}`} fill="none"/>
+                <line x1="100" y1="90" x2={x} y2={y} stroke={`${c}25`} strokeWidth="1"/>
               </g>
             ))}
-            <text x="100" y="175" textAnchor="middle" fill="rgba(255,149,0,0.4)" fontSize="6.5" fontFamily="monospace">SmartHome · {(state.home_power??0).toFixed(1)} kW Verbrauch</text>
+            <circle cx="100" cy="90" r="6" fill="rgba(22,30,65,0.9)" stroke="rgba(255,107,53,0.5)" strokeWidth="1"/>
+            <text x="100" y="170" textAnchor="middle" fill="rgba(255,149,0,0.4)" fontSize="7" fontFamily="monospace">Haushalt · Heimspeicher · IoT</text>
           </svg>
-        </div>
+        }
+      />
 
-        {/* Left content */}
-        <div style={{ position:'relative', zIndex:2, padding:'clamp(28px,4vw,52px) clamp(20px,3vw,48px)', display:'flex', flexDirection:'column', gap:16, maxWidth:'clamp(260px,46%,520px)' }}>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,107,53,0.08)', border:'1px solid rgba(255,107,53,0.28)', borderRadius:999, padding:'6px 16px', width:'fit-content', backdropFilter:'blur(12px)' }}>
-            <span style={{ width:7, height:7, borderRadius:'50%', background:'#ff6b35', boxShadow:'0 0 8px rgba(255,107,53,0.7)', display:'inline-block', animation:'wai-breathe 4s ease-in-out infinite' }}/>
-            <span style={{ fontSize:10, color:'rgba(255,149,0,0.9)', letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 }}>Haushalt · Heimspeicher · IoT</span>
-          </div>
-          {/* WebSocket Live-Status */}
-          <div style={{ display:'inline-flex', alignItems:'center', gap:7, borderRadius:999, padding:'5px 14px', width:'fit-content',
-            background: wsStatus === 'live' ? 'rgba(34,197,94,0.08)' : wsStatus === 'connecting' ? 'rgba(255,149,0,0.08)' : 'rgba(239,68,68,0.08)',
-            border: `1px solid ${wsStatus === 'live' ? 'rgba(34,197,94,0.3)' : wsStatus === 'connecting' ? 'rgba(255,149,0,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
-            {wsStatus === 'live' && <span style={{ width:7, height:7, borderRadius:'50%', background:'#22c55e', display:'inline-block', animation:'wai-pulse-green 2s ease-in-out infinite' }}/>}
-            {wsStatus === 'connecting' && <span style={{ width:8, height:8, borderRadius:'50%', border:'1.5px solid #ff9500', borderTopColor:'transparent', display:'inline-block', animation:'wai-spin-slow 0.7s linear infinite' }}/>}
-            {wsStatus === 'offline' && <span style={{ width:7, height:7, borderRadius:'50%', background:'#ef4444', display:'inline-block', animation:'wai-pulse-red 2s ease-in-out infinite' }}/>}
-            <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase',
-              color: wsStatus === 'live' ? '#22c55e' : wsStatus === 'connecting' ? '#ff9500' : '#ef4444' }}>
-              {wsStatus === 'live' ? 'Live' : wsStatus === 'connecting' ? 'Verbinde…' : 'Offline – Retry in 5s'}
-            </span>
-            {wsStatus === 'live' && lastUpdate !== '–' && (
-              <span style={{ fontSize:9, color:'rgba(34,197,94,0.55)', fontFamily:'monospace' }}>{lastUpdate}</span>
-            )}
-          </div>
-          <h1 style={{ fontSize:'clamp(26px,3.8vw,52px)', fontWeight:900, lineHeight:1.06, letterSpacing:'-0.03em', margin:0, background:'linear-gradient(135deg,#fff5f0 0%,#ff9500 40%,#ff6b35 65%,#3b82f6 100%)', backgroundSize:'300% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'wai-shimmer 9s linear infinite' }}>
-            Haushalt &<br/>Heimspeicher
-          </h1>
-          <p style={{ margin:0, fontSize:'clamp(13px,1.4vw,15px)', color:'rgba(248,250,252,0.5)', lineHeight:1.8 }}>Intelligente Hausautomation, Verbrauchsoptimierung und Heimspeicher-Management in Echtzeit.</p>
-          <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:4 }}>
-            {[
-              { label:'PV', value:`${(state.pv_power??0).toFixed(1)} kW`, c:'#ff9500' },
-              { label:'Netz', value:`${(state.grid_power??0).toFixed(1)} kW`, c:'#3b82f6' },
-              { label:'Speicher', value:`${state.battery_soc??0} %`, c:'#22c55e' },
-            ].map(({label,value,c})=>(
-              <div key={label} style={{ background:`${c}08`, border:`1px solid ${wsStatus === 'offline' ? 'rgba(239,68,68,0.15)' : `${c}20`}`, borderRadius:10, padding:'8px 14px', minWidth:80, transition:'border-color 0.4s' }}>
-                <div style={{ fontSize:9, color:`${c}80`, letterSpacing:'0.15em', textTransform:'uppercase' }}>{label}</div>
-                <div style={{ fontSize:16, fontWeight:800, color: wsStatus !== 'live' ? 'rgba(248,250,252,0.2)' : c, fontFamily:'monospace', transition:'color 0.4s' }}>
-                  {wsStatus !== 'live' ? '– –' : value}
-                </div>
-                {wsStatus === 'live' && (
-                  <div style={{ width:4, height:4, borderRadius:'50%', background:c, marginTop:4, animation:'wai-breathe 3s ease-in-out infinite' }}/>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div aria-hidden="true" style={{ position:'absolute', zIndex:1, top:'50%', left:'50%', width:460, height:460, marginTop:-230, marginLeft:-230, borderRadius:'50%', border:'1px solid rgba(59,130,246,0.05)', animation:'wai-spin-slow 70s linear infinite', pointerEvents:'none' }}/>
-      </div>
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
       <div style={{ padding:'0 clamp(12px,2vw,24px)', display:'flex', flexDirection:'column', gap:16 }}>
