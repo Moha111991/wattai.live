@@ -46,10 +46,28 @@ export default function Dashboard() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [devices, setDevices] = useState<DeviceSummary[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/devices`, { headers: { 'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE', 'Content-Type': 'application/json' } })
       .then(r => r.json()).then(d => setDevices(d.devices || []));
+  }, []);
+
+  useEffect(() => {
+    // Fallback: REST-Polling für Realtimedata wenn WS keine Daten sendet
+    const fetchRealtime = async () => {
+      try {
+        const r = await fetch(`${API_BASE}/realtime`);
+        if (r.ok) {
+          const d = await r.json();
+          if (d) setData(prev => prev ?? d);
+        }
+      } catch {}
+    };
+    fetchRealtime();
+    // Nach 3s Ladescreen auf jeden Fall ausblenden
+    const t = setTimeout(() => setReady(true), 3000);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -78,7 +96,7 @@ export default function Dashboard() {
 
   // Note: second WS removed — main WS above already handles onmessage
 
-  if (!data) {
+  if (!data && !ready) {
     return (
       <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#020617 0%,#04060e 100%)', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <style>{WAI}</style>
