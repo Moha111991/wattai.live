@@ -154,32 +154,43 @@ const EVChargeControl: React.FC = () => {
       <style>{WAI}</style>
 
       {/* Plan-Badge + Limit-Info */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, flexWrap:'wrap' }}>
-        <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.14em', textTransform:'uppercase',
-          color:planLimit.color, background:`${planLimit.color}15`, border:`1px solid ${planLimit.color}30`,
-          borderRadius:999, padding:'3px 12px' }}>
-          {planLimit.label}-Plan
-        </span>
-        <span style={{ fontSize:12, color:'rgba(248,250,252,0.45)' }}>
-          {planLimit.max === 1
-            ? '1 Wallbox steuerbar'
-            : planLimit.max >= 25
-            ? `bis ${planLimit.max} Wallboxen / Standort steuerbar`
-            : `bis ${planLimit.max} Wallboxen steuerbar`}
-        </span>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10,
+        background:`${planLimit.color}0d`, border:`1px solid ${planLimit.color}30`,
+        borderRadius:12, padding:'10px 16px', marginBottom:18 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+          <div style={{ width:8, height:8, borderRadius:'50%', background:planLimit.color,
+            boxShadow:`0 0 8px ${planLimit.color}80`, flexShrink:0,
+            animation:'wai-breathe 2.5s ease-in-out infinite' }}/>
+          <span style={{ fontSize:12, fontWeight:700, color:planLimit.color, letterSpacing:'0.08em' }}>
+            ✓ Ladesteuerung im {planLimit.label}-Plan inklusive
+          </span>
+          <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>
+            · {planLimit.max === 1
+              ? '1 Wallbox steuerbar'
+              : planLimit.max >= 25
+              ? `bis ${planLimit.max} Wallboxen / Standort`
+              : `bis ${planLimit.max} Wallboxen`}
+          </span>
+        </div>
         {planLimit.upgrade && (
           <span
             onClick={() => window.dispatchEvent(new CustomEvent('wattai:open-upgrade', { detail: { planId: planLimit.upgrade } }))}
-            style={{ fontSize:11, fontWeight:700, color:'#ff9500', cursor:'pointer', borderBottom:'1px dashed rgba(255,149,0,0.4)' }}>
-            ↑ Upgraden
+            style={{ fontSize:11, fontWeight:700, color:'#ff9500', cursor:'pointer',
+              background:'rgba(255,149,0,0.08)', border:'1px solid rgba(255,149,0,0.25)',
+              borderRadius:999, padding:'4px 12px', whiteSpace:'nowrap' }}>
+            ↑ Mehr Wallboxen? Upgraden
           </span>
         )}
       </div>
 
       {/* Subtitle */}
       <p style={{ margin:'0 0 20px', fontSize:13, color:'rgba(248,250,252,0.42)', lineHeight:1.75 }}>
-        Steuerung des Ladevorgangs (Start/Stop, Ladeleistung). Wallbox-Verbindung unter
-        Geräte verwalten. SOC aus Wallbox/Backend; während der Fahrt nur über Fahrzeug-BMS zugänglich.
+        Start/Stop des Ladevorgangs und Ladeleistung direkt steuern.
+        {!wallboxConnected && allWallboxes.length === 0 && (
+          <span style={{ color:'#f59e0b', fontWeight:600 }}>
+            {' '}→ Bitte zuerst im Tab <strong>Geräte → Wallbox / EVSE</strong> eine Wallbox verbinden.
+          </span>
+        )}
       </p>
 
       {/* Status row */}
