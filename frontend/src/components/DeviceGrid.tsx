@@ -58,7 +58,6 @@ const WAI_CSS = `
     .wai-card-cta{width:100%!important;flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important;align-items:center!important;justify-content:flex-start!important}
     .wai-card-cta .wai-btn-p,.wai-card-cta button{flex:1 1 auto!important;min-width:120px!important}
   }
-`;ortant}
   .wai-btn-s{transition:all .3s ease!important}
   .wai-btn-s:hover{background:rgba(255,255,255,0.09)!important;border-color:rgba(255,255,255,.22)!important}
   .wai-form-section{animation:wai-slide-in .3s ease!important}
