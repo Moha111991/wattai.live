@@ -105,7 +105,7 @@ const KIDashboard = () => {
 
   const fetchRec = async () => {
     setLoading(true);
-    try { const r=await fetch(`${API_URL}/api/ai/recommendation`); setRec(await r.json()); } catch { /* ignore */ } finally { setLoading(false); }
+    try { const r=await fetch(`${API_URL}/airecommendation`); setRec(await r.json()); } catch { /* ignore */ } finally { setLoading(false); }
   };
 
   useEffect(() => {
