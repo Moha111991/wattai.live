@@ -103,7 +103,7 @@ const DevicesDashboard = (): ReactElement => {
       <div style={{ padding:'0 clamp(12px,2vw,24px)' }}>
         <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
-          <div style={{ padding:'24px' }}>
+          <div style={{ padding:'clamp(12px,3vw,24px)' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(255,149,0,0.7)', marginBottom:18 }}>Geräte & Adapter</div>
             <DeviceManager/>
           </div>

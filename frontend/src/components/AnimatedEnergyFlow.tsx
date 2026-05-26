@@ -30,8 +30,8 @@ const AnimatedEnergyFlow = ({
   const isEVCharging = evPower > 0.1;
 
   return (
-    <div className="tab-modern-card glass-effect animate-page-enter" style={{ padding: '24px' }}>
-      <h2 className="tab-section-title neon-glow" style={{ marginBottom: '24px' }}>
+    <div className="tab-modern-card glass-effect animate-page-enter" style={{ padding: 'clamp(12px,3vw,24px)', overflowX: 'hidden' }}>
+      <h2 className="tab-section-title neon-glow" style={{ marginBottom: '16px', textAlign: 'center' }}>
         Energiefluss Live
       </h2>
 
@@ -40,12 +40,12 @@ const AnimatedEnergyFlow = ({
         width: '100%',
         maxWidth: '720px',
         margin: '0 auto',
-        minHeight: '400px',
+        minHeight: 'clamp(280px,60vw,400px)',
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gridTemplateRows: 'repeat(3, 1fr)',
-        gap: '12px',
-        padding: '12px',
+        gap: 'clamp(6px,2vw,12px)',
+        padding: 'clamp(6px,2vw,12px)',
         justifyItems: 'center',
         alignItems: 'center'
       }}>
@@ -60,15 +60,15 @@ const AnimatedEnergyFlow = ({
                 : 'rgba(15, 23, 42, 0.7)',
               border: `2px solid ${isPVActive ? '#fbbf24' : 'rgba(103, 232, 249, 0.2)'}`,
               borderRadius: '20px',
-              padding: '20px',
+              padding: 'clamp(8px,3vw,20px)',
               textAlign: 'center',
               boxShadow: isPVActive ? '0 0 40px rgba(245, 158, 11, 0.5)' : 'none',
               transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <div style={{ fontSize: '36px', marginBottom: '8px' }}>☀️</div>
-            <div style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '4px' }}>Solar</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>
+            <div style={{ fontSize: 'clamp(20px,5vw,36px)', marginBottom: 'clamp(4px,1vw,8px)' }}>☀️</div>
+            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>Solar</div>
+            <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {pvPower.toFixed(1)} kW
             </div>
           </div>
@@ -115,7 +115,7 @@ const AnimatedEnergyFlow = ({
                 : 'rgba(15, 23, 42, 0.7)',
               border: `2px solid ${isGridImport ? '#60a5fa' : isGridExport ? '#4ade80' : 'rgba(103, 232, 249, 0.2)'}`,
               borderRadius: '20px',
-              padding: '20px',
+              padding: 'clamp(8px,3vw,20px)',
               textAlign: 'center',
               boxShadow: isGridImport 
                 ? '0 0 40px rgba(59, 130, 246, 0.5)' 
@@ -125,13 +125,13 @@ const AnimatedEnergyFlow = ({
               transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <div style={{ fontSize: '36px', marginBottom: '8px' }}>
+            <div style={{ fontSize: 'clamp(20px,5vw,36px)', marginBottom: 'clamp(4px,1vw,8px)' }}>
               {isGridImport ? '⚡' : isGridExport ? '💸' : '🔌'}
             </div>
-            <div style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '4px' }}>
+            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>
               {isGridImport ? 'Bezug' : isGridExport ? 'Einspeisung' : 'Netz'}
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>
+            <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {Math.abs(gridPower).toFixed(1)} kW
             </div>
           </div>
@@ -203,15 +203,15 @@ const AnimatedEnergyFlow = ({
               background: 'linear-gradient(135deg, #67e8f9, #3b82f6)',
               border: '2px solid #67e8f9',
               borderRadius: '20px',
-              padding: '20px',
+              padding: 'clamp(8px,3vw,20px)',
               textAlign: 'center',
               boxShadow: '0 0 40px rgba(103, 232, 249, 0.5)',
               transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <div style={{ fontSize: '36px', marginBottom: '8px' }}>🏠</div>
-            <div style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '4px' }}>Haushalt</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>
+            <div style={{ fontSize: 'clamp(20px,5vw,36px)', marginBottom: 'clamp(4px,1vw,8px)' }}>🏠</div>
+            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>Haushalt</div>
+            <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {housePower.toFixed(1)} kW
             </div>
           </div>
@@ -229,7 +229,7 @@ const AnimatedEnergyFlow = ({
                 : 'rgba(15, 23, 42, 0.7)',
               border: `2px solid ${isBatteryCharging ? '#4ade80' : isBatteryDischarging ? '#fbbf24' : 'rgba(103, 232, 249, 0.2)'}`,
               borderRadius: '20px',
-              padding: '20px',
+              padding: 'clamp(8px,3vw,20px)',
               textAlign: 'center',
               boxShadow: isBatteryCharging 
                 ? '0 0 40px rgba(34, 197, 94, 0.5)' 
@@ -239,13 +239,13 @@ const AnimatedEnergyFlow = ({
               transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <div style={{ fontSize: '36px', marginBottom: '8px' }}>
+            <div style={{ fontSize: 'clamp(20px,5vw,36px)', marginBottom: 'clamp(4px,1vw,8px)' }}>
               {isBatteryCharging ? '🔋⚡' : isBatteryDischarging ? '🔋📉' : '🔋'}
             </div>
-            <div style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '4px' }}>
+            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>
               {isBatteryCharging ? 'Laden' : isBatteryDischarging ? 'Entladen' : 'Batterie'}
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>
+            <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {Math.abs(batteryPower).toFixed(1)} kW
             </div>
           </div>
@@ -319,19 +319,19 @@ const AnimatedEnergyFlow = ({
                 : 'rgba(15, 23, 42, 0.7)',
               border: `2px solid ${isEVCharging ? '#4ade80' : 'rgba(103, 232, 249, 0.2)'}`,
               borderRadius: '20px',
-              padding: '20px',
+              padding: 'clamp(8px,3vw,20px)',
               textAlign: 'center',
               boxShadow: isEVCharging ? '0 0 40px rgba(34, 197, 94, 0.5)' : 'none',
               transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <div style={{ fontSize: '36px', marginBottom: '8px' }}>
+            <div style={{ fontSize: 'clamp(20px,5vw,36px)', marginBottom: 'clamp(4px,1vw,8px)' }}>
               {isEVCharging ? '🚗⚡' : '🚗'}
             </div>
-            <div style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '4px' }}>
+            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>
               {isEVCharging ? 'Laden' : 'E-Auto'}
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>
+            <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {evPower.toFixed(1)} kW
             </div>
           </div>

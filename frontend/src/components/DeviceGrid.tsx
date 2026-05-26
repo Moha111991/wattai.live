@@ -724,10 +724,10 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 animation:'wai-scan 22s linear infinite', pointerEvents:'none', zIndex:0 }}/>
 
               {/* Main card row */}
-              <div style={{ display:'flex', alignItems:'center', padding:'16px 20px', gap:0, position:'relative', zIndex:1, flexWrap:'wrap', cursor:'default' }}>
+              <div style={{ display:'flex', alignItems:'center', padding:'clamp(10px,2vw,16px) clamp(10px,2.5vw,20px)', gap:0, position:'relative', zIndex:1, flexWrap:'wrap', cursor:'default' }}>
 
                 {/* ── Icon col ── */}
-                <div style={{ flexShrink:0, width:62, display:'flex', flexDirection:'column', alignItems:'center', gap:6, marginRight:16 }}>
+                <div style={{ flexShrink:0, width:54, display:'flex', flexDirection:'column', alignItems:'center', gap:4, marginRight:10 }}>
                   <div style={{ position:'relative', width:52, height:52 }}>
                     <svg width={52} height={52} viewBox="0 0 52 52" fill="none" style={{ position:'absolute', top:0, left:0 }}>
                       <polygon points="26,2 49,14 49,38 26,50 3,38 3,14"
@@ -751,7 +751,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Name + badge ── */}
-                <div style={{ flex:'1 1 140px', minWidth:0, marginRight:16 }}>
+                <div style={{ flex:'1 1 120px', minWidth:0, marginRight:10 }}>
                   <div style={{ fontSize:15, fontWeight:900, color:'#f8fafc', letterSpacing:'-0.02em', marginBottom:2 }}>
                     {slot.label}
                     {totalConnected > 1 && (
@@ -795,14 +795,14 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Specs mini grid ── */}
-                <div style={{ flex:1, minWidth:0, display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 8px', marginRight:16 }}>
+                <div style={{ flex:1, minWidth:0, display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px 6px', marginRight:8 }}>
                   {[
                     { label:'Protokoll', value: slot.protos.map(p=>({modbus:'Modbus',cloud:'Cloud',ocpp:'OCPP',sunspec:'SunSpec',mqtt:'MQTT'}[p]||p)).join(' · ') },
                     { label:'Standard', value: slot.standard },
                     { label:'Sicherheit', value:'TLS 1.3 · mTLS' },
                     { label:'Schnittstelle', value: device?.ip || slot.protocols_info },
                   ].map(({ label, value }) => (
-                    <div key={label} style={{ padding:'7px 9px', background:'rgba(255,255,255,0.025)', borderRadius:9, border:'1px solid rgba(255,255,255,0.045)' }}>
+                    <div key={label} style={{ padding:'clamp(4px,1.5vw,7px) clamp(5px,1.5vw,9px)', background:'rgba(255,255,255,0.025)', borderRadius:9, border:'1px solid rgba(255,255,255,0.045)' }}>
                       <div style={{ fontSize:9, color:'rgba(248,250,252,0.24)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:2 }}>{label}</div>
                       <div style={{ fontSize:10, fontWeight:700, color:'rgba(248,250,252,0.58)', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value}</div>
                     </div>
@@ -810,7 +810,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Metrics + CTA ── */}
-                <div style={{ flexShrink:0, width:118, display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
+                <div style={{ flexShrink:0, width:'clamp(90px,20vw,118px)', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
                   {isBatt && cState==='connected' ? (
                     <SOCRing soc={safeSoc} accent={slot.accent}/>
                   ) : (

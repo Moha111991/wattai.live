@@ -178,12 +178,12 @@ const KIDashboard = () => {
         {rec && (
           <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.15)', borderRadius:22, backdropFilter:'blur(14px)', overflow:'hidden', animation:'wai-slide-in .6s ease-out' }}>
             <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
-            <div style={{ padding:'24px 28px' }}>
+            <div style={{ padding:'clamp(16px,3vw,24px) clamp(14px,3vw,28px)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
                 <div style={{ width:8, height:8, borderRadius:'50%', background:'#22c55e', animation:'wai-breathe 2.5s ease-in-out infinite', boxShadow:'0 0 10px rgba(34,197,94,0.7)' }}/>
                 <span style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(255,149,0,0.8)' }}>Aktuelle KI-Empfehlung</span>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:16 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(min(160px,100%),1fr))', gap:12, marginBottom:16 }}>
                 {[{label:'Aktion',value:rec.action??'—',color:'#ff9500'},{label:'Einsparung',value:rec.savings_eur!=null?`€ ${rec.savings_eur.toFixed(2)}`:'—',color:'#22c55e'},{label:'Konfidenz',value:rec.confidence!=null?`${(rec.confidence*100).toFixed(0)}%`:'—',color:'#3b82f6'}].map(({label,value,color})=>(
                   <div key={label} style={{ background:'rgba(255,107,53,0.04)', border:'1px solid rgba(255,107,53,0.09)', borderRadius:14, padding:'16px 18px' }}>
                     <div style={{ fontSize:9, color:'rgba(248,250,252,0.35)', letterSpacing:'0.16em', textTransform:'uppercase', marginBottom:8 }}>{label}</div>
@@ -237,7 +237,7 @@ const KIDashboard = () => {
         {/* 24h Optimization Timeline */}
         <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:22, backdropFilter:'blur(14px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500,#22c55e)' }}/>
-          <div style={{ padding:'24px 28px' }}>
+          <div style={{ padding:'clamp(16px,3vw,24px) clamp(14px,3vw,28px)' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)', marginBottom:20, display:'flex', alignItems:'center', gap:10 }}>
               <div style={{ width:3, height:16, background:'linear-gradient(180deg,#3b82f6,#22c55e)', borderRadius:999 }}/>
               KI-Optimierungsplan · Nächste 24h
@@ -254,9 +254,9 @@ const KIDashboard = () => {
                 ].map(({ time, action, savings, icon, color }) => (
                   <div key={time} className="wai-ki-row" style={{ display:'flex', alignItems:'center', gap:14, padding:'10px 14px', borderRadius:10 }}>
                     <div style={{ width:32, height:32, borderRadius:9, background:`${color}15`, border:`1px solid ${color}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, flexShrink:0 }}>{icon}</div>
-                    <div style={{ width:115, fontSize:10, color:`${color}cc`, fontFamily:'monospace', fontWeight:700, flexShrink:0 }}>{time}</div>
+                    <div style={{ minWidth:0, width:'clamp(80px,20vw,115px)', fontSize:10, color:`${color}cc`, fontFamily:'monospace', fontWeight:700, flexShrink:0, overflow:'hidden' }}>{time}</div>
                     <div style={{ flex:1, fontSize:12, color:'rgba(248,250,252,0.65)' }}>{action}</div>
-                    <div style={{ fontSize:13, fontWeight:800, color, fontFamily:'monospace', flexShrink:0 }}>{savings}</div>
+                    <div style={{ fontSize:12, fontWeight:800, color, fontFamily:'monospace', flexShrink:0, textAlign:'right', minWidth:0 }}>{savings}</div>
                   </div>
                 ))}
               </div>
