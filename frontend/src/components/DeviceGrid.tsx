@@ -44,6 +44,25 @@ const WAI_CSS = `
   .wai-btn-s:hover{background:rgba(255,255,255,0.09)!important;border-color:rgba(255,255,255,.22)!important}
   .wai-form-section{animation:wai-slide-in .3s ease!important}
   .wai-input:focus{border-color:rgba(255,107,53,.5)!important;background:rgba(255,255,255,.07)!important;box-shadow:0 0 0 3px rgba(255,107,53,.12)!important}
+
+  /* ── Device card responsive layout ── */
+  .wai-card-row{display:flex;align-items:center;gap:0;position:relative;z-index:1;flex-wrap:nowrap}
+  .wai-card-specs{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;margin-right:8px}
+  .wai-card-cta{flex-shrink:0;width:clamp(90px,20vw,118px);display:flex;flex-direction:column;align-items:center;gap:6px}
+
+  @media(max-width:640px){
+    .wai-card-row{flex-direction:column!important;align-items:stretch!important;padding:14px 14px!important;gap:14px!important}
+    .wai-card-icon{width:100%!important;flex-direction:row!important;gap:12px!important;margin-right:0!important;align-items:center!important}
+    .wai-card-name{margin-right:0!important;flex:unset!important;width:100%!important}
+    .wai-card-specs{grid-template-columns:1fr 1fr!important;margin-right:0!important;width:100%!important;gap:6px!important}
+    .wai-card-cta{width:100%!important;flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important;align-items:center!important;justify-content:flex-start!important}
+    .wai-card-cta .wai-btn-p,.wai-card-cta button{flex:1 1 auto!important;min-width:120px!important}
+  }
+`;ortant}
+  .wai-btn-s{transition:all .3s ease!important}
+  .wai-btn-s:hover{background:rgba(255,255,255,0.09)!important;border-color:rgba(255,255,255,.22)!important}
+  .wai-form-section{animation:wai-slide-in .3s ease!important}
+  .wai-input:focus{border-color:rgba(255,107,53,.5)!important;background:rgba(255,255,255,.07)!important;box-shadow:0 0 0 3px rgba(255,107,53,.12)!important}
 `;
 
 /* ─── Device slot definitions ───────────────────────────────────── */
@@ -670,14 +689,14 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
       <canvas ref={canvasRef} style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:0 }}/>
 
       {/* Header bar */}
-      <div style={{ position:'relative', zIndex:1, display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+      <div style={{ position:'relative', zIndex:1, display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:3, height:22, background:'linear-gradient(180deg,#ff6b35,#ff9500)', borderRadius:999 }}/>
           <span style={{ fontSize:12, fontWeight:700, color:'rgba(248,250,252,0.5)', letterSpacing:'0.16em', textTransform:'uppercase' }}>
             {Object.values(connStates).filter(s=>s==='connected').length} / {SLOTS.length} Geräte verbunden
           </span>
         </div>
-        <div style={{ display:'flex', gap:6 }}>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           {['MQTT','TLS 1.3','ISO 15118','OCPP 2.0.1'].map(t => (
             <span key={t} style={{ fontSize:9, fontWeight:700, letterSpacing:'0.12em', color:'rgba(59,130,246,0.55)',
               background:'rgba(59,130,246,0.07)', border:'1px solid rgba(59,130,246,0.14)',
@@ -724,10 +743,10 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 animation:'wai-scan 22s linear infinite', pointerEvents:'none', zIndex:0 }}/>
 
               {/* Main card row */}
-              <div style={{ display:'flex', alignItems:'center', padding:'clamp(10px,2vw,16px) clamp(10px,2.5vw,20px)', gap:0, position:'relative', zIndex:1, flexWrap:'wrap', cursor:'default' }}>
+              <div className="wai-card-row" style={{ padding:'clamp(10px,2vw,16px) clamp(10px,2.5vw,20px)' }}>
 
                 {/* ── Icon col ── */}
-                <div style={{ flexShrink:0, width:54, display:'flex', flexDirection:'column', alignItems:'center', gap:4, marginRight:10 }}>
+                <div className="wai-card-icon" style={{ flexShrink:0, width:54, display:'flex', flexDirection:'column', alignItems:'center', gap:4, marginRight:10 }}>
                   <div style={{ position:'relative', width:52, height:52 }}>
                     <svg width={52} height={52} viewBox="0 0 52 52" fill="none" style={{ position:'absolute', top:0, left:0 }}>
                       <polygon points="26,2 49,14 49,38 26,50 3,38 3,14"
@@ -751,7 +770,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Name + badge ── */}
-                <div style={{ flex:'1 1 120px', minWidth:0, marginRight:10 }}>
+                <div className="wai-card-name" style={{ flex:'1 1 120px', minWidth:0, marginRight:10 }}>
                   <div style={{ fontSize:15, fontWeight:900, color:'#f8fafc', letterSpacing:'-0.02em', marginBottom:2 }}>
                     {slot.label}
                     {totalConnected > 1 && (
@@ -795,7 +814,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Specs mini grid ── */}
-                <div style={{ flex:1, minWidth:0, display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px 6px', marginRight:8 }}>
+                <div className="wai-card-specs" style={{ flex:1, minWidth:0, display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px 6px', marginRight:8 }}>
                   {[
                     { label:'Protokoll', value: slot.protos.map(p=>({modbus:'Modbus',cloud:'Cloud',ocpp:'OCPP',sunspec:'SunSpec',mqtt:'MQTT'}[p]||p)).join(' · ') },
                     { label:'Standard', value: slot.standard },
@@ -810,7 +829,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Metrics + CTA ── */}
-                <div style={{ flexShrink:0, width:'clamp(90px,20vw,118px)', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                <div className="wai-card-cta" style={{ flexShrink:0, width:'clamp(90px,20vw,118px)', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
                   {isBatt && cState==='connected' ? (
                     <SOCRing soc={safeSoc} accent={slot.accent}/>
                   ) : (
