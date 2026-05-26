@@ -24,9 +24,12 @@ const EVDashboard = () => {
   const [wsStatus, setWsStatus] = useState<'connecting'|'live'|'offline'>('connecting');
   const wsRef = useRef<WebSocket | null>(null);
   useEffect(() => {
-    const WS_BASE = import.meta.env.VITE_WS_URL || '';
+    const WS_BASE = import.meta.env.VITE_WS_URL
+      || (typeof window !== 'undefined'
+          ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
+          : '');
     const connect = () => {
-      if (wsRef.current) return;
+      if (!WS_BASE || wsRef.current) return;
       const ws = new WebSocket(WS_BASE);
       wsRef.current = ws;
       ws.onopen = () => setWsStatus('live');

@@ -76,11 +76,7 @@ export default function Dashboard() {
     return () => { wsRef.current?.close(); if (reconnectRef.current) clearTimeout(reconnectRef.current); clearInterval(id); };
   }, []);
 
-  useEffect(() => {
-    const ws = new WebSocket(WS_BASE);
-    ws.onmessage = (e) => { try { setData(JSON.parse(e.data)); } catch {} };
-    return () => ws.close();
-  }, []);
+  // Note: second WS removed — main WS above already handles onmessage
 
   if (!data) {
     return (
