@@ -330,7 +330,7 @@ function Tilt({ children, style = {} }: { children: React.ReactNode; style?: CSS
 
 // ── Technical Details Data ──────────────────────────────────────────────────────
 
-const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; protocols: string[]; plan: string }> = {
+const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; protocols: string[]; plan: string; workflow: { step: string; desc: string }[]; workflowTitle: string; workflowSubtitle: string; legal: string; legalTitle: string }> = {
   'pv-optimierung': {
     specs: [
       { label: 'Algorithmus', value: 'MPPT + ML-Ertragsprognose' },
@@ -342,6 +342,17 @@ const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; pro
     ],
     protocols: ['Modbus TCP', 'SunSpec', 'REST API', 'MQTT'],
     plan: 'Free',
+    workflowTitle: 'PV-Optimierung Pro',
+    workflowSubtitle: 'Maximieren Sie Ihren Solarertrag mit KI-gestützter Ertragsprognose und automatischer Eigenverbrauchsoptimierung.',
+    workflow: [
+      { step: 'Wechselrichter auswählen', desc: 'SMA, Fronius, Huawei, Enphase, Kostal – Hersteller und Modell auswählen' },
+      { step: 'Protokoll wählen', desc: 'Verbindungsart festlegen: Modbus TCP, SunSpec REST, MQTT oder Cloud-API' },
+      { step: 'IP-Adresse & Port konfigurieren', desc: 'Lokale Netzwerkverbindung oder Cloud-Zugangsdaten eingeben' },
+      { step: 'Echtzeit-Monitoring starten', desc: 'Ertrag, Einstrahlung, Wirkungsgrad live überwachen' },
+      { step: 'Prognose & Automatisierung aktivieren', desc: '72h-Wetterprognose für optimale Speicher- und Einspeisestrategie' },
+    ],
+    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
+    legal: 'Die Einspeisevergütung richtet sich nach § 21 EEG 2023. Dynamische Abregelung erfolgt gemäß § 9 EEG. Alle Messdaten werden DSGVO-konform verschlüsselt gespeichert. Die Anbindung an den Netzbetreiber (Einspeisemanagement) obliegt dem Anlagenbetreiber. WattAI übernimmt keine Haftung für Ertragsausfälle durch Netzanforderungen.',
   },
   'batteriemanagement': {
     specs: [
@@ -354,6 +365,17 @@ const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; pro
     ],
     protocols: ['CAN Bus', 'Modbus RTU', 'REST API', 'MQTT'],
     plan: 'Free',
+    workflowTitle: 'Batteriemanagement Pro',
+    workflowSubtitle: 'Verlängern Sie die Lebensdauer Ihres Speichers und senken Sie Stromkosten durch intelligente Ladestrategien.',
+    workflow: [
+      { step: 'Batteriespeicher auswählen', desc: 'LG RESU, BYD Box, Sonnen, Sungrow, SMA – Modell und Kapazität eingeben' },
+      { step: 'Kommunikationsprotokoll festlegen', desc: 'CAN Bus, Modbus RTU/TCP oder Cloud-API des Herstellers wählen' },
+      { step: 'SOC-Grenzen & Schutzparameter konfigurieren', desc: 'Min./Max. Ladezustand, SOH-Schutz und Temperaturgrenzen einstellen' },
+      { step: 'Tarifintegration aktivieren', desc: 'Tibber, aWATTar oder EPEX Spot verknüpfen für tarifsensibles Laden' },
+      { step: 'Automatisierung & Monitoring starten', desc: 'Lade-/Entladezyklen optimieren, Lebensdauerprognose überwachen' },
+    ],
+    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
+    legal: 'Batteriespeicher unterliegen der IEC 62619 (Sicherheitsanforderungen). Garantiebedingungen der Hersteller (z.B. LG, BYD) bleiben durch WattAI unberührt. Alle Steuerbefehle erfolgen im Rahmen der vom Hersteller freigegebenen Parameter. Datenübertragung erfolgt verschlüsselt (TLS 1.3) gemäß DSGVO. Netzdienste (Regelenergie) erfordern separate Verträge mit dem Netzbetreiber.',
   },
   'ev-v2h-v2g': {
     specs: [
@@ -366,6 +388,17 @@ const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; pro
     ],
     protocols: ['OCPP 1.6/2.0.1', 'ISO 15118', 'MQTT', 'Modbus TCP'],
     plan: 'Pro (Multi-EV)',
+    workflowTitle: 'EV · V2H · V2G Pro',
+    workflowSubtitle: 'Laden Sie Ihr Elektroauto intelligent und nutzen Sie es als bidirektionalen Energiespeicher für Haus und Netz.',
+    workflow: [
+      { step: 'Wallbox & Fahrzeug auswählen', desc: 'Wallbe, ABB Terra, KEBA, Easee – Modell und EV-Profil anlegen' },
+      { step: 'Protokoll konfigurieren', desc: 'OCPP 2.0.1 oder ISO 15118 Plug & Charge aktivieren' },
+      { step: 'Ladeprofil & SOC-Ziel festlegen', desc: 'Abfahrtszeit, Mindest-SOC und Ladebudget definieren' },
+      { step: 'V2H / V2G freigeben', desc: 'Bidirektionales Laden aktivieren und Rückspeise-Schwellwert einstellen' },
+      { step: 'Spot-Tarif-Laden & Monitoring', desc: 'Günstige Ladezeitfenster automatisch nutzen, Ladehistorie einsehen' },
+    ],
+    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
+    legal: 'Bidirektionales Laden (V2G) erfordert eine Genehmigung des Netzbetreibers gemäß § 14a EnWG. Die Wallbox muss für V2G zertifiziert sein (ISO 15118-20). Netzrückspeisung unterliegt dem Erneuerbare-Energien-Gesetz (EEG). WattAI agiert als HEMS gemäß EN 50631-1. Alle Fahrzeug- und Ladedaten werden DSGVO-konform verarbeitet.',
   },
   'smart-home': {
     specs: [
@@ -378,6 +411,17 @@ const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; pro
     ],
     protocols: ['KNX', 'Z-Wave', 'Zigbee', 'REST/MQTT'],
     plan: 'Pro',
+    workflowTitle: 'Hausautomation Pro',
+    workflowSubtitle: 'Steuern Sie Wärmepumpe, Waschmaschine, Trockner, Spülmaschine und mehr automatisch in günstige Zeitfenster.',
+    workflow: [
+      { step: 'Gerät auswählen', desc: 'Wärmepumpe, Waschmaschine, Trockner, Spülmaschine oder weiteres IoT-Gerät hinzufügen' },
+      { step: 'Protokoll wählen', desc: 'KNX, Zigbee, Z-Wave, Home Assistant, openHAB oder Loxone als Kommunikationsweg festlegen' },
+      { step: 'Gerät koppeln & freigeben', desc: 'Netzwerkverbindung herstellen, Gerät authentifizieren und Steuerrechte erteilen' },
+      { step: 'Automatisierung aktivieren', desc: 'Zeitfenster, PV-Überschuss-Trigger oder dynamischen Stromtarif als Auslöser konfigurieren' },
+      { step: 'Live-Status & Verbrauch überwachen', desc: 'Echtzeitdaten, Verbrauchshistorie und Einsparpotenzial im Dashboard einsehen' },
+    ],
+    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
+    legal: 'Die Integration von IoT-Geräten erfolgt gemäß DSGVO und IT-Sicherheitsgesetz 2.0. Alle Daten werden verschlüsselt übertragen (TLS 1.3). Kompatibel mit deutschen Smart-Home-Standards (KNX, EN 50631-1). Die Steuerung von Wärmepumpen über SG-Ready ist gemäß VDE-AR-N 4105 zulässig. WattAI haftet nicht für Schäden durch fehlerhafte Gerätekonfiguration des Nutzers.',
   },
   'ki-empfehlung': {
     specs: [
@@ -390,6 +434,17 @@ const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; pro
     ],
     protocols: ['ONNX', 'TFLite', 'REST API', 'WebSocket'],
     plan: 'Pro',
+    workflowTitle: 'KI-Empfehlung Pro',
+    workflowSubtitle: 'Erhalten Sie optimale Lade-, Speicher- und Einspeisestrategien durch Deep-Q-Network-basierte Entscheidungen in Echtzeit.',
+    workflow: [
+      { step: 'KI-Analyse starten', desc: 'DQN-Agent liest Echtzeitdaten: Strompreis, SOC, PV-Prognose, Wetter' },
+      { step: 'Konfidenz & Empfehlung prüfen', desc: 'Empfehlung mit Konfidenz-Score und Begründung einsehen und verstehen' },
+      { step: 'Aktion bestätigen oder automatisieren', desc: 'Manuell bestätigen oder vollautomatische Ausführung durch HEMS aktivieren' },
+      { step: 'Feedback & Lernzyklus', desc: 'Ergebnis bewerten – verbessert das KI-Modell beim wöchentlichen Re-Training' },
+      { step: 'Verlauf & Reporting', desc: 'Alle Empfehlungen, Einsparungen und CO₂-Reduktionen im Verlauf nachverfolgen' },
+    ],
+    legalTitle: 'Rechtlicher Hinweis (Deutschland & EU)',
+    legal: 'WattAI-Empfehlungen sind Optimierungsvorschläge – keine Finanz- oder Rechtsberatung. Der Nutzer trägt die Verantwortung für die Umsetzung. KI-Systeme unterliegen der EU-KI-Verordnung (AI Act, Risikoklasse „niedrig"). Alle Trainingsdaten werden anonymisiert und DSGVO-konform verarbeitet. Modellentscheidungen sind nachvollziehbar (Konfidenz-Score, XAI-Erklärung).',
   },
   'flottenmanagement': {
     specs: [
@@ -402,6 +457,17 @@ const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; pro
     ],
     protocols: ['REST API', 'MQTT', 'Webhook', 'OpenAPI 3.1'],
     plan: 'Business',
+    workflowTitle: 'Flottenmanagement Business',
+    workflowSubtitle: 'Verwalten Sie mehrere EV-Standorte zentral, optimieren Sie den Ladevorgang und erstellen Sie revisionssichere Berichte.',
+    workflow: [
+      { step: 'Standort & Infrastruktur anlegen', desc: 'Ladestandorte mit Adresse, Wallbox-Anzahl und Netzanschluss-Kapazität registrieren' },
+      { step: 'Fahrzeuge & Fahrer registrieren', desc: 'EV-Profile, RFID-Karten und Fahrerberechtigungen hinterlegen' },
+      { step: 'Dispatch-Regeln konfigurieren', desc: 'Lastspitzen-Capping, Prioritätsregeln und KI-Optimierung aktivieren' },
+      { step: 'SLA-Monitoring & Alerting', desc: 'Verfügbarkeits-SLA überwachen, bei Ausfall automatisch E-Mail/Push senden' },
+      { step: 'Reporting & Compliance-Export', desc: 'CO₂-Bilanz, Kostenreport und revisionssicheres Logging als CSV/PDF exportieren' },
+    ],
+    legalTitle: 'Rechtlicher Hinweis (Deutschland & EU)',
+    legal: 'Flottenmanagement-Daten werden ISO 27001-konform geloggt und 10 Jahre revisionssicher archiviert (GoBD). Fahrzeug- und Fahrerdaten unterliegen der DSGVO – Auftragsverarbeitungsvertrag (AVV) auf Anfrage verfügbar. Ladeinfrastruktur muss gemäß AFIR (Alternative Fuels Infrastructure Regulation) registriert sein. Die Abrechnung von Ladevorgängen erfordert eine eichrechtskonforme Messung (MID-Zulassung der Wallbox).',
   },
 };
 
@@ -435,7 +501,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
           position: 'relative', width: '100%', maxWidth: 620,
           background: 'linear-gradient(160deg,rgba(10,6,30,0.97),rgba(4,6,20,0.99))',
           border: '1px solid rgba(255,107,53,0.3)',
-          borderRadius: 24, overflow: 'hidden',
+          borderRadius: 24, overflow: 'auto', maxHeight: '90vh',
           boxShadow: '0 0 80px rgba(255,107,53,0.15), 0 40px 80px rgba(0,0,0,0.7)',
         }}
       >
@@ -507,6 +573,44 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
                 fontFamily: 'monospace',
               }}>{p}</span>
             ))}
+          </div>
+        </div>
+
+        {/* Workflow */}
+        <div style={{ padding: '0 28px 0', borderTop: '1px solid rgba(255,107,53,0.08)' }}>
+          <div style={{ padding: '20px 0 4px' }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: '#ff9500', marginBottom: 4 }}>
+              {data.workflowTitle}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(248,250,252,0.45)', marginBottom: 16, lineHeight: 1.6 }}>
+              {data.workflowSubtitle}
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,149,0,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12, fontWeight: 700 }}>
+              IoT-Workflow:
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {data.workflow.map((w, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#ff9500', fontFamily: 'monospace' }}>
+                    {i + 1}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#f0f4ff', marginBottom: 2 }}>{w.step}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(248,250,252,0.4)', lineHeight: 1.5 }}>{w.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Legal notice */}
+        <div style={{ margin: '0 28px 24px', background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 14, padding: '14px 16px' }}>
+          <div style={{ fontSize: 10, color: 'rgba(59,130,246,0.7)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
+            ⚖️ {data.legalTitle}
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(248,250,252,0.45)', lineHeight: 1.7 }}>
+            {data.legal}
           </div>
         </div>
 
