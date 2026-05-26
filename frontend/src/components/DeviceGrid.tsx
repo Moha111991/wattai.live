@@ -54,7 +54,8 @@ const WAI_CSS = `
     .wai-card-row{flex-direction:column!important;align-items:stretch!important;padding:14px 14px!important;gap:14px!important}
     .wai-card-icon{width:100%!important;flex-direction:row!important;gap:12px!important;margin-right:0!important;align-items:center!important}
     .wai-card-name{margin-right:0!important;flex:unset!important;width:100%!important}
-    .wai-card-specs{grid-template-columns:1fr 1fr!important;margin-right:0!important;width:100%!important;gap:6px!important}
+    .wai-card-specs{grid-template-columns:1fr 1fr!important;margin-right:0!important;width:100%!important;gap:6px!important;overflow:visible!important}
+    .wai-card-specs > div{overflow:visible!important;height:auto!important;min-height:0!important}
     .wai-card-cta{width:100%!important;flex-direction:row!important;flex-wrap:wrap!important;gap:8px!important;align-items:center!important;justify-content:flex-start!important}
     .wai-card-cta .wai-btn-p,.wai-card-cta button{flex:1 1 auto!important;min-width:120px!important}
   }
@@ -822,7 +823,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                   ].map(({ label, value }) => (
                     <div key={label} style={{ padding:'clamp(4px,1.5vw,7px) clamp(5px,1.5vw,9px)', background:'rgba(255,255,255,0.025)', borderRadius:9, border:'1px solid rgba(255,255,255,0.045)' }}>
                       <div style={{ fontSize:9, color:'rgba(248,250,252,0.24)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:2 }}>{label}</div>
-                      <div style={{ fontSize:10, fontWeight:700, color:'rgba(248,250,252,0.58)', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value}</div>
+                      <div style={{ fontSize:10, fontWeight:700, color:'rgba(248,250,252,0.58)', fontFamily:'monospace', overflowWrap:'break-word', wordBreak:'break-word', whiteSpace:'normal', lineHeight:1.4 }}>{value}</div>
                     </div>
                   ))}
                 </div>
