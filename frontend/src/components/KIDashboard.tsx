@@ -26,6 +26,21 @@ const WAI = `
   .wai-ai-mod:hover{transform:translateY(-2px)!important}
   .wai-ki-row{transition:background .3s!important}
   .wai-ki-row:hover{background:rgba(255,107,53,0.06)!important}
+
+  /* ── AI Module card responsive ── */
+  .wai-mod-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+  .wai-mod-meta{flex:1;min-width:0}
+  .wai-mod-title{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+  .wai-mod-metric{text-align:right;flex-shrink:0}
+  .wai-mod-tags{display:flex;gap:6px;flex-wrap:wrap}
+
+  @media(max-width:640px){
+    .wai-mod-header{flex-wrap:wrap!important;gap:10px!important}
+    .wai-mod-metric{flex-basis:100%!important;text-align:left!important;display:flex!important;align-items:baseline!important;gap:8px!important;flex-direction:row!important;margin-top:2px!important}
+    .wai-mod-metric > div:first-child{font-size:15px!important}
+    .wai-mod-metric > div:last-child{font-size:9px!important}
+    .wai-mod-tags span{font-size:9px!important;white-space:nowrap!important}
+  }
 `;
 
 interface KIRec { action?: string; savings_eur?: number; confidence?: number; explanation?: string; }
@@ -210,22 +225,22 @@ const KIDashboard = () => {
                 <div style={{ height:2, background:`linear-gradient(90deg,${mod.accent},${mod.accent}44)` }}/>
                 <div style={{ position:'absolute', left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${mod.accent}18,transparent)`, animation:'wai-scan 18s linear infinite', pointerEvents:'none' }}/>
                 <div style={{ padding:'18px 20px', position:'relative', zIndex:1 }}>
-                  <div style={{ display:'flex', alignItems:'flex-start', gap:14, marginBottom:14 }}>
+                  <div className="wai-mod-header">
                     <div style={{ width:44, height:44, borderRadius:12, background:`${mod.accent}15`, border:`1px solid ${mod.accent}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>{mod.icon}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                    <div className="wai-mod-meta">
+                      <div className="wai-mod-title">
                         <span style={{ fontWeight:800, fontSize:14, color:'#f8fafc' }}>{mod.title}</span>
                         <StatusBadge status={mod.status}/>
                       </div>
-                      <div style={{ fontSize:10, color:'rgba(248,250,252,0.35)', letterSpacing:'0.06em' }}>{mod.subtitle}</div>
+                      <div style={{ fontSize:10, color:'rgba(248,250,252,0.35)', letterSpacing:'0.06em', overflowWrap:'break-word' }}>{mod.subtitle}</div>
                     </div>
-                    <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontSize:18, fontWeight:900, color:mod.accent, fontFamily:'monospace' }}>{mod.metric}</div>
-                      <div style={{ fontSize:9, color:'rgba(248,250,252,0.3)', letterSpacing:'0.12em', textTransform:'uppercase' }}>{mod.metricLabel}</div>
+                    <div className="wai-mod-metric">
+                      <div style={{ fontSize:18, fontWeight:900, color:mod.accent, fontFamily:'monospace', whiteSpace:'nowrap' }}>{mod.metric}</div>
+                      <div style={{ fontSize:9, color:'rgba(248,250,252,0.3)', letterSpacing:'0.12em', textTransform:'uppercase', whiteSpace:'nowrap' }}>{mod.metricLabel}</div>
                     </div>
                   </div>
-                  {activeModule===mod.id && <p style={{ margin:'0 0 14px', fontSize:12, color:'rgba(248,250,252,0.55)', lineHeight:1.7, animation:'wai-slide-in .3s ease-out' }}>{mod.description}</p>}
-                  <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                  {activeModule===mod.id && <p style={{ margin:'0 0 14px', fontSize:12, color:'rgba(248,250,252,0.55)', lineHeight:1.7, animation:'wai-slide-in .3s ease-out', overflowWrap:'break-word' }}>{mod.description}</p>}
+                  <div className="wai-mod-tags">
                     {mod.tags.map(tag=><span key={tag} style={{ fontSize:9, fontWeight:700, letterSpacing:'0.14em', color:`${mod.accent}cc`, background:`${mod.accent}10`, border:`1px solid ${mod.accent}22`, borderRadius:4, padding:'3px 8px', textTransform:'uppercase' }}>{tag}</span>)}
                   </div>
                 </div>
