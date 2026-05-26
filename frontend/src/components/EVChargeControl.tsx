@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { API_URL, WS_URL } from '../lib/api';
+import { usePlan } from '../context/PlanContext';
 
 interface EVState { ev_soc: number; ev_power_kw: number; ev_charging: boolean; }
 interface WallboxInfo { id?: string; type?: string; status?: string; enabled?: boolean; brand?: string; model?: string; ip?: string; }
 interface DevicesResponse { devices?: WallboxInfo[]; }
 interface ChargingResponse { soc?: number; power_kw?: number; }
+
+/* ── Plan-Limits: Wie viele Wallboxen je Plan steuerbar ── */
+const PLAN_LIMITS: Record<string, { max: number; label: string; color: string; upgrade?: string }> = {
+  free:     { max: 1,  label: 'Free',     color: '#67e8f9', upgrade: 'pro' },
+  pro:      { max: 3,  label: 'Pro',      color: '#06b6d4', upgrade: 'business' },
+  business: { max: 25, label: 'Business', color: '#a78bfa' },
+};
 
 /* ── Nur wirklich verbundene Wallboxen zählen ── */
 const isReallyConnected = (w: WallboxInfo) =>
@@ -26,6 +34,9 @@ const WAI = `
 `;
 
 const EVChargeControl: React.FC = () => {
+  const { planId: plan } = usePlan();
+  const planLimit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+
   const [evState, setEvState] = useState<EVState>({ ev_soc: 0, ev_power_kw: 0, ev_charging: false });
   const [loading, setLoading] = useState(false);
   const [power, setPower] = useState<number>(11);
@@ -99,7 +110,10 @@ const EVChargeControl: React.FC = () => {
   }, []);
 
   /* ── Abgeleitete Werte ── */
-  const connectedWallboxes = allWallboxes.filter(isReallyConnected);
+  const allConnected = allWallboxes.filter(isReallyConnected);
+  // Plan-Limit anwenden: nur max. N Wallboxen steuerbar
+  const connectedWallboxes = allConnected.slice(0, planLimit.max);
+  const lockedWallboxes = allConnected.slice(planLimit.max); // über dem Limit
   const selectedWallbox = connectedWallboxes.find(w => w.id === selectedWallboxId) ?? connectedWallboxes[0] ?? null;
   const wallboxConnected = selectedWallbox !== null;
   // Wallboxen, die in der API existieren aber nicht verbunden sind
@@ -138,6 +152,29 @@ const EVChargeControl: React.FC = () => {
   return (
     <div>
       <style>{WAI}</style>
+
+      {/* Plan-Badge + Limit-Info */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16, flexWrap:'wrap' }}>
+        <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.14em', textTransform:'uppercase',
+          color:planLimit.color, background:`${planLimit.color}15`, border:`1px solid ${planLimit.color}30`,
+          borderRadius:999, padding:'3px 12px' }}>
+          {planLimit.label}-Plan
+        </span>
+        <span style={{ fontSize:12, color:'rgba(248,250,252,0.45)' }}>
+          {planLimit.max === 1
+            ? '1 Wallbox steuerbar'
+            : planLimit.max >= 25
+            ? `bis ${planLimit.max} Wallboxen / Standort steuerbar`
+            : `bis ${planLimit.max} Wallboxen steuerbar`}
+        </span>
+        {planLimit.upgrade && (
+          <span
+            onClick={() => window.dispatchEvent(new CustomEvent('wattai:open-upgrade', { detail: { planId: planLimit.upgrade } }))}
+            style={{ fontSize:11, fontWeight:700, color:'#ff9500', cursor:'pointer', borderBottom:'1px dashed rgba(255,149,0,0.4)' }}>
+            ↑ Upgraden
+          </span>
+        )}
+      </div>
 
       {/* Subtitle */}
       <p style={{ margin:'0 0 20px', fontSize:13, color:'rgba(248,250,252,0.42)', lineHeight:1.75 }}>
@@ -325,6 +362,30 @@ const EVChargeControl: React.FC = () => {
 
         {wallboxError && (
           <div style={{ color:'#f87171', marginTop:6, fontSize:11 }}>⚠ {wallboxError}</div>
+        )}
+
+        {/* Gesperrte Wallboxen über dem Plan-Limit */}
+        {lockedWallboxes.length > 0 && (
+          <div style={{ marginTop:10, padding:'10px 14px', background:'rgba(167,139,250,0.06)', border:'1px solid rgba(167,139,250,0.2)', borderRadius:10 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'rgba(167,139,250,0.8)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>
+              🔒 {lockedWallboxes.length} weitere Wallbox{lockedWallboxes.length > 1 ? 'en' : ''} — Plan-Limit erreicht
+            </div>
+            {lockedWallboxes.map(w => (
+              <div key={w.id ?? w.ip} style={{ fontSize:11, color:'rgba(248,250,252,0.3)', fontFamily:'monospace', padding:'3px 0' }}>
+                🔌 {w.brand ?? 'Wallbox'} {w.model ?? ''}{w.ip ? ` · ${w.ip}` : ''}
+              </div>
+            ))}
+            <div style={{ marginTop:8, fontSize:11, color:'rgba(248,250,252,0.4)', lineHeight:1.5 }}>
+              {plan === 'free'
+                ? 'Mit dem Pro-Plan können Sie bis zu 3 Wallboxen gleichzeitig steuern.'
+                : 'Mit dem Business-Plan können Sie bis zu 25 Wallboxen / Standort steuern.'}
+              <span
+                onClick={() => window.dispatchEvent(new CustomEvent('wattai:open-upgrade', { detail: { planId: planLimit.upgrade } }))}
+                style={{ marginLeft:8, color:'#ff9500', fontWeight:700, cursor:'pointer', borderBottom:'1px dashed rgba(255,149,0,0.4)' }}>
+                Jetzt upgraden →
+              </span>
+            </div>
+          </div>
         )}
       </div>
     </div>
