@@ -181,7 +181,7 @@ const KIDashboard = () => {
       />
       <TabBar />
       {/* KI Action Buttons */}
-      <div style={{ display:'flex', gap:12, flexWrap:'wrap', padding:'0 clamp(12px,2vw,24px)', marginTop:-16, marginBottom:24, position:'relative', zIndex:2 }}>
+      <div style={{ display:'flex', gap:12, flexWrap:'wrap', padding:'20px clamp(12px,2vw,24px) 0', marginBottom:24, position:'relative', zIndex:2 }}>
         <button type="button" className="wai-btn-o" onClick={fetchRec} disabled={loading} style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', animation:'wai-glow-o 5s ease-in-out infinite' }}>{loading?'⟳ Analysiere…':'🧠 Empfehlung laden'}</button>
         <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>📈 Verlauf</button>
       </div>
