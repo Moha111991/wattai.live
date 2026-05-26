@@ -646,7 +646,7 @@ const HouseholdDashboard = () => {
           { label:'Status', value:wsStatus === 'live' ? 'Live' : wsStatus === 'connecting' ? 'Verbinde…' : 'Offline', color:wsStatus === 'live' ? '#22c55e' : '#ff6b35' },
         ]}
         visual={
-          <svg viewBox="0 0 200 180" style={{ width:'100%', height:'100%' }} fill="none">
+          <svg viewBox="0 0 200 190" style={{ width:'100%', height:'100%' }} fill="none">
             <defs>
               <linearGradient id="hh-roof-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a3020"/><stop offset="100%" stopColor="#0a1a10"/></linearGradient>
               <filter id="hh-glow"><feGaussianBlur stdDeviation="3" result="b"/><feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
@@ -664,14 +664,11 @@ const HouseholdDashboard = () => {
             <rect x="84" y="95" width="2" height="15" fill="rgba(100,200,255,0.15)"/>
             <ellipse cx="100" cy="128" rx="44" ry="4" fill="rgba(34,197,94,0.12)"><animate attributeName="opacity" values="0.12;0.25;0.12" dur="5s" repeatCount="indefinite"/></ellipse>
             {iotNodes.map(({label,x,y,c})=>{
-              // Label außerhalb des Kreises: rechts wenn x<100, links wenn x>=100, unten wenn y>=140
-              const lx = x < 100 ? x - 13 : x > 100 ? x + 13 : x;
-              const ly = y >= 140 ? y + 18 : y - 12;
-              const anchor = x < 100 ? 'end' : x > 100 ? 'start' : 'middle';
               return (
               <g key={label}>
-                <circle cx={x} cy={y} r="8" fill="rgba(22,30,65,0.88)" stroke={c} strokeWidth="1.2"/>
-                <text x={lx} y={ly} textAnchor={anchor} fill={c} fontSize="6" fontFamily="monospace" fontWeight="bold">{label}</text>
+                {/* Kreis mit kurzem Label zentriert drin — wie Geräte-Tab */}
+                <circle cx={x} cy={y} r="11" fill="rgba(22,30,65,0.92)" stroke={c} strokeWidth="1.4"/>
+                <text x={x} y={y+2.5} textAnchor="middle" dominantBaseline="middle" fill={c} fontSize="5" fontFamily="monospace" fontWeight="bold">{label.length > 5 ? label.slice(0,5) : label}</text>
                 <circle r="2.5" fill={c} filter="url(#hh-glow)" opacity="0.8">
                   <animateMotion dur="3s" repeatCount="indefinite">
                     <mpath xlinkHref={"#hh-path-" + label}/>
@@ -684,7 +681,8 @@ const HouseholdDashboard = () => {
               );
             })}
             <circle cx="100" cy="90" r="6" fill="rgba(22,30,65,0.9)" stroke="rgba(255,107,53,0.5)" strokeWidth="1"/>
-            <text x="100" y="170" textAnchor="middle" fill="rgba(255,149,0,0.4)" fontSize="7" fontFamily="monospace">Haushalt · Heimspeicher · IoT</text>
+            <line x1="10" y1="168" x2="190" y2="168" stroke="rgba(255,107,53,0.08)" strokeWidth="0.5" strokeDasharray="4 3"/>
+            <text x="100" y="182" textAnchor="middle" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">Haushalt · Heimspeicher · IoT</text>
           </svg>
         }
       />
