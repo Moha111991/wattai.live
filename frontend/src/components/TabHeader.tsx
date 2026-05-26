@@ -22,6 +22,12 @@ const STYLES = `
   .th-tag{transition:all .3s ease!important}
   .th-tag:hover{transform:translateY(-2px)!important;opacity:.85!important}
   .th-visual{transition:transform .1s ease-out!important}
+
+  @media(max-width:640px){
+    .th-visual{display:none!important}
+    .th-left{max-width:100%!important;padding:22px 18px 20px!important}
+    .th-root{min-height:auto!important}
+  }
 `;
 
 export type WsStatus = 'live' | 'connecting' | 'offline';
@@ -158,6 +164,7 @@ export default function TabHeader({
       <style>{STYLES}</style>
       <div
         ref={containerRef}
+        className="th-root"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{
@@ -244,7 +251,7 @@ export default function TabHeader({
         </div>
 
         {/* ── Left content ── */}
-        <div style={{
+        <div className="th-left" style={{
           position: 'relative', zIndex: 3,
           padding: 'clamp(28px,4vw,52px) clamp(20px,3vw,48px)',
           display: 'flex', flexDirection: 'column', gap: 14,

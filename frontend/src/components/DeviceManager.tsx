@@ -197,7 +197,7 @@ function BatteryModbusDialog({ onConnect, onClose, realDevices }: { onConnect: (
   };
 
   const DLG_BACKDROP: React.CSSProperties = { position:'fixed', inset:0, background:'rgba(4,6,20,0.72)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 };
-  const DLG_BOX: React.CSSProperties = { background:'linear-gradient(140deg,rgba(18,24,58,0.97),rgba(22,30,65,0.97))', border:'1px solid rgba(255,107,53,0.22)', borderRadius:20, padding:'32px 36px', minWidth:360, maxWidth:480, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', color:'#f8fafc', fontFamily:'Inter,Segoe UI,sans-serif' };
+  const DLG_BOX: React.CSSProperties = { background:'linear-gradient(140deg,rgba(18,24,58,0.97),rgba(22,30,65,0.97))', border:'1px solid rgba(255,107,53,0.22)', borderRadius:20, padding:'clamp(20px,4vw,32px) clamp(16px,4vw,36px)', minWidth:'min(360px,calc(100vw-32px))', maxWidth:480, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', color:'#f8fafc', fontFamily:'Inter,Segoe UI,sans-serif' };
   const DLG_H3: React.CSSProperties = { fontSize:17, fontWeight:900, color:'#ff9500', marginBottom:20, letterSpacing:'-0.01em' };
   const DLG_LABEL: React.CSSProperties = { display:'block', fontSize:11, color:'rgba(248,250,252,0.5)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4, marginTop:12 };
   const DLG_INPUT: React.CSSProperties = { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,107,53,0.22)', borderRadius:10, padding:'10px 14px', color:'#f8fafc', fontSize:13, outline:'none', fontFamily:'monospace', boxSizing:'border-box' };
@@ -356,7 +356,7 @@ function DeviceConnectDialog({ deviceType, realDevices, onConnect, onClose }: { 
   };
 
   const DLG_BACKDROP: React.CSSProperties = { position:'fixed', inset:0, background:'rgba(4,6,20,0.72)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 };
-  const DLG_BOX: React.CSSProperties = { background:'linear-gradient(140deg,rgba(18,24,58,0.97),rgba(22,30,65,0.97))', border:'1px solid rgba(255,107,53,0.22)', borderRadius:20, padding:'32px 36px', minWidth:360, maxWidth:500, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', color:'#f8fafc', fontFamily:'Inter,Segoe UI,sans-serif', maxHeight:'90vh', overflowY:'auto' };
+  const DLG_BOX: React.CSSProperties = { background:'linear-gradient(140deg,rgba(18,24,58,0.97),rgba(22,30,65,0.97))', border:'1px solid rgba(255,107,53,0.22)', borderRadius:20, padding:'clamp(20px,4vw,32px) clamp(16px,4vw,36px)', minWidth:'min(360px,calc(100vw-32px))', maxWidth:500, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.6)', color:'#f8fafc', fontFamily:'Inter,Segoe UI,sans-serif', maxHeight:'90vh', overflowY:'auto' };
   const DLG_H3: React.CSSProperties = { fontSize:17, fontWeight:900, color:'#ff9500', marginBottom:20, letterSpacing:'-0.01em' };
   const DLG_LABEL: React.CSSProperties = { display:'block', fontSize:11, color:'rgba(248,250,252,0.5)', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4, marginTop:12 };
   const DLG_INPUT: React.CSSProperties = { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,107,53,0.22)', borderRadius:10, padding:'10px 14px', color:'#f8fafc', fontSize:13, outline:'none', fontFamily:'monospace', boxSizing:'border-box' };

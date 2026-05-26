@@ -201,7 +201,7 @@ const KIDashboard = () => {
         </div>
 
         {/* AI Modules Grid */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))', gap:16 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(340px,100%),1fr))', gap:16 }}>
           {AI_MODULES.map((mod) => (
             <PlanGate key={mod.id} feature={mod.feature as never} featureName={mod.featureName} requiredPlan="pro">
               <div className="wai-ai-mod" onClick={()=>setActiveModule(activeModule===mod.id?null:mod.id)} style={{ background:`linear-gradient(130deg,rgba(22,30,65,0.75) 55%,${mod.accent}08)`, border:`1px solid ${activeModule===mod.id?mod.accent+'50':'rgba(255,255,255,0.06)'}`, borderRadius:18, overflow:'hidden', cursor:'pointer', backdropFilter:'blur(14px)', position:'relative' }}>

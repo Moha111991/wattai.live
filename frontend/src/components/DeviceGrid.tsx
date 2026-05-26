@@ -751,7 +751,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Name + badge ── */}
-                <div style={{ flex:'0 0 auto', minWidth:160, marginRight:16 }}>
+                <div style={{ flex:'1 1 140px', minWidth:0, marginRight:16 }}>
                   <div style={{ fontSize:15, fontWeight:900, color:'#f8fafc', letterSpacing:'-0.02em', marginBottom:2 }}>
                     {slot.label}
                     {totalConnected > 1 && (
@@ -795,7 +795,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 </div>
 
                 {/* ── Specs mini grid ── */}
-                <div style={{ flex:1, minWidth:190, display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 8px', marginRight:16 }}>
+                <div style={{ flex:1, minWidth:0, display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 8px', marginRight:16 }}>
                   {[
                     { label:'Protokoll', value: slot.protos.map(p=>({modbus:'Modbus',cloud:'Cloud',ocpp:'OCPP',sunspec:'SunSpec',mqtt:'MQTT'}[p]||p)).join(' · ') },
                     { label:'Standard', value: slot.standard },
