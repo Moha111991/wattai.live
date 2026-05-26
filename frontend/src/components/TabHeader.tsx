@@ -24,9 +24,14 @@ const STYLES = `
   .th-visual{transition:transform .1s ease-out!important}
 
   @media(max-width:640px){
-    .th-visual{display:none!important}
-    .th-left{max-width:100%!important;padding:22px 18px 20px!important}
-    .th-root{min-height:auto!important}
+    .th-root{ display:flex!important; flex-direction:column!important; min-height:auto!important }
+    .th-visual{
+      position:relative!important; display:block!important;
+      width:100%!important; height:160px!important;
+      top:auto!important; bottom:auto!important; right:auto!important;
+      opacity:1!important; order:-1;
+    }
+    .th-left{ max-width:100%!important; padding:18px 18px 22px!important }
   }
 `;
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import TabHeader from './TabHeader';
+import TabBar from './TabBar';
 import BatteryWidget from './BatteryWidget';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 
@@ -686,6 +687,7 @@ const HouseholdDashboard = () => {
           </svg>
         }
       />
+      <TabBar />
 
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}

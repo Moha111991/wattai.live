@@ -11,6 +11,7 @@ import AuthModal from "./components/AuthModal";
 import UpgradeModal from "./components/UpgradeModal";
 import CookieConsent from "./components/CookieConsent";
 import { PlanProvider, usePlan } from "./context/PlanContext";
+import { TabContext } from "./context/TabContext";
 import StartPage from "./pages/StartPage";
 import ProduktePage from "./pages/ProduktePage";
 import AboutPage from "./pages/AboutPage";
@@ -210,99 +211,36 @@ function AppShell() {
           <AppFooter />
         </>
       ) : (
-        <>
-      {/* Main Content Container with Padding */}
-      <div style={{
-        padding: 'clamp(10px, 1.6vw, 20px) clamp(10px, 2.4vw, 30px)',
-        boxSizing: 'border-box',
-      }}>
-        <nav style={navStyle}>
-          <div style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 'clamp(8px, 1.4vw, 12px)',
-          }}>
-            {tabs.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className="ui-focusable"
-                style={{
-                  padding: '0.52rem 1rem',
-                  borderRadius: 999,
-                  border: tab === t.key ? '1px solid rgba(103,232,249,0.72)' : '1px solid rgba(148,163,184,0.35)',
-                  background: tab === t.key ? 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)' : 'rgba(15,23,42,0.56)',
-                  color: '#f8fafc',
-                  cursor: 'pointer',
-                  fontWeight: tab === t.key ? 700 : 600,
-                  fontSize: 13,
-                  minHeight: 40,
-                  letterSpacing: '0.02em',
-                  boxShadow: tab === t.key ? '0 8px 20px rgba(14,165,233,0.35)' : '0 4px 10px rgba(2,6,23,0.35)',
-                  transition: 'all 180ms ease',
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 'clamp(8px, 1.4vw, 12px)',
-            flexWrap: 'wrap',
-          }}>
-            <span style={{ color: '#cbd5e1', fontSize: 13, padding: '0.35rem 0.8rem', borderRadius: 999, border: `1px solid ${plan.badgeColor}`, background: plan.badgeColor }}>
-              Aktueller Plan: <b style={{ color: plan.color }}>{plan.title}</b>
-              {plan.segment === 'b2b' && <span style={{ marginLeft: 6, fontSize: 10, color: plan.color, opacity: 0.8 }}>B2B</span>}
-            </span>
-            {!isLoggedIn && (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                style={{
-                  background: 'rgba(103,232,249,0.1)',
-                  border: '1px solid rgba(103,232,249,0.35)',
-                  color: '#67e8f9',
-                  borderRadius: 999,
-                  padding: '0.35rem 0.9rem',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                🔐 Anmelden für mehr Funktionen
-              </button>
-            )}
-          </div>
-        </nav>
-        <section style={{
-          minHeight: 'max(420px, calc(100dvh - 260px))',
-          width: '100%',
-          maxWidth: '100%',
-          margin: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'stretch',
-          flexDirection: 'column',
-          gap: 10,
+        <TabContext.Provider value={{
+          tab,
+          setTab,
+          tabs,
+          isLoggedIn,
+          onAuthClick: () => setIsAuthModalOpen(true),
+          planTitle: plan.title,
+          planColor: plan.color,
         }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-            {tabs.find(t => t.key === tab)?.component}
-          </div>
-        </section>
-      </div>
-      {/* End Main Content Container */}
-
-      {/* Footer */}
-      <AppFooter />
-      </>
+          <>
+          <section style={{
+            minHeight: 'max(420px, calc(100dvh - 120px))',
+            width: '100%',
+            maxWidth: '100%',
+            margin: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'stretch',
+            flexDirection: 'column',
+          }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+              {tabs.find(t => t.key === tab)?.component}
+            </div>
+          </section>
+          <AppFooter />
+          </>
+        </TabContext.Provider>
       )}
     </div>
+    {/* End appContentRef div */}
 
     {/* Floating Bottom-Right Widget: Upgrade + App Store */}
     {(showBanner || plan.id !== 'business') && (

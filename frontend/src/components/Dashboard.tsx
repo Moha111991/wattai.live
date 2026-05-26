@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import TabHeader from './TabHeader';
+import TabBar from './TabBar';
 import HistoryChart from './HistoryChart';
 import PowerChart from "./PowerChart";
 import CO2CostWidget from './CO2CostWidget';
@@ -206,6 +207,7 @@ export default function Dashboard() {
           </svg>
         }
       />
+      <TabBar />
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
       <div style={{ padding:'0 clamp(12px,2vw,24px)', display:'flex', flexDirection:'column', gap:16 }}>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import TabHeader from './TabHeader';
+import TabBar from './TabBar';
 import '../styles/ev-dashboard.css';
 import ElektroautoV2H from './ElektroautoV2H';
 import EVChargeControl from './EVChargeControl';
@@ -101,6 +102,7 @@ const EVDashboard = () => {
           </svg>
         }
       />
+      <TabBar />
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
       <div style={{ padding:'0 clamp(12px,2vw,24px)', display:'flex', flexDirection:'column', gap:16 }}>

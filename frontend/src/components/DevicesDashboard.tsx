@@ -1,5 +1,6 @@
 import { ReactElement, useEffect, useRef, useState } from 'react';
 import TabHeader from './TabHeader';
+import TabBar from './TabBar';
 import DeviceManager from './DeviceManager';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -95,6 +96,7 @@ const DevicesDashboard = (): ReactElement => {
           </svg>
         }
       />
+      <TabBar />
 
 
       {/* ── CONTENT ─────────────────────────────────────────────────────── */}
