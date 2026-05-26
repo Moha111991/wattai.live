@@ -131,17 +131,17 @@ export default function Dashboard() {
         gradientTo="#3b82f6"
         tags={[['WebSocket · Live','#22c55e'],['MQTT / TLS','#ff9500'],['KI-Optimierung','#3b82f6'],['CO₂-Analyse','#a855f7']]}
         stats={[
-          { label:'PV', value:`${data.pv_power_kw.toFixed(1)}`, unit:'kW', color:'#ff9500', icon:'☀️' },
-          { label:'Netz', value:`${((data.grid_import_w-data.grid_export_w)/1000).toFixed(1)}`, unit:'kW', color:'#3b82f6', icon:'🔌' },
+          { label:'PV', value:`${(data?.pv_power_kw ?? 0).toFixed(1)}`, unit:'kW', color:'#ff9500', icon:'☀️' },
+          { label:'Netz', value:`${(((data?.grid_import_w ?? 0)-(data?.grid_export_w ?? 0))/1000).toFixed(1)}`, unit:'kW', color:'#3b82f6', icon:'🔌' },
           { label:'Speicher', value:`${battery.soc}`, unit:'%', color:'#22c55e', icon:'🔋' },
         ]}
         wsStatus={wsStatus}
         ticker={[
-          { label:'PV-Ertrag', value:`${data.pv_power_kw.toFixed(1)} kW`, color:'#ff9500' },
-          { label:'Hausverbrauch', value:`${(data.house_load_w/1000).toFixed(1)} kW`, color:'#3b82f6' },
+          { label:'PV-Ertrag', value:`${(data?.pv_power_kw ?? 0).toFixed(1)} kW`, color:'#ff9500' },
+          { label:'Hausverbrauch', value:`${((data?.house_load_w ?? 0)/1000).toFixed(1)} kW`, color:'#3b82f6' },
           { label:'Speicher-SOC', value:`${battery.soc}%`, color:'#22c55e' },
-          { label:'EV', value:`${(data.ev_power_w/1000).toFixed(1)} kW`, color:'#60a5fa' },
-          { label:'Grid Import', value:`${(data.grid_import_w/1000).toFixed(1)} kW`, color:'#a855f7' },
+          { label:'EV', value:`${((data?.ev_power_w ?? 0)/1000).toFixed(1)} kW`, color:'#60a5fa' },
+          { label:'Grid Import', value:`${((data?.grid_import_w ?? 0)/1000).toFixed(1)} kW`, color:'#a855f7' },
         ]}
         visual={
           <svg viewBox="0 0 700 280" style={{ width:'100%', height:'100%' }} fill="none">
@@ -198,10 +198,10 @@ export default function Dashboard() {
             <circle r="4" fill="#3b82f6" filter="url(#db-glow)"><animateMotion dur="3.1s" repeatCount="indefinite"><mpath xlinkHref="#dp3"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="3.1s" repeatCount="indefinite"/></circle>
             <path id="dp4" d="M668 168 Q650 194 639 194" fill="none"/>
             <circle r="3.5" fill="rgba(34,197,94,0.9)" filter="url(#db-glow)"><animateMotion dur="2s" repeatCount="indefinite"><mpath xlinkHref="#dp4"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite"/></circle>
-            <text x="68" y="114" textAnchor="middle" fill="rgba(255,149,0,0.55)" fontSize="9" fontFamily="monospace" fontWeight="bold">{data.pv_power_kw.toFixed(1)} kW PV</text>
+            <text x="68" y="114" textAnchor="middle" fill="rgba(255,149,0,0.55)" fontSize="9" fontFamily="monospace" fontWeight="bold">{(data?.pv_power_kw ?? 0).toFixed(1)} kW PV</text>
             <text x="314" y="258" textAnchor="middle" fill="rgba(255,107,53,0.45)" fontSize="8" fontFamily="monospace">HAUS</text>
             <text x="457" y="210" textAnchor="middle" fill="rgba(255,107,53,0.45)" fontSize="8" fontFamily="monospace">SPEICHER</text>
-            <text x="576" y="250" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="8" fontFamily="monospace">EV · {data.ev_soc}%</text>
+            <text x="576" y="250" textAnchor="middle" fill="rgba(59,130,246,0.45)" fontSize="8" fontFamily="monospace">EV · {data?.ev_soc ?? 0}%</text>
             <text x="682" y="242" textAnchor="middle" fill="rgba(59,130,246,0.4)" fontSize="8" fontFamily="monospace">NETZ</text>
           </svg>
         }
@@ -214,7 +214,7 @@ export default function Dashboard() {
         <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
           <div style={{ height:3, background:'linear-gradient(90deg,#ff6b35,#ff9500,#3b82f6)' }}/>
           <div style={{ padding:'20px 24px' }}>
-            <AnimatedEnergyFlow pvPower={data.pv_power_kw} housePower={data.house_load_w/1000} batteryPower={battery.power_kw} gridPower={(data.grid_import_w-data.grid_export_w)/1000} evPower={data.ev_power_w/1000}/>
+            <AnimatedEnergyFlow pvPower={data?.pv_power_kw ?? 0} housePower={(data?.house_load_w ?? 0)/1000} batteryPower={battery.power_kw} gridPower={((data?.grid_import_w ?? 0)-(data?.grid_export_w ?? 0))/1000} evPower={(data?.ev_power_w ?? 0)/1000}/>
           </div>
         </div>
         <div style={{ display:'flex', justifyContent:'center' }}>
