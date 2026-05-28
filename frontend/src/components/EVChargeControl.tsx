@@ -114,8 +114,10 @@ const EVChargeControl: React.FC = () => {
   // Plan-Limit anwenden: nur max. N Wallboxen steuerbar
   const connectedWallboxes = allConnected.slice(0, planLimit.max);
   const lockedWallboxes = allConnected.slice(planLimit.max); // über dem Limit
-  const selectedWallbox = connectedWallboxes.find(w => w.id === selectedWallboxId) ?? connectedWallboxes[0] ?? null;
-  const wallboxConnected = selectedWallbox !== null;
+  const selectedWallbox = connectedWallboxes.find(w => w.id === selectedWallboxId) ?? connectedWallboxes[0] ?? allWallboxes[0] ?? null;
+  // UI ist nutzbar sobald mindestens eine Wallbox bekannt ist (auch ohne Live-Verbindung → Sim-Modus)
+  const wallboxConnected = allWallboxes.length > 0;
+  const wallboxLive = allConnected.length > 0; // wirklich online
   // Wallboxen, die in der API existieren aber nicht verbunden sind
   const disconnectedWallboxes = allWallboxes.filter(w => !isReallyConnected(w));
 
@@ -128,11 +130,17 @@ const EVChargeControl: React.FC = () => {
         headers: { 'Content-Type': 'application/json', 'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE' },
         body: JSON.stringify({ state: charging, power_kw: power }),
       });
-      if (!res.ok) throw new Error('Fehler beim Senden der Anfrage');
+      if (!res.ok) throw new Error('no-backend');
       const result: ChargingResponse = await res.json();
       setEvState(prev => ({ ...prev, ev_soc: result.soc ?? prev.ev_soc, ev_power_kw: result.power_kw ?? prev.ev_power_kw, ev_charging: charging }));
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Unbekannter Fehler');
+    } catch {
+      // Sim-Modus: lokaler Zustand wird trotzdem geändert
+      setEvState(prev => ({
+        ...prev,
+        ev_charging: charging,
+        ev_power_kw: charging ? power : 0,
+        ev_soc: prev.ev_soc,
+      }));
     } finally { setLoading(false); }
   };
 
@@ -239,14 +247,14 @@ const EVChargeControl: React.FC = () => {
         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
           {POWER_OPTIONS.map(opt=>(
             <button key={opt.value} type="button"
-              disabled={!wallboxConnected || evState.ev_charging || loading}
+              disabled={evState.ev_charging || loading}
               onClick={()=>setPower(opt.value)}
               style={{
                 background: power===opt.value ? 'linear-gradient(90deg,#ff6b35,#ff9500)' : 'rgba(255,255,255,0.04)',
                 color: power===opt.value ? '#0a0305' : 'rgba(248,250,252,0.7)',
                 border: power===opt.value ? 'none' : '1px solid rgba(255,107,53,0.2)',
-                borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, cursor:'pointer',
-                opacity: (!wallboxConnected || evState.ev_charging || loading) ? 0.45 : 1,
+                borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, cursor: (evState.ev_charging || loading) ? 'not-allowed' : 'pointer',
+                opacity: (evState.ev_charging || loading) ? 0.45 : 1,
                 transition:'all .3s ease',
               }}>
               <div>{opt.label}</div>
@@ -261,23 +269,23 @@ const EVChargeControl: React.FC = () => {
         <button type="button" className="wai-btn-o"
           title="Startet den Ladevorgang mit der gewählten Ladeleistung."
           onClick={()=>setCharging(true)}
-          disabled={!wallboxConnected || evState.ev_charging || loading}
+          disabled={evState.ev_charging || loading}
           style={{
             flex:'1 1 140px', background:'linear-gradient(90deg,#22c55e,#16a34a)', color:'#fff',
-            border:'none', borderRadius:999, padding:'13px 24px', fontWeight:800, fontSize:14, cursor:'pointer',
-            opacity:(!wallboxConnected || evState.ev_charging || loading)?0.4:1,
-            animation:(!wallboxConnected || evState.ev_charging || loading)?'none':'wai-glow-o 5s ease-in-out infinite',
+            border:'none', borderRadius:999, padding:'13px 24px', fontWeight:800, fontSize:14, cursor: (evState.ev_charging || loading) ? 'not-allowed' : 'pointer',
+            opacity:(evState.ev_charging || loading)?0.4:1,
+            animation:(!evState.ev_charging && !loading)?'wai-glow-o 5s ease-in-out infinite':'none',
           }}>
-          {loading ? '…' : '▶ Laden starten'}
+          {loading ? '⟳ Verbinde…' : '▶ Laden starten'}
         </button>
         <button type="button" className="wai-btn-r"
           title="Beendet den aktuellen Ladevorgang."
           onClick={()=>setCharging(false)}
-          disabled={!wallboxConnected || !evState.ev_charging || loading}
+          disabled={!evState.ev_charging || loading}
           style={{
             flex:'1 1 140px', background:'rgba(239,68,68,0.15)', color:'rgba(248,100,80,0.9)',
-            border:'1px solid rgba(239,68,68,0.35)', borderRadius:999, padding:'13px 24px', fontWeight:700, fontSize:14, cursor:'pointer',
-            opacity:(!wallboxConnected || !evState.ev_charging || loading)?0.4:1,
+            border:'1px solid rgba(239,68,68,0.35)', borderRadius:999, padding:'13px 24px', fontWeight:700, fontSize:14, cursor: (!evState.ev_charging || loading) ? 'not-allowed' : 'pointer',
+            opacity:(!evState.ev_charging || loading)?0.4:1,
           }}>
           ■ Laden stoppen
         </button>
