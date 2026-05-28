@@ -45,6 +45,22 @@ const WAI = `
 
 interface KIRec { action?: string; savings_eur?: number; confidence?: number; explanation?: string; }
 
+const MOCK_RECS: KIRec[] = [
+  { action:'Jetzt laden – PV-Überschuss 4,2 kW', savings_eur:0.87, confidence:0.94, explanation:'Photovoltaik liefert aktuell 4,2 kW Überschuss. Das DQN empfiehlt sofortige Ladung mit 11 kW (Phase 3), um Netzeinspeisung zu vermeiden und 0,87 € gegenüber Netzbezug zu sparen. Prognose: Bewölkung ab 15:30 Uhr.' },
+  { action:'Laden pausieren – Spitzentarif aktiv', savings_eur:0.54, confidence:0.91, explanation:'Tibber-Spotpreis liegt bei 0,38 €/kWh (Spitze). LSTM-Modell prognostiziert Preisrückgang auf 0,19 €/kWh um 14:00 Uhr. Empfehlung: Laden in 2h fortsetzen.' },
+  { action:'Heimspeicher entladen – Preispeak', savings_eur:1.12, confidence:0.88, explanation:'Stromnachfrage im Netz erhöht, EPEX-Preis über 0,42 €/kWh. Peak-Shaving durch Heimspeicherentladung (8 kW) empfohlen. Schätzte Ersparnis: 1,12 € in den nächsten 45 Minuten.' },
+  { action:'V2H aktiv – EV als Puffer nutzen', savings_eur:0.63, confidence:0.85, explanation:'EV-Batterie (SOC 78%) kann als Hauspuffer genutzt werden. V2H-Entladung mit 3,6 kW für 1h, danach automatische Wiederaufladung via PV-Überschuss ab 11:30 Uhr.' },
+];
+
+const VERLAUF_ENTRIES = [
+  { time:'Heute, 09:14', action:'PV-Überschuss laden', savings:0.87, conf:94, status:'umgesetzt' },
+  { time:'Heute, 07:30', action:'Nachtladen abgeschlossen', savings:1.24, conf:97, status:'umgesetzt' },
+  { time:'Gestern, 18:45', action:'Peak-Shaving aktiv', savings:1.12, conf:88, status:'umgesetzt' },
+  { time:'Gestern, 14:00', action:'Ladepause – Spitzentarif', savings:0.54, conf:91, status:'umgesetzt' },
+  { time:'Gestern, 11:20', action:'V2H Entladung', savings:0.63, conf:85, status:'umgesetzt' },
+  { time:'Mo, 22:10', action:'Tibber Niedertarif laden', savings:2.18, conf:96, status:'umgesetzt' },
+];
+
 interface AIModule {
   id: string; title: string; subtitle: string; icon: string; accent: string;
   status: 'active' | 'learning' | 'standby';
@@ -122,15 +138,26 @@ const NeuralNetSVG = ({ conf }: { conf: number }) => {
 };
 
 const KIDashboard = () => {
-  const [rec, setRec] = useState<KIRec | null>(null);
+  const [rec, setRec] = useState<KIRec | null>(MOCK_RECS[0]);
   const [loading, setLoading] = useState(false);
+  const [showVerlauf, setShowVerlauf] = useState(false);
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [liveMetrics, setLiveMetrics] = useState({ savings:324, co2:1840, efficiency:87 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const fetchRec = async () => {
     setLoading(true);
-    try { const r=await fetch(`${API_URL}/airecommendation`); setRec(await r.json()); } catch { /* ignore */ } finally { setLoading(false); }
+    try {
+      const r = await fetch(`${API_URL}/airecommendation`);
+      if (!r.ok) throw new Error('no backend');
+      setRec(await r.json());
+    } catch {
+      // Fallback: pick a random mock recommendation
+      const mock = MOCK_RECS[Math.floor(Math.random() * MOCK_RECS.length)];
+      setRec(mock);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -183,7 +210,7 @@ const KIDashboard = () => {
       {/* KI Action Buttons */}
       <div style={{ display:'flex', gap:12, flexWrap:'wrap', padding:'20px clamp(12px,2vw,24px) 0', marginBottom:24, position:'relative', zIndex:2 }}>
         <button type="button" className="wai-btn-o" onClick={fetchRec} disabled={loading} style={{ background:'linear-gradient(90deg,#ff6b35,#ff9500)', color:'#0a0305', border:'none', borderRadius:999, padding:'12px 28px', fontWeight:800, fontSize:14, cursor:'pointer', boxShadow:'0 0 32px rgba(255,107,53,0.32)', animation:'wai-glow-o 5s ease-in-out infinite' }}>{loading?'⟳ Analysiere…':'🧠 Empfehlung laden'}</button>
-        <button type="button" className="wai-btn-g" style={{ background:'transparent', color:'rgba(255,149,0,0.9)', border:'1px solid rgba(255,107,53,0.32)', borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>📈 Verlauf</button>
+        <button type="button" className="wai-btn-g" onClick={() => setShowVerlauf(v => !v)} style={{ background: showVerlauf ? 'rgba(255,107,53,0.1)' : 'transparent', color:'rgba(255,149,0,0.9)', border:`1px solid ${showVerlauf ? 'rgba(255,107,53,0.55)' : 'rgba(255,107,53,0.32)'}`, borderRadius:999, padding:'12px 28px', fontWeight:700, fontSize:14, cursor:'pointer', backdropFilter:'blur(12px)' }}>📈 Verlauf</button>
       </div>
 
       {/* CONTENT */}
@@ -207,6 +234,34 @@ const KIDashboard = () => {
                 ))}
               </div>
               {rec.explanation && <p style={{ margin:0, fontSize:13, color:'rgba(248,250,252,0.5)', lineHeight:1.75, borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:14 }}>{rec.explanation}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Verlauf */}
+        {showVerlauf && (
+          <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,149,0,0.15)', borderRadius:22, backdropFilter:'blur(14px)', overflow:'hidden', animation:'wai-slide-in .4s ease-out' }}>
+            <div style={{ height:3, background:'linear-gradient(90deg,#ff9500,#3b82f6)' }}/>
+            <div style={{ padding:'clamp(16px,3vw,24px) clamp(14px,3vw,28px)' }}>
+              <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(255,149,0,0.8)', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
+                <span>📈</span> KI-Entscheidungsverlauf
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {VERLAUF_ENTRIES.map((e, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', borderRadius:12, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,149,0,0.08)' }}>
+                    <div style={{ flexShrink:0, width:7, height:7, borderRadius:'50%', background:'#22c55e', boxShadow:'0 0 6px rgba(34,197,94,0.5)' }}/>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#f8fafc', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{e.action}</div>
+                      <div style={{ fontSize:10, color:'rgba(248,250,252,0.35)', marginTop:2 }}>{e.time}</div>
+                    </div>
+                    <div style={{ textAlign:'right', flexShrink:0 }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:'#22c55e', fontFamily:'monospace' }}>+ € {e.savings.toFixed(2)}</div>
+                      <div style={{ fontSize:10, color:'rgba(255,149,0,0.6)', marginTop:1 }}>{e.conf}% Konfidenz</div>
+                    </div>
+                    <span style={{ fontSize:9, fontWeight:700, letterSpacing:'0.12em', color:'rgba(34,197,94,0.8)', background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:6, padding:'2px 8px', flexShrink:0, textTransform:'uppercase' }}>{e.status}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
