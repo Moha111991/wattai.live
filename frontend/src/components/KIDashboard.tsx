@@ -168,12 +168,20 @@ const KIDashboard = () => {
 
   useEffect(() => {
     const canvas=canvasRef.current; if(!canvas) return;
-    const ctx=canvas.getContext('2d'); if(!ctx) return;
-    canvas.width=canvas.offsetWidth||600; canvas.height=canvas.offsetHeight||300;
-    const pts=Array.from({length:20},()=>({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-.5)*.35, vy:(Math.random()-.5)*.35, r:Math.random()*1.4+.4, c:['rgba(255,107,53,','rgba(59,130,246,','rgba(255,149,0,'][Math.floor(Math.random()*3)] }));
     let raf:number;
-    const draw=()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>canvas.width)p.vx*=-1; if(p.y<0||p.y>canvas.height)p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.c+'0.3)'; ctx.fill(); }); raf=requestAnimationFrame(draw); };
-    draw(); return ()=>cancelAnimationFrame(raf);
+    const init=()=>{
+      const ctx=canvas.getContext('2d'); if(!ctx) return;
+      const w=window.innerWidth||800; const h=window.innerHeight||600;
+      canvas.width=w; canvas.height=h;
+      const pts=Array.from({length:20},()=>({ x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.35, vy:(Math.random()-.5)*.35, r:Math.random()*1.4+.4, c:['rgba(255,107,53,','rgba(59,130,246,','rgba(255,149,0,'][Math.floor(Math.random()*3)] }));
+      cancelAnimationFrame(raf);
+      const draw=()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>canvas.width)p.vx*=-1; if(p.y<0||p.y>canvas.height)p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.c+'0.3)'; ctx.fill(); }); raf=requestAnimationFrame(draw); };
+      draw();
+    };
+    const onResize=()=>init();
+    window.addEventListener('resize',onResize);
+    const t=setTimeout(init,60);
+    return ()=>{ cancelAnimationFrame(raf); window.removeEventListener('resize',onResize); clearTimeout(t); };
   }, []);
 
   useEffect(() => { fetchRec(); }, []);

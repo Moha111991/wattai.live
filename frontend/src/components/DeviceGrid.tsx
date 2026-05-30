@@ -641,34 +641,44 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
     });
   }, [devices]);
 
-  // Particle canvas
+  // Particle canvas – defer init so offsetWidth is available after layout
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    const pts = Array.from({ length: 18 }, () => ({
-      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-      vx: (Math.random() - .5) * .28, vy: (Math.random() - .5) * .28,
-      r: Math.random() * 1.1 + .3,
-      c: Math.random() > .5 ? 'rgba(255,107,53,' : 'rgba(59,130,246,',
-    }));
     let raf: number;
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pts.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.c + '0.22)'; ctx.fill();
-      });
-      raf = requestAnimationFrame(draw);
+
+    const init = () => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const w = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 800;
+      const h = canvas.offsetHeight || canvas.parentElement?.offsetHeight || 400;
+      canvas.width = w;
+      canvas.height = h;
+      const pts = Array.from({ length: 18 }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - .5) * .28, vy: (Math.random() - .5) * .28,
+        r: Math.random() * 1.1 + .3,
+        c: Math.random() > .5 ? 'rgba(255,107,53,' : 'rgba(59,130,246,',
+      }));
+      cancelAnimationFrame(raf);
+      const draw = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pts.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+          if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.c + '0.22)'; ctx.fill();
+        });
+        raf = requestAnimationFrame(draw);
+      };
+      draw();
     };
-    draw();
-    return () => cancelAnimationFrame(raf);
+
+    const ro = new ResizeObserver(() => init());
+    ro.observe(canvas.parentElement ?? canvas);
+    const t = setTimeout(init, 60);
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); clearTimeout(t); };
   }, []);
 
   const handleConnected = useCallback((slotKey: string, data: Partial<Device>) => {
