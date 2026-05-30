@@ -134,7 +134,7 @@ export default function Dashboard() {
         stats={[
           { label:'PV', value:`${(data?.pv_power_kw ?? 0).toFixed(1)}`, unit:'kW', color:'#ff9500', icon:'☀️' },
           { label:'Netz', value:`${(((data?.grid_import_w ?? 0)-(data?.grid_export_w ?? 0))/1000).toFixed(1)}`, unit:'kW', color:'#3b82f6', icon:'🔌' },
-          { label:'Speicher', value:`${battery.soc}`, unit:'%', color:'#22c55e', icon:'🔋' },
+          { label:'Speicher', value:`${battery.soc ?? 50}`, unit:'%', color:'#22c55e', icon:'🔋' },
         ]}
         wsStatus={wsStatus}
         ticker={[

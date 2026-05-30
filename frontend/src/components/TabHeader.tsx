@@ -30,27 +30,37 @@ const STYLES = `
     }
     .th-visual{
       position:relative!important; display:block!important;
-      width:100%!important; height:110px!important;
+      width:100%!important; height:150px!important;
       top:auto!important; bottom:auto!important; right:auto!important;
-      opacity:0.75!important; order:-1;
+      opacity:0.85!important; order:-1;
     }
     .th-left{
       max-width:100%!important;
-      padding:10px 14px 14px!important;
-      gap:8px!important;
+      padding:8px 12px 10px!important;
+      gap:6px!important;
     }
-    .th-left h1{ font-size:clamp(19px,5.5vw,26px)!important; line-height:1.1!important }
-    .th-left p{ font-size:11px!important; line-height:1.55!important;
+    .th-left h1{ font-size:clamp(17px,5vw,24px)!important; line-height:1.1!important }
+    .th-left p{ font-size:10px!important; line-height:1.5!important;
       display:-webkit-box!important; -webkit-line-clamp:2!important;
       -webkit-box-orient:vertical!important; overflow:hidden!important }
-    .th-stat-card{ padding:6px 10px!important; min-width:62px!important }
-    .th-tag{ font-size:9px!important; padding:3px 8px!important }
+    .th-tags{ gap:4px!important; margin-top:0!important }
+    .th-tag{ font-size:8px!important; padding:2px 6px!important }
+    .th-stats{ gap:5px!important; margin-top:0!important }
+    .th-stat-card{
+      padding:4px 7px!important; min-width:50px!important;
+      border-radius:8px!important;
+    }
+    .th-stat-icon{ font-size:10px!important; margin-bottom:1px!important }
+    .th-stat-label{ font-size:7px!important }
+    .th-stat-value{ font-size:12px!important }
+    .th-stat-dot{ width:3px!important; height:3px!important; margin-top:3px!important }
   }
   @media(max-width:400px){
-    .th-visual{ height:80px!important }
-    .th-left{ padding:8px 12px 10px!important }
+    .th-visual{ height:120px!important }
+    .th-left{ padding:6px 10px 8px!important }
     .th-left p{ display:none!important }
     .th-orbit{ display:none!important }
+    .th-tags{ display:none!important }
   }
 `;
 
@@ -332,7 +342,7 @@ export default function TabHeader({
 
           {/* Tags */}
           {tags.length > 0 && (
-            <div style={{
+            <div className="th-tags" style={{
               display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4,
               opacity: mounted ? 1 : 0, transition: 'opacity .6s .3s ease',
             }}>
@@ -350,7 +360,7 @@ export default function TabHeader({
 
           {/* Stat cards */}
           {stats.length > 0 && (
-            <div style={{
+            <div className="th-stats" style={{
               display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 6,
               opacity: mounted ? 1 : 0, transition: 'opacity .6s .4s ease',
             }}>
@@ -375,11 +385,11 @@ export default function TabHeader({
                     }} />
                   )}
                   {s.icon && (
-                    <div style={{ fontSize: 14, marginBottom: 3 }}>{s.icon}</div>
+                    <div className="th-stat-icon" style={{ fontSize: 14, marginBottom: 3 }}>{s.icon}</div>
                   )}
-                  <div style={{ fontSize: 9, color: `${s.color}80`, letterSpacing: '0.14em',
+                  <div className="th-stat-label" style={{ fontSize: 9, color: `${s.color}80`, letterSpacing: '0.14em',
                     textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: s.color,
+                  <div className="th-stat-value" style={{ fontSize: 17, fontWeight: 800, color: s.color,
                     fontFamily: 'monospace', lineHeight: 1 }}>
                     {s.value}
                     {s.unit && (
@@ -387,7 +397,7 @@ export default function TabHeader({
                         marginLeft: 3 }}>{s.unit}</span>
                     )}
                   </div>
-                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: s.color,
+                  <div className="th-stat-dot" style={{ width: 4, height: 4, borderRadius: '50%', background: s.color,
                     marginTop: 5, animation: 'th-breathe 3s ease-in-out infinite' }} />
                 </div>
               ))}
