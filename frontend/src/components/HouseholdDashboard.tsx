@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import TabHeader from './TabHeader';
 import TabBar from './TabBar';
 import BatteryWidget from './BatteryWidget';
@@ -122,6 +122,43 @@ function ConnectionAnimation({ proto, onDone }: { proto: string; onDone: () => v
 
 
 type WsStatus = 'connecting' | 'live' | 'offline';
+
+// ── IoT Device Card ──────────────────────────────────────────────────────────
+function IoTDeviceCard({ device }: { device: typeof DEVICES[0] }) {
+  const [active, setActive] = useState(false);
+  const [kwh] = useState(+(Math.random() * 3).toFixed(2));
+  return (
+    <button
+      type="button"
+      onClick={() => setActive(v => !v)}
+      style={{
+        display:'flex', flexDirection:'column', gap:8, padding:'14px',
+        borderRadius:14, textAlign:'left', cursor:'pointer',
+        background: active ? `${device.color}12` : 'rgba(255,255,255,0.03)',
+        border: `1.5px solid ${active ? device.color + '55' : 'rgba(255,255,255,0.07)'}`,
+        color:'#f8fafc', transition:'all 0.3s', position:'relative', width:'100%',
+      }}>
+      {/* Status-Dot */}
+      {active && (
+        <div style={{ position:'absolute', top:10, right:10, width:7, height:7, borderRadius:'50%',
+          background:'#22c55e', animation:'wai-pulse-green 2s ease-in-out infinite' }}/>
+      )}
+      <span style={{ fontSize:24 }}>{device.icon}</span>
+      <div>
+        <div style={{ fontWeight:700, fontSize:12, marginBottom:2 }}>{device.label}</div>
+        <div style={{ fontSize:10, color:'rgba(248,250,252,0.35)' }}>{device.watt} W · {device.proto}</div>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <span style={{ fontSize:11, color: active ? '#22c55e' : 'rgba(248,250,252,0.3)', fontWeight:700 }}>
+          {active ? '● AN' : '○ AUS'}
+        </span>
+        <span style={{ fontSize:10, color:'rgba(248,250,252,0.3)', fontFamily:'monospace' }}>{kwh} kWh</span>
+      </div>
+      {/* Toggle-Bar */}
+      <div style={{ height:3, borderRadius:999, background: active ? `linear-gradient(90deg,${device.color},${device.color}88)` : 'rgba(255,255,255,0.06)' }}/>
+    </button>
+  );
+}
 
 const HouseholdDashboard = () => {
   const [state, setState] = useState<SysState>({});
@@ -253,6 +290,34 @@ const HouseholdDashboard = () => {
           <div style={{ padding:'clamp(14px,3vw,24px)' }}>
             <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(34,197,94,0.7)', marginBottom:18 }}>Heimspeicher</div>
             <BatteryWidget data={{ soc: state.battery_soc ?? 0, power_kw: state.battery_power_kw ?? 0, capacity_kwh: state.battery_capacity_kwh ?? 10 }}/>
+          </div>
+        </div>
+
+        {/* ── Hausautomation IoT ── */}
+        <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(59,130,246,0.12)', borderRadius:20, backdropFilter:'blur(12px)', overflow:'hidden' }}>
+          <div style={{ height:3, background:'linear-gradient(90deg,#3b82f6,#ff9500)' }}/>
+          <div style={{ padding:'clamp(14px,3vw,24px)' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8, marginBottom:18 }}>
+              <div style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', fontWeight:700, color:'rgba(59,130,246,0.7)' }}>
+                Hausautomation
+                <span style={{ fontSize:10, background:'rgba(255,149,0,0.12)', color:'#ff9500', borderRadius:8, padding:'2px 10px', marginLeft:8, letterSpacing:'0.08em' }}>PRO</span>
+              </div>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {['KNX','Zigbee','Z-Wave','MQTT','SG-Ready'].map(p => (
+                  <span key={p} style={{ fontSize:9, fontWeight:700, color:'rgba(248,250,252,0.45)', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:6, padding:'2px 8px', fontFamily:'monospace' }}>{p}</span>
+                ))}
+              </div>
+            </div>
+            {/* Geräte-Grid */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:10, marginBottom:16 }}>
+              {DEVICES.map(d => (
+                <IoTDeviceCard key={d.id} device={d} />
+              ))}
+            </div>
+            {/* Rechtlicher Hinweis */}
+            <div style={{ fontSize:11, color:'rgba(255,149,0,0.5)', borderTop:'1px solid rgba(255,149,0,0.07)', paddingTop:12, lineHeight:1.7 }}>
+              🇩🇪 <b>Rechtlicher Hinweis:</b> DSGVO-konform · IT-Sicherheitsgesetz · EN 50631-1 · Ende-zu-Ende-verschlüsselt
+            </div>
           </div>
         </div>
 
