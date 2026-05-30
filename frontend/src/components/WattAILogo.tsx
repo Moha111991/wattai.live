@@ -47,20 +47,21 @@ const WattAILogo = ({
     >
       <defs>
         {/* Gradient Definitions */}
+        {/* Hauptgradient: Orange → Amber — passt zum Website-Farbschema */}
         <linearGradient id="wattai-gradient-main" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#67e8f9', stopOpacity: 1 }} />
-          <stop offset="50%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#2563eb', stopOpacity: 1 }} />
+          <stop offset="0%" style={{ stopColor: '#ff9500', stopOpacity: 1 }} />
+          <stop offset="50%" style={{ stopColor: '#ff6b35', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: '#f97316', stopOpacity: 1 }} />
         </linearGradient>
 
         <linearGradient id="wattai-gradient-accent" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style={{ stopColor: '#fbbf24', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#f59e0b', stopOpacity: 1 }} />
+          <stop offset="0%" style={{ stopColor: '#ff9500', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: '#ff6b35', stopOpacity: 1 }} />
         </linearGradient>
 
         <linearGradient id="wattai-gradient-glow" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#67e8f9', stopOpacity: 0.8 }} />
-          <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0.2 }} />
+          <stop offset="0%" style={{ stopColor: '#ff9500', stopOpacity: 0.8 }} />
+          <stop offset="100%" style={{ stopColor: '#ff6b35', stopOpacity: 0.2 }} />
         </linearGradient>
 
         {/* Glow Filter */}
@@ -73,7 +74,7 @@ const WattAILogo = ({
         {animated && (
           <>
             <linearGradient id="wattai-energy-flow" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style={{ stopColor: '#67e8f9', stopOpacity: 0 }}>
+              <stop offset="0%" style={{ stopColor: '#ff9500', stopOpacity: 0 }}>
                 <animate
                   attributeName="stop-opacity"
                   values="0;1;0"
@@ -81,7 +82,7 @@ const WattAILogo = ({
                   repeatCount="indefinite"
                 />
               </stop>
-              <stop offset="50%" style={{ stopColor: '#3b82f6', stopOpacity: 0 }}>
+              <stop offset="50%" style={{ stopColor: '#ff6b35', stopOpacity: 0 }}>
                 <animate
                   attributeName="stop-opacity"
                   values="0;1;0"
@@ -90,7 +91,7 @@ const WattAILogo = ({
                   repeatCount="indefinite"
                 />
               </stop>
-              <stop offset="100%" style={{ stopColor: '#2563eb', stopOpacity: 0 }}>
+              <stop offset="100%" style={{ stopColor: '#f97316', stopOpacity: 0 }}>
                 <animate
                   attributeName="stop-opacity"
                   values="0;1;0"
@@ -195,7 +196,7 @@ const WattAILogo = ({
                     cx="0"
                     cy="-10"
                     r="2"
-                    fill="#fbbf24"
+                    fill="#ff9500"
                     opacity="0"
                   >
                     <animate
@@ -264,7 +265,7 @@ const WattAILogo = ({
 
             {/* ".live" in lighter weight */}
             <tspan
-              fill="#94a3b8"
+              fill="rgba(248,250,252,0.45)"
               fontWeight="500"
               fontSize={textHeight * 0.85}
             >
