@@ -24,14 +24,33 @@ const STYLES = `
   .th-visual{transition:transform .1s ease-out!important}
 
   @media(max-width:640px){
-    .th-root{ display:flex!important; flex-direction:column!important; min-height:auto!important }
+    .th-root{
+      display:flex!important; flex-direction:column!important;
+      min-height:auto!important; margin-bottom:16px!important;
+    }
     .th-visual{
       position:relative!important; display:block!important;
-      width:100%!important; height:160px!important;
+      width:100%!important; height:110px!important;
       top:auto!important; bottom:auto!important; right:auto!important;
-      opacity:1!important; order:-1;
+      opacity:0.75!important; order:-1;
     }
-    .th-left{ max-width:100%!important; padding:18px 18px 22px!important }
+    .th-left{
+      max-width:100%!important;
+      padding:10px 14px 14px!important;
+      gap:8px!important;
+    }
+    .th-left h1{ font-size:clamp(19px,5.5vw,26px)!important; line-height:1.1!important }
+    .th-left p{ font-size:11px!important; line-height:1.55!important;
+      display:-webkit-box!important; -webkit-line-clamp:2!important;
+      -webkit-box-orient:vertical!important; overflow:hidden!important }
+    .th-stat-card{ padding:6px 10px!important; min-width:62px!important }
+    .th-tag{ font-size:9px!important; padding:3px 8px!important }
+  }
+  @media(max-width:400px){
+    .th-visual{ height:80px!important }
+    .th-left{ padding:8px 12px 10px!important }
+    .th-left p{ display:none!important }
+    .th-orbit{ display:none!important }
   }
 `;
 
@@ -174,7 +193,7 @@ export default function TabHeader({
         onMouseLeave={handleMouseLeave}
         style={{
           position: 'relative', width: '100%',
-          minHeight: `clamp(${hasTicker ? '296px' : '260px'}, 32vw, ${hasTicker ? '400px' : '360px'})`,
+          minHeight: `clamp(${hasTicker ? '220px' : '190px'}, 28vw, ${hasTicker ? '400px' : '360px'})`,
           overflow: 'hidden', marginBottom: 32,
           background: 'linear-gradient(160deg,#020617 0%,#050d1a 60%,#040810 100%)',
           borderBottom: `1px solid ${accentColor}18`,
@@ -228,13 +247,13 @@ export default function TabHeader({
         ))}
 
         {/* ── Spinning orbit rings ── */}
-        <div aria-hidden="true" style={{
+        <div aria-hidden="true" className="th-orbit" style={{
           position: 'absolute', zIndex: 1, top: '50%', left: '50%',
           width: 500, height: 500, marginTop: -250, marginLeft: -250,
           borderRadius: '50%', border: `1px solid ${accentColor}06`,
           animation: 'th-spin 80s linear infinite', pointerEvents: 'none',
         }} />
-        <div aria-hidden="true" style={{
+        <div aria-hidden="true" className="th-orbit" style={{
           position: 'absolute', zIndex: 1, top: '50%', left: '50%',
           width: 360, height: 360, marginTop: -180, marginLeft: -180,
           borderRadius: '50%', border: `1px solid ${gradientTo}05`,
