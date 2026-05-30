@@ -97,101 +97,146 @@ export default function AppFooter() {
 **Angaben gemäß § 5 TMG**
 
 WattAI.live
-Musterstraße 1
-12345 Musterstadt
+– Betreiber: Mohammad Hameed –
 Deutschland
 
-**Vertreten durch:**
-Max Mustermann (Geschäftsführer)
-
 **Kontakt:**
-Telefon: +49 (0) 123 456 789
 E-Mail: kontakt@wattai.live
+Web: https://wattai.live
 
-**Registereintrag:**
-Eingetragen im Handelsregister.
-Registergericht: Amtsgericht Musterstadt
-Registernummer: HRB 12345
+**Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:**
+Mohammad Hameed
 
-**Umsatzsteuer-ID:**
-Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: DE 123456789
+**Hinweis zur Plattform:**
+WattAI.live ist eine KI-gestützte Energiemanagement-Plattform für Elektrofahrzeuge, PV-Anlagen, Heimspeicher und Smart-Home-Integration.
 
-**Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:**
-Max Mustermann, Musterstraße 1, 12345 Musterstadt
-
-**Streitschlichtung:**
-Die EU-Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/
-Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+**EU-Streitschlichtung:**
+Die EU-Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
+https://ec.europa.eu/consumers/odr/
+Wir sind nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
 
 **Haftung für Inhalte:**
-Die Inhalte dieser Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.
+Die Inhalte dieser Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich.
+
+**Haftung für Links:**
+Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen.
+
+Stand: Mai 2026
   `;
 
   const DATENSCHUTZ_TEXT = `
-**Datenschutzerklärung gemäß DSGVO**
+**Datenschutzerklärung gemäß DSGVO (EU 2016/679)**
+
+Stand: Mai 2026
 
 **1. Verantwortlicher**
-WattAI.live, Musterstraße 1, 12345 Musterstadt, kontakt@wattai.live
+Mohammad Hameed — WattAI.live
+E-Mail: datenschutz@wattai.live
+Web: https://wattai.live
 
-**2. Erhebung und Speicherung personenbezogener Daten**
-Wir erheben bei der Nutzung unserer Plattform folgende Daten: E-Mail-Adresse, Name, Gerätedaten (Energieverbrauch, Ladestatus) sowie technische Zugriffsdaten (IP, Browser, Zeitstempel).
+**2. Erhobene Daten**
+Wir erheben bei der Nutzung der Plattform folgende Daten:
+– E-Mail-Adresse und Name (bei Registrierung)
+– Gerätedaten: Energieverbrauch, Ladestatus, SoC, PV-Ertrag
+– Technische Zugriffsdaten: IP-Adresse, Browser, Zeitstempel (Logs)
+– Zahlungsdaten (verarbeitet durch Stripe – wir speichern keine Kartendaten)
 
 **3. Zweck der Verarbeitung**
-- Bereitstellung der Energiemanagement-Dienste (Art. 6 Abs. 1 lit. b DSGVO)
-- Verbesserung unserer KI-Algorithmen (berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO)
-- Einhaltung gesetzlicher Pflichten (Art. 6 Abs. 1 lit. c DSGVO)
+– Bereitstellung der EMS-Dienste (Art. 6 Abs. 1 lit. b DSGVO)
+– KI-Optimierung und Personalisierung (berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO)
+– Einhaltung gesetzlicher Pflichten (Art. 6 Abs. 1 lit. c DSGVO)
+– Zahlungsabwicklung (Art. 6 Abs. 1 lit. b DSGVO)
 
 **4. Weitergabe an Dritte**
-Eine Weitergabe Ihrer Daten an Dritte erfolgt ausschließlich im Rahmen der Vertragserfüllung (z.B. Zahlungsabwicklung via Stripe) oder bei gesetzlicher Pflicht.
+Daten werden nur weitergegeben an:
+– Stripe Inc. (USA) — Zahlungsabwicklung, Standardvertragsklauseln gem. Art. 46 DSGVO
+– Railway.app — Hosting-Infrastruktur (EU-Server)
+Kein Verkauf von Daten an Dritte. Keine Weitergabe zu Werbezwecken.
 
-**5. Datenspeicherung**
-Alle Daten werden auf Servern in Deutschland gespeichert. Die Übertragung erfolgt verschlüsselt via TLS 1.3.
+**5. Datenspeicherung & Sicherheit**
+Alle Daten werden auf Servern innerhalb der EU gespeichert.
+Übertragung ausschließlich verschlüsselt via TLS 1.3.
+Passwörter werden mit bcrypt gehasht gespeichert.
 
-**6. Ihre Rechte (Art. 15–22 DSGVO)**
-Sie haben das Recht auf: Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch.
+**6. Cookies**
+Wir verwenden ausschließlich technisch notwendige Cookies (Session, Authentifizierung).
+Analyse- oder Marketingcookies werden nur mit ausdrücklicher Einwilligung gesetzt.
+
+**7. Ihre Rechte (Art. 15–22 DSGVO)**
+✅ Auskunft über gespeicherte Daten (Art. 15)
+✅ Berichtigung unrichtiger Daten (Art. 16)
+✅ Löschung Ihrer Daten (Art. 17)
+✅ Einschränkung der Verarbeitung (Art. 18)
+✅ Datenübertragbarkeit als JSON/CSV (Art. 20)
+✅ Widerspruch gegen Verarbeitung (Art. 21)
+
 Anfragen richten Sie an: datenschutz@wattai.live
+Antwort innerhalb von 30 Tagen (Art. 12 DSGVO).
 
-**7. Beschwerderecht**
-Sie haben das Recht, sich bei der zuständigen Datenschutzbehörde zu beschweren.
+**8. Beschwerderecht**
+Sie haben das Recht, sich bei der zuständigen Datenschutzaufsichtsbehörde zu beschweren.
+Zuständig in Deutschland: Der Bundesbeauftragte für den Datenschutz (BfDI).
 
-**8. Cookies**
-Wir verwenden ausschließlich technisch notwendige Cookies. Marketingcookies werden nur mit Ihrer ausdrücklichen Einwilligung gesetzt.
+**9. Änderungen dieser Erklärung**
+Wir behalten uns vor, diese Datenschutzerklärung bei Änderungen der Plattform oder gesetzlichen Anforderungen anzupassen. Die aktuelle Version ist stets auf wattai.live abrufbar.
   `;
 
   const AGB_TEXT = `
 **Allgemeine Geschäftsbedingungen (AGB)**
+WattAI.live — Stand: Mai 2026
 
 **§ 1 Geltungsbereich**
-Diese AGB gelten für alle Verträge zwischen WattAI.live und Nutzern der WattAI.live-Plattform.
+Diese AGB gelten für alle Verträge zwischen WattAI.live (Betreiber: Mohammad Hameed) und den Nutzern der WattAI.live-Plattform unter https://wattai.live.
 
 **§ 2 Vertragsschluss**
-Der Vertrag kommt durch Registrierung auf der Plattform und Bestätigung per E-Mail zustande.
+Der Nutzungsvertrag kommt durch Registrierung auf der Plattform und Bestätigung per E-Mail zustande. Für kostenpflichtige Pläne gilt der Vertrag ab Zahlungseingang als geschlossen.
 
 **§ 3 Leistungsumfang**
-WattAI.live stellt eine Softwareplattform zur Energieoptimierung bereit. Der Funktionsumfang richtet sich nach dem gewählten Tarif (Free, Pro, Business).
+WattAI.live stellt eine KI-gestützte Softwareplattform für Energiemanagement bereit (EV-Laden, PV-Optimierung, Heimspeicher, Smart Home). Der Funktionsumfang richtet sich nach dem gewählten Tarif:
+– Free: Echtzeit-Monitoring, Basisvisualisierung (1 Gerät)
+– Pro (19 €/Monat): KI-Optimierung, bis zu 3 Geräte, Verlaufsanalyse
+– Business (49 €/Standort/Monat): Flottenmanagement, bis zu 25 Geräte, API-Zugang
 
 **§ 4 Preise und Zahlung**
-Pro- und Business-Pläne werden monatlich per Kreditkarte oder SEPA-Lastschrift abgerechnet. Alle Preise verstehen sich zzgl. der gesetzlichen Mehrwertsteuer (19 % MwSt.).
+Pro- und Business-Pläne werden monatlich im Voraus abgerechnet (Kreditkarte oder SEPA via Stripe).
+Alle Preise verstehen sich zzgl. der gesetzlichen Mehrwertsteuer (19 % MwSt.).
+Es besteht kein Anspruch auf ununterbrochene Verfügbarkeit externer Geräte-APIs.
 
 **§ 5 Kündigung**
-Bezahlte Pläne sind monatlich kündbar. Die Kündigung erfolgt schriftlich per E-Mail an kontakt@wattai.live. Nach Kündigung wird auf den Free-Plan zurückgestuft.
+Bezahlte Pläne sind monatlich kündbar, ohne Mindestlaufzeit.
+Kündigung per E-Mail an kontakt@wattai.live oder über den Account-Bereich.
+Nach Kündigung wird der Account automatisch auf den Free-Plan zurückgestuft. Gespeicherte Daten bleiben 30 Tage abrufbar.
 
 **§ 6 Haftungsbeschränkung**
-WattAI.live haftet nicht für Ausfälle externer Dienste (z.B. Smart-Meter-Gateways, Wechselrichter-APIs) sowie für indirekte Schäden, die durch Optimierungsempfehlungen entstehen.
+WattAI.live haftet nicht für:
+– Ausfälle externer Dienste (Gerätehersteller-APIs, Smart-Meter-Gateways)
+– Schäden durch fehlerhafte Gerätekonfiguration durch den Nutzer
+– Indirekte oder Folgeschäden durch KI-Optimierungsempfehlungen
+Die Haftung für grobe Fahrlässigkeit und Vorsatz bleibt unberührt.
 
-**§ 7 Datenschutz**
-Die Verarbeitung personenbezogener Daten erfolgt gemäß unserer Datenschutzerklärung und der DSGVO.
+**§ 7 Verfügbarkeit**
+Wir streben eine Plattformverfügbarkeit von 99 % p.a. an. Wartungsarbeiten werden nach Möglichkeit angekündigt. Ein Anspruch auf ständige Verfügbarkeit besteht nicht.
 
-**§ 8 Änderungen der AGB**
-Wir behalten uns vor, diese AGB mit einer Frist von 4 Wochen zu ändern. Nutzer werden per E-Mail informiert.
+**§ 8 Datenschutz**
+Die Verarbeitung personenbezogener Daten erfolgt gemäß unserer Datenschutzerklärung und der DSGVO (EU 2016/679).
 
-**§ 9 Anwendbares Recht / Gerichtsstand**
-Es gilt deutsches Recht. Gerichtsstand ist Musterstadt (Deutschland).
+**§ 9 Nutzerpflichten**
+Nutzer sind verpflichtet:
+– Zugangsdaten geheim zu halten
+– Die Plattform nicht missbräuchlich zu nutzen
+– Gerätekonfigurationen sorgfältig durchzuführen
 
-**§ 10 Salvatorische Klausel**
+**§ 10 Änderungen der AGB**
+Wir behalten uns vor, diese AGB mit einer Ankündigungsfrist von 4 Wochen zu ändern. Nutzer werden per E-Mail informiert. Widerspruch gilt als Kündigung.
+
+**§ 11 Anwendbares Recht / Gerichtsstand**
+Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts (CISG).
+Für Verbraucher gilt der Gerichtsstand am Wohnsitz des Nutzers.
+
+**§ 12 Salvatorische Klausel**
 Sollten einzelne Bestimmungen unwirksam sein, bleiben die übrigen Bestimmungen hiervon unberührt.
 
-Stand: Mai 2026
+Kontakt: kontakt@wattai.live
   `;
 
   const renderModal = () => {
