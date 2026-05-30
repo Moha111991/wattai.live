@@ -63,6 +63,22 @@ const WAI_CSS = `
   .wai-btn-s:hover{background:rgba(255,255,255,0.09)!important;border-color:rgba(255,255,255,.22)!important}
   .wai-form-section{animation:wai-slide-in .3s ease!important}
   .wai-input:focus{border-color:rgba(255,107,53,.5)!important;background:rgba(255,255,255,.07)!important;box-shadow:0 0 0 3px rgba(255,107,53,.12)!important}
+
+  /* ─── Form field grid ─── */
+  .wai-fields{display:flex;flex-wrap:wrap;gap:10px}
+  .wai-field-full{flex:1 1 100%;min-width:0}
+  .wai-field-half{flex:1 1 calc(50% - 5px);min-width:130px}
+  .wai-field-sm{flex:1 1 100px;min-width:90px;max-width:130px}
+
+  @media(max-width:640px){
+    .wai-fields{gap:8px!important}
+    .wai-field-full{flex:1 1 100%!important}
+    .wai-field-half{flex:1 1 100%!important;max-width:100%!important}
+    .wai-field-sm{flex:1 1 calc(50% - 4px)!important;min-width:0!important;max-width:calc(50% - 4px)!important}
+    .wai-form-section{padding:12px 12px 14px!important}
+    .wai-proto-btn{padding:5px 10px!important;font-size:10px!important}
+    .wai-input{font-size:12px!important;padding:8px 10px!important}
+  }
 `;
 
 /* ─── Device slot definitions ───────────────────────────────────── */
@@ -239,13 +255,13 @@ const ProtoBadge: React.FC<{ label: string; accent: string }> = ({ label, accent
 
 /* ─── Input ──────────────────────────────────────────────────────── */
 const FInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string; accent: string }> = ({ label, accent, ...props }) => (
-  <label style={{ display:'flex', flexDirection:'column', gap:4, flex:1, minWidth:130 }}>
-    <span style={{ fontSize:10, color:'rgba(248,250,252,0.4)', letterSpacing:'0.13em', textTransform:'uppercase', fontFamily:'monospace' }}>{label}</span>
+  <label style={{ display:'flex', flexDirection:'column', gap:4, width:'100%' }}>
+    <span style={{ fontSize:10, color:'rgba(248,250,252,0.4)', letterSpacing:'0.13em', textTransform:'uppercase', fontFamily:'monospace', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{label}</span>
     <input {...props} className="wai-input" style={{
       background:'rgba(255,255,255,0.05)', border:`1px solid ${accent}28`, borderRadius:9,
       padding:'9px 12px', color:'#f8fafc', fontSize:13, outline:'none',
       fontFamily:'monospace', width:'100%', boxSizing:'border-box',
-      transition:'all .25s ease', ...props.style
+      transition:'all .25s ease', minWidth:0, ...props.style
     }}/>
   </label>
 );
@@ -440,7 +456,7 @@ const ConnectPanel: React.FC<{
       padding:'18px 22px 20px',
     }}>
       {/* Protocol selector */}
-      <div style={{ display:'flex', gap:8, marginBottom:18, flexWrap:'wrap' }}>
+      <div className="wai-proto-bar" style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
         <span style={{ fontSize:10, color:'rgba(248,250,252,0.35)', letterSpacing:'0.12em', textTransform:'uppercase', alignSelf:'center', marginRight:4 }}>Protokoll</span>
         {slot.protos.map(p => (
           <button key={p} type="button"
@@ -451,7 +467,7 @@ const ConnectPanel: React.FC<{
               background: proto===p ? `${accent}20` : 'rgba(255,255,255,0.04)',
               color: proto===p ? accent : 'rgba(248,250,252,0.45)',
               cursor:'pointer', outline:'none', transition:'all .25s ease',
-              letterSpacing:'0.06em',
+              letterSpacing:'0.06em', whiteSpace:'nowrap',
             }}>
             {protoLabels[p] || p}
           </button>
@@ -459,29 +475,43 @@ const ConnectPanel: React.FC<{
       </div>
 
       {/* Fields */}
-      <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
+      <div className="wai-fields">
         {/* Network fields */}
         {!isCloud && !isMqtt && <>
-          <FInput label="IP-Adresse" accent={accent} type="text" value={ip}
-            onChange={e=>setIp(e.target.value)} placeholder="192.168.1.50" style={{ minWidth:140 }}/>
-          <FInput label={`Port (Standard: ${slot.defaultPort})`} accent={accent} type="number" value={port}
-            onChange={e=>setPort(Number(e.target.value))} style={{ maxWidth:110 }}/>
+          <div className="wai-field-half">
+            <FInput label="IP-Adresse" accent={accent} type="text" value={ip}
+              onChange={e=>setIp(e.target.value)} placeholder="192.168.1.50"/>
+          </div>
+          <div className="wai-field-sm">
+            <FInput label={`Port (Std: ${slot.defaultPort})`} accent={accent} type="number" value={port}
+              onChange={e=>setPort(Number(e.target.value))}/>
+          </div>
         </>}
 
         {/* MQTT fields */}
         {isMqtt && <>
-          <FInput label="Broker-Adresse" accent={accent} type="text" value={mqttBroker}
-            onChange={e=>setMqttBroker(e.target.value)} placeholder="192.168.1.10 oder mqtt.example.com" style={{ minWidth:200 }}/>
-          <FInput label={`Port (${mqttTls ? '8883 TLS' : '1883 plain'})`} accent={accent} type="number" value={mqttPort}
-            onChange={e=>setMqttPort(Number(e.target.value))} style={{ maxWidth:120 }}/>
-          <FInput label="Topic-Prefix" accent={accent} type="text" value={mqttTopic}
-            onChange={e=>setMqttTopic(e.target.value)} placeholder="energy/battery" style={{ minWidth:180 }}/>
-          <FInput label="Benutzername (optional)" accent={accent} type="text" value={mqttUser}
-            onChange={e=>setMqttUser(e.target.value)} placeholder="mqtt_user" style={{ minWidth:140 }}/>
-          <FInput label="Passwort (optional)" accent={accent} type="password" value={mqttPass}
-            onChange={e=>setMqttPass(e.target.value)} placeholder="••••••••" style={{ minWidth:140 }}/>
+          <div className="wai-field-half">
+            <FInput label="Broker-Adresse" accent={accent} type="text" value={mqttBroker}
+              onChange={e=>setMqttBroker(e.target.value)} placeholder="192.168.1.10 oder mqtt.example.com"/>
+          </div>
+          <div className="wai-field-sm">
+            <FInput label={`Port (${mqttTls ? '8883 TLS' : '1883'})`} accent={accent} type="number" value={mqttPort}
+              onChange={e=>setMqttPort(Number(e.target.value))}/>
+          </div>
+          <div className="wai-field-half">
+            <FInput label="Topic-Prefix" accent={accent} type="text" value={mqttTopic}
+              onChange={e=>setMqttTopic(e.target.value)} placeholder="energy/battery"/>
+          </div>
+          <div className="wai-field-half">
+            <FInput label="Benutzername (optional)" accent={accent} type="text" value={mqttUser}
+              onChange={e=>setMqttUser(e.target.value)} placeholder="mqtt_user"/>
+          </div>
+          <div className="wai-field-half">
+            <FInput label="Passwort (optional)" accent={accent} type="password" value={mqttPass}
+              onChange={e=>setMqttPass(e.target.value)} placeholder="••••••••"/>
+          </div>
           {/* TLS toggle */}
-          <label style={{ display:'flex', flexDirection:'column', gap:4, justifyContent:'flex-end', paddingBottom:4 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:4, justifyContent:'flex-end', paddingBottom:4 }}>
             <span style={{ fontSize:10, color:'rgba(248,250,252,0.4)', letterSpacing:'0.13em', textTransform:'uppercase', fontFamily:'monospace' }}>TLS / SSL</span>
             <button type="button"
               onClick={() => { setMqttTls(t => { const next = !t; setMqttPort(p => p === (t ? 8883 : 1883) ? (next ? 8883 : 1883) : p); return next; }); }}
@@ -490,16 +520,16 @@ const ConnectPanel: React.FC<{
                 background: mqttTls ? `${accent}20` : 'rgba(255,255,255,0.04)',
                 border: mqttTls ? `1px solid ${accent}55` : `1px solid ${accent}28`,
                 color: mqttTls ? accent : 'rgba(248,250,252,0.35)', fontSize:12, fontWeight:700, outline:'none',
-                transition:'all .25s ease', fontFamily:'monospace',
+                transition:'all .25s ease', fontFamily:'monospace', whiteSpace:'nowrap',
               }}>
               <span style={{ width:16, height:16, borderRadius:'50%', background: mqttTls ? accent : 'rgba(255,255,255,0.1)',
                 border:`2px solid ${mqttTls ? accent : 'rgba(255,255,255,0.2)'}`, display:'inline-block',
                 boxShadow: mqttTls ? `0 0 8px ${accent}60` : 'none', transition:'all .25s ease' }}/>
               {mqttTls ? 'TLS aktiv (Port 8883)' : 'TLS deaktiviert'}
             </button>
-          </label>
+          </div>
           {/* Topic info box */}
-          <div style={{ width:'100%', padding:'10px 14px', borderRadius:10,
+          <div className="wai-field-full" style={{ padding:'10px 14px', borderRadius:10,
             background:'rgba(255,255,255,0.03)', border:`1px solid ${accent}18`,
             fontSize:10, color:'rgba(248,250,252,0.35)', fontFamily:'monospace', lineHeight:1.7 }}>
             <div style={{ color:accent, fontWeight:700, marginBottom:4 }}>📡 Subscribed Topics</div>
@@ -511,50 +541,45 @@ const ConnectPanel: React.FC<{
 
         {/* Cloud fields */}
         {isCloud && <>
-          <FInput label="Device-ID" accent={accent} type="text" value={deviceId}
-            onChange={e=>setDeviceId(e.target.value)} placeholder="z.B. BAT-001"/>
-          <FInput label="API Base URL" accent={accent} type="text" value={apiBaseUrl}
-            onChange={e=>setApiBaseUrl(e.target.value)} placeholder="https://cloud.example.com/api" style={{ minWidth:200 }}/>
-          <FInput label="API Key" accent={accent} type="password" value={apiKey}
-            onChange={e=>setApiKey(e.target.value)} placeholder="••••••••"/>
+          <div className="wai-field-half">
+            <FInput label="Device-ID" accent={accent} type="text" value={deviceId}
+              onChange={e=>setDeviceId(e.target.value)} placeholder="z.B. BAT-001"/>
+          </div>
+          <div className="wai-field-full">
+            <FInput label="API Base URL" accent={accent} type="text" value={apiBaseUrl}
+              onChange={e=>setApiBaseUrl(e.target.value)} placeholder="https://cloud.example.com/api"/>
+          </div>
+          <div className="wai-field-half">
+            <FInput label="API Key" accent={accent} type="password" value={apiKey}
+              onChange={e=>setApiKey(e.target.value)} placeholder="••••••••"/>
+          </div>
         </>}
 
         {/* Battery-specific */}
         {slot.key==='battery' && !isCloud && !isMqtt && <>
-          <FInput label="SoC (%)" accent={accent} type="number" value={soc} min={0} max={100}
-            onChange={e=>setSoc(Number(e.target.value))} style={{ maxWidth:90 }}/>
-          <FInput label="SoH (%)" accent={accent} type="number" value={soh} min={0} max={100}
-            onChange={e=>setSoh(Number(e.target.value))} style={{ maxWidth:90 }}/>
-          <FInput label="Spannung (V)" accent={accent} type="number" value={voltage}
-            onChange={e=>setVoltage(Number(e.target.value))} style={{ maxWidth:110 }}/>
-          <FInput label="Strom (A)" accent={accent} type="number" value={current}
-            onChange={e=>setCurrent(Number(e.target.value))} style={{ maxWidth:100 }}/>
-          <FInput label="Temperatur (°C)" accent={accent} type="number" value={temperature}
-            onChange={e=>setTemperature(Number(e.target.value))} style={{ maxWidth:120 }}/>
+          <div className="wai-field-sm"><FInput label="SoC (%)" accent={accent} type="number" value={soc} min={0} max={100} onChange={e=>setSoc(Number(e.target.value))}/></div>
+          <div className="wai-field-sm"><FInput label="SoH (%)" accent={accent} type="number" value={soh} min={0} max={100} onChange={e=>setSoh(Number(e.target.value))}/></div>
+          <div className="wai-field-sm"><FInput label="Spannung (V)" accent={accent} type="number" value={voltage} onChange={e=>setVoltage(Number(e.target.value))}/></div>
+          <div className="wai-field-sm"><FInput label="Strom (A)" accent={accent} type="number" value={current} onChange={e=>setCurrent(Number(e.target.value))}/></div>
+          <div className="wai-field-sm"><FInput label="Temp. (°C)" accent={accent} type="number" value={temperature} onChange={e=>setTemperature(Number(e.target.value))}/></div>
         </>}
 
         {/* Inverter-specific */}
         {slot.key==='inverter' && !isCloud && !isMqtt && <>
-          <FInput label="Leistung (kW)" accent={accent} type="number" value={power}
-            onChange={e=>setPower(Number(e.target.value))} style={{ maxWidth:120 }}/>
-          <FInput label="Spannung (V)" accent={accent} type="number" value={voltage}
-            onChange={e=>setVoltage(Number(e.target.value))} style={{ maxWidth:110 }}/>
-          <FInput label="Strom (A)" accent={accent} type="number" value={current}
-            onChange={e=>setCurrent(Number(e.target.value))} style={{ maxWidth:100 }}/>
-          <FInput label="Temperatur (°C)" accent={accent} type="number" value={temperature}
-            onChange={e=>setTemperature(Number(e.target.value))} style={{ maxWidth:120 }}/>
+          <div className="wai-field-sm"><FInput label="Leistung (kW)" accent={accent} type="number" value={power} onChange={e=>setPower(Number(e.target.value))}/></div>
+          <div className="wai-field-sm"><FInput label="Spannung (V)" accent={accent} type="number" value={voltage} onChange={e=>setVoltage(Number(e.target.value))}/></div>
+          <div className="wai-field-sm"><FInput label="Strom (A)" accent={accent} type="number" value={current} onChange={e=>setCurrent(Number(e.target.value))}/></div>
+          <div className="wai-field-sm"><FInput label="Temp. (°C)" accent={accent} type="number" value={temperature} onChange={e=>setTemperature(Number(e.target.value))}/></div>
         </>}
 
         {/* Wallbox-specific */}
         {slot.key==='wallbox' && !isCloud && !isMqtt && <>
-          <FInput label="Ladestrom (A)" accent={accent} type="number" value={chargeCurrent} min={6} max={32}
-            onChange={e=>setChargeCurrent(Number(e.target.value))} style={{ maxWidth:120 }}/>
+          <div className="wai-field-sm"><FInput label="Ladestrom (A)" accent={accent} type="number" value={chargeCurrent} min={6} max={32} onChange={e=>setChargeCurrent(Number(e.target.value))}/></div>
         </>}
 
         {/* Smart Meter-specific */}
         {slot.key==='meter' && !isCloud && !isMqtt && <>
-          <FInput label="Meter-ID" accent={accent} type="text" value={meterId}
-            onChange={e=>setMeterId(e.target.value)} placeholder="z.B. 123456"/>
+          <div className="wai-field-half"><FInput label="Meter-ID" accent={accent} type="text" value={meterId} onChange={e=>setMeterId(e.target.value)} placeholder="z.B. 123456"/></div>
         </>}
       </div>
 
