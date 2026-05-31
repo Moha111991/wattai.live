@@ -32,24 +32,25 @@ interface SysState { grid_power?: number; pv_power?: number; battery_soc?: numbe
 
 // ── IoT Hausautomation Types ─────────────────────────────────────────────────
 const DEVICES = [
-  { id:'wp',  icon:'🔥', label:'Wärmepumpe',  watt:2200, proto:'KNX', color:'#ff6b35' },
-  { id:'wm',  icon:'🫧', label:'Waschmaschine',watt:1800, proto:'Zigbee', color:'#3b82f6' },
-  { id:'tr',  icon:'💨', label:'Trockner',     watt:2000, proto:'Z-Wave', color:'#a855f7' },
-  { id:'sp',  icon:'🍽️', label:'Spülmaschine', watt:1200, proto:'Home Assistant', color:'#22c55e' },
-  { id:'ac',  icon:'❄️', label:'Klimaanlage',  watt:1500, proto:'openHAB', color:'#22d3ee' },
-  { id:'lx',  icon:'💡', label:'Smart Licht',  watt:80,   proto:'Loxone', color:'#fbbf24' },
+  { id:'wp', icon:'🔥', label:'Wärmepumpe',   color:'#ff6b35' },
+  { id:'wm', icon:'🫧', label:'Waschmaschine', color:'#3b82f6' },
+  { id:'tr', icon:'💨', label:'Trockner',      color:'#a855f7' },
+  { id:'sp', icon:'🍽️', label:'Spülmaschine',  color:'#22c55e' },
+  { id:'ac', icon:'❄️', label:'Klimaanlage',   color:'#22d3ee' },
+  { id:'lx', icon:'💡', label:'Smart Licht',   color:'#fbbf24' },
 ];
 const PROTOCOLS = ['KNX','Zigbee','Z-Wave','Home Assistant','openHAB','Loxone'];
 const AUTOMATIONS = [
-  { id:'pv',   label:'PV-Überschuss',  desc:'Startet automatisch bei Solarüberschuss' },
+  { id:'pv',   label:'PV-Überschuss',   desc:'Startet automatisch bei Solarüberschuss' },
   { id:'tarif',label:'Günstigster Tarif',desc:'Nutzt den günstigsten Netztarif (Tibber/aWATTar)' },
-  { id:'zeit', label:'Zeitfenster',     desc:'Startet in definiertem Zeitfenster' },
-  { id:'sg',   label:'SG-Ready',        desc:'Steuersignal vom Netzbetreiber' },
+  { id:'zeit', label:'Zeitfenster',      desc:'Startet in definiertem Zeitfenster' },
+  { id:'sg',   label:'SG-Ready',         desc:'Steuersignal vom Netzbetreiber' },
 ];
 
-type ConnStatus = 'disconnected' | 'scanning' | 'pairing' | 'connected' | 'error';
-type DeviceState = {
-  coupled: boolean; automation: string; active: boolean; kwh: number; schedule: string;
+type ConnStatus = 'disconnected' | 'scanning' | 'connected' | 'error';
+type ConnectedDevice = {
+  uid: string; slotId: string; proto: string;
+  automation: string; active: boolean; kwh: number; schedule: string;
   connStatus: ConnStatus; pairingCode: string; ip: string; signal: number; lastSeen: string;
 };
 
@@ -127,59 +128,78 @@ function HausautomationPanel() {
   const [selectedAuto, setSelectedAuto] = useState<string>('pv');
   const [schedule, setSchedule] = useState<string>('11:00');
   const [connecting, setConnecting] = useState(false);
-  const [managingId, setManagingId] = useState<string|null>(null);
-  const [deviceStates, setDeviceStates] = useState<Record<string, DeviceState>>(() =>
-    Object.fromEntries(DEVICES.map(d => [d.id, {
-      coupled: false, automation:'pv', active: false,
-      kwh: +(Math.random()*3).toFixed(2), schedule:'11:00',
-      connStatus: 'disconnected' as ConnStatus,
-      pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen: '–'
-    }]))
+  const [managingUid, setManagingUid] = useState<string|null>(null);
+  // slot id → array of connected devices
+  const [slotDevices, setSlotDevices] = useState<Record<string, ConnectedDevice[]>>(() =>
+    Object.fromEntries(DEVICES.map(d => [d.id, []]))
   );
+  // wizard temp state for connection being built
+  const [wizardConn, setWizardConn] = useState<{ pairingCode:string; ip:string; signal:number; lastSeen:string; connStatus:ConnStatus }>(() => ({
+    pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen:'–', connStatus:'disconnected'
+  }));
 
   const dev = DEVICES.find(d => d.id === selectedDevice);
-  const ds = selectedDevice ? deviceStates[selectedDevice] : null;
+  // all connected devices across all slots (flat list)
+  const allConnected = DEVICES.flatMap(d => slotDevices[d.id]);
 
   const handleConnect = useCallback(() => {
     if (!selectedDevice || !selectedProto) return;
     setConnecting(true);
-    setDeviceStates(prev => ({ ...prev, [selectedDevice]: { ...prev[selectedDevice], connStatus: 'scanning' } }));
+    setWizardConn(prev => ({ ...prev, connStatus: 'scanning' }));
   }, [selectedDevice, selectedProto]);
 
   const handleConnectDone = useCallback(() => {
     setConnecting(false);
     const now = new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
-    setDeviceStates(prev => ({ ...prev, [selectedDevice]: {
-      ...prev[selectedDevice], coupled: true, connStatus: 'connected',
-      ip: rndIP(), signal: rndSignal(), lastSeen: now
-    }}));
+    const newDev: ConnectedDevice = {
+      uid: Math.random().toString(36).slice(2,10),
+      slotId: selectedDevice,
+      proto: selectedProto,
+      automation: 'pv', active: false,
+      kwh: +(Math.random()*3).toFixed(2), schedule: '11:00',
+      connStatus: 'connected',
+      pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen: now,
+    };
+    setSlotDevices(prev => ({ ...prev, [selectedDevice]: [...prev[selectedDevice], newDev] }));
+    setWizardConn({ pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen: '–', connStatus: 'disconnected' });
     setStep(4);
-  }, [selectedDevice]);
+  }, [selectedDevice, selectedProto]);
 
-  const handleDisconnect = useCallback((id: string) => {
-    setDeviceStates(prev => ({ ...prev, [id]: { ...prev[id], coupled: false, active: false, connStatus: 'disconnected' } }));
+  // uid of the device just added (last in slot)
+  const lastAddedUid = selectedDevice ? (slotDevices[selectedDevice].at(-1)?.uid ?? '') : '';
+
+  const handleDisconnect = useCallback((slotId: string, uid: string) => {
+    setSlotDevices(prev => ({ ...prev, [slotId]: prev[slotId].filter(d => d.uid !== uid) }));
   }, []);
 
-  const handleReconnect = useCallback((id: string) => {
-    setDeviceStates(prev => ({ ...prev, [id]: { ...prev[id], connStatus: 'scanning' } }));
+  const handleReconnect = useCallback((slotId: string, uid: string) => {
+    setSlotDevices(prev => ({
+      ...prev, [slotId]: prev[slotId].map(d => d.uid === uid ? { ...d, connStatus: 'scanning' } : d)
+    }));
     setTimeout(() => {
       const now = new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
-      setDeviceStates(prev => ({ ...prev, [id]: { ...prev[id], coupled: true, active: true, connStatus: 'connected', lastSeen: now, signal: rndSignal() } }));
+      setSlotDevices(prev => ({
+        ...prev, [slotId]: prev[slotId].map(d => d.uid === uid ? { ...d, active: true, connStatus: 'connected', lastSeen: now, signal: rndSignal() } : d)
+      }));
     }, 2200);
   }, []);
 
   const handleActivate = useCallback(() => {
-    if (!selectedDevice) return;
-    setDeviceStates(prev => ({ ...prev, [selectedDevice]: { ...prev[selectedDevice], automation: selectedAuto, active: true, schedule } }));
+    if (!selectedDevice || !lastAddedUid) return;
+    setSlotDevices(prev => ({
+      ...prev, [selectedDevice]: prev[selectedDevice].map(d =>
+        d.uid === lastAddedUid ? { ...d, automation: selectedAuto, active: true, schedule } : d
+      )
+    }));
     setStep(5);
-  }, [selectedDevice, selectedAuto, schedule]);
+  }, [selectedDevice, lastAddedUid, selectedAuto, schedule]);
 
   const handleReset = useCallback(() => {
-    setStep(1); setSelectedDevice(''); setSelectedProto(''); setConnecting(false); setManagingId(null);
+    setStep(1); setSelectedDevice(''); setSelectedProto(''); setConnecting(false); setManagingUid(null);
+    setWizardConn({ pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen:'–', connStatus:'disconnected' });
   }, []);
 
   const STEPS = ['Gerät wählen','Protokoll','Verbinden','Automatisierung','Live-Status'];
-  const connectedDevices = DEVICES.filter(d => deviceStates[d.id].coupled);
 
   return (
     <div style={{ fontFamily:'monospace' }}>
@@ -206,40 +226,61 @@ function HausautomationPanel() {
       {step === 1 && (
         <div style={{ animation:'wai-fade-in 0.3s ease' }}>
           <div style={{ fontSize:12, color:'rgba(248,250,252,0.45)', marginBottom:14, letterSpacing:'0.04em' }}>
-            Wählen Sie ein Gerät, das Sie mit WattAI verbinden möchten:
+            Wählen Sie eine Kategorie, um ein Gerät zu verbinden:
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))', gap:10 }}>
             {DEVICES.map(d => {
-              const st = deviceStates[d.id];
+              const devList = slotDevices[d.id];
+              const hasDevices = devList.length > 0;
               return (
-                <button key={d.id} type="button" onClick={() => { setSelectedDevice(d.id); setSelectedProto(d.proto); setStep(2); }}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 14px', borderRadius:13, textAlign:'left',
-                    background: st.coupled ? `${d.color}12` : 'rgba(255,255,255,0.03)',
-                    border: `1.5px solid ${st.coupled ? d.color+'55' : 'rgba(255,255,255,0.07)'}`,
-                    color:'#f8fafc', cursor:'pointer', transition:'all 0.3s', position:'relative' }}>
-                  <span style={{ fontSize:22 }}>{d.icon}</span>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, fontSize:12, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{d.label}</div>
-                    <div style={{ fontSize:10, color:'rgba(248,250,252,0.35)', marginTop:1 }}>{d.watt} W · {d.proto}</div>
-                  </div>
-                  {st.coupled && (
-                    <div style={{ position:'absolute', top:8, right:8, width:7, height:7, borderRadius:'50%',
-                      background:'#22c55e', animation:'wai-pulse-green 2s ease-in-out infinite' }}/>
+                <div key={d.id} style={{ borderRadius:13, background: hasDevices ? `${d.color}10` : 'rgba(255,255,255,0.03)',
+                  border:`1.5px solid ${hasDevices ? d.color+'45' : 'rgba(255,255,255,0.07)'}`, overflow:'hidden', transition:'all 0.3s' }}>
+                  {/* Category header */}
+                  <button type="button" onClick={() => { setSelectedDevice(d.id); setSelectedProto(''); setStep(2); }}
+                    style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 14px', width:'100%', textAlign:'left',
+                      background:'transparent', border:'none', color:'#f8fafc', cursor:'pointer' }}>
+                    <span style={{ fontSize:22 }}>{d.icon}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:700, fontSize:12, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{d.label}</div>
+                      <div style={{ fontSize:10, color:'rgba(248,250,252,0.4)', marginTop:1 }}>
+                        {hasDevices ? `${devList.length} verbunden` : 'Nicht verbunden'}
+                      </div>
+                    </div>
+                    {hasDevices && (
+                      <div style={{ width:7, height:7, borderRadius:'50%', background:'#22c55e', flexShrink:0, animation:'wai-pulse-green 2s ease-in-out infinite' }}/>
+                    )}
+                  </button>
+                  {/* Connected device list */}
+                  {hasDevices && (
+                    <div style={{ borderTop:`1px solid ${d.color}20`, padding:'6px 12px 8px' }}>
+                      {devList.map(cd => (
+                        <div key={cd.uid} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
+                          <span style={{ width:5, height:5, borderRadius:'50%', background: cd.connStatus === 'connected' ? '#22c55e' : '#ef4444', flexShrink:0, display:'inline-block' }}/>
+                          <span style={{ fontSize:10, color:'rgba(248,250,252,0.55)', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{cd.proto}</span>
+                          {cd.active && <span style={{ fontSize:9, color:'#ff9500', fontWeight:700 }}>●</span>}
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => { setSelectedDevice(d.id); setSelectedProto(''); setStep(2); }}
+                        style={{ marginTop:4, width:'100%', padding:'5px 0', borderRadius:8, background:'rgba(255,149,0,0.08)',
+                          border:'1px solid rgba(255,149,0,0.2)', color:'#ff9500', fontSize:10, cursor:'pointer', fontWeight:700 }}>
+                        + Weiteres Gerät
+                      </button>
+                    </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
-          {connectedDevices.length > 0 && (
+          {allConnected.length > 0 && (
             <div style={{ marginTop:18, padding:'12px 16px', borderRadius:12, background:'rgba(34,197,94,0.04)', border:'1px solid rgba(34,197,94,0.14)' }}>
               <div style={{ fontSize:10, color:'rgba(34,197,94,0.7)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:8 }}>
-                Verbundene Geräte ({connectedDevices.length})
+                Verbundene Geräte ({allConnected.length})
               </div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                {connectedDevices.map(d => (
+                {DEVICES.filter(d => slotDevices[d.id].length > 0).map(d => (
                   <span key={d.id} style={{ display:'inline-flex', alignItems:'center', gap:5, background:`${d.color}10`,
                     border:`1px solid ${d.color}35`, borderRadius:8, padding:'3px 10px', fontSize:11, color:d.color }}>
-                    {d.icon} {d.label}
+                    {d.icon} {d.label} <span style={{ opacity:.6 }}>×{slotDevices[d.id].length}</span>
                   </span>
                 ))}
               </div>
@@ -256,12 +297,8 @@ function HausautomationPanel() {
             <span style={{ fontSize:28 }}>{dev.icon}</span>
             <div>
               <div style={{ fontWeight:800, fontSize:15, color:'#f8fafc' }}>{dev.label}</div>
-              <div style={{ fontSize:11, color:'rgba(248,250,252,0.4)', marginTop:2 }}>{dev.watt} W Nennleistung</div>
+              <div style={{ fontSize:11, color:'rgba(248,250,252,0.4)', marginTop:2 }}>Kommunikationsprotokoll wählen</div>
             </div>
-          </div>
-          <div style={{ fontSize:12, color:'rgba(248,250,252,0.5)', marginBottom:6 }}>Kommunikationsprotokoll wählen:</div>
-          <div style={{ fontSize:11, color:'rgba(255,149,0,0.6)', marginBottom:12 }}>
-            ⭐ Empfohlen für {dev.label}: <b style={{ color:'#ff9500' }}>{dev.proto}</b>
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:18 }}>
             {PROTOCOLS.map(p => (
@@ -272,7 +309,7 @@ function HausautomationPanel() {
                   color: selectedProto === p ? '#ff9500' : 'rgba(248,250,252,0.55)',
                   fontWeight: selectedProto === p ? 700 : 500, fontSize:12, cursor:'pointer', transition:'all 0.25s',
                   boxShadow: selectedProto === p ? '0 0 14px rgba(255,149,0,0.12)' : 'none' }}>
-                {p === dev.proto ? `⭐ ${p}` : p}
+                {p}
               </button>
             ))}
           </div>
@@ -313,7 +350,7 @@ function HausautomationPanel() {
           </div>
 
           {/* Pre-connection checklist */}
-          {!connecting && ds?.connStatus !== 'connected' && (
+          {!connecting && wizardConn.connStatus !== 'connected' && (
             <div style={{ marginBottom:16 }}>
               <div style={{ fontSize:12, color:'rgba(248,250,252,0.5)', marginBottom:10 }}>Vor dem Verbinden sicherstellen:</div>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
@@ -331,7 +368,7 @@ function HausautomationPanel() {
               {/* Pairing code */}
               <div style={{ marginTop:14, padding:'12px 16px', borderRadius:10, background:'rgba(255,149,0,0.06)', border:'1px solid rgba(255,149,0,0.2)' }}>
                 <div style={{ fontSize:10, color:'rgba(255,149,0,0.6)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:6 }}>Kopplungscode (falls gefordert)</div>
-                <div style={{ fontFamily:'monospace', fontSize:22, fontWeight:900, color:'#ff9500', letterSpacing:'0.25em' }}>{ds?.pairingCode}</div>
+                <div style={{ fontFamily:'monospace', fontSize:22, fontWeight:900, color:'#ff9500', letterSpacing:'0.25em' }}>{wizardConn.pairingCode}</div>
                 <div style={{ fontSize:10, color:'rgba(248,250,252,0.35)', marginTop:4 }}>Am Gerätedisplay oder App eingeben</div>
               </div>
             </div>
@@ -344,17 +381,12 @@ function HausautomationPanel() {
             </div>
           )}
 
-          {/* Already connected state */}
-          {ds?.connStatus === 'connected' && !connecting && (
+          {/* Already connected state (shouldn't normally show in wizard, but guard) */}
+          {wizardConn.connStatus === 'connected' && !connecting && (
             <div style={{ marginBottom:16, padding:'14px 16px', borderRadius:12, background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.25)', animation:'wai-fade-in 0.3s ease' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
                 <div style={{ width:10, height:10, borderRadius:'50%', background:'#22c55e', animation:'wai-pulse-green 2s ease-in-out infinite' }}/>
                 <span style={{ color:'#22c55e', fontWeight:700, fontSize:13 }}>Verbunden · {selectedProto}</span>
-              </div>
-              <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>IP: <b style={{ color:'#f8fafc' }}>{ds.ip}</b></span>
-                <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Signal: <b style={{ color:'#22c55e' }}>{ds.signal}%</b></span>
-                <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Zuletzt gesehen: <b style={{ color:'#f8fafc' }}>{ds.lastSeen}</b></span>
               </div>
             </div>
           )}
@@ -364,7 +396,7 @@ function HausautomationPanel() {
               style={{ padding:'10px 22px', borderRadius:10, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', color:'rgba(248,250,252,0.45)', fontSize:12, cursor: connecting ? 'not-allowed' : 'pointer', opacity: connecting ? 0.5 : 1 }}>
               ← Zurück
             </button>
-            {ds?.connStatus !== 'connected' && (
+            {wizardConn.connStatus !== 'connected' && (
               <button type="button" onClick={handleConnect} disabled={connecting}
                 style={{ padding:'10px 26px', borderRadius:10,
                   background: connecting ? 'rgba(255,149,0,0.06)' : 'linear-gradient(90deg,#ff6b35,#ff9500)',
@@ -373,12 +405,6 @@ function HausautomationPanel() {
                 {connecting ? (
                   <><span style={{ display:'inline-block', width:12, height:12, borderRadius:'50%', border:'2px solid #ff9500', borderTopColor:'transparent', animation:'wai-spin-slow 0.6s linear infinite' }}/>Verbinde…</>
                 ) : '⚡ Verbindung aufbauen'}
-              </button>
-            )}
-            {ds?.connStatus === 'connected' && (
-              <button type="button" onClick={() => setStep(4)}
-                style={{ padding:'10px 26px', borderRadius:10, background:'linear-gradient(90deg,#22c55e,#3b82f6)', border:'none', color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer' }}>
-                Weiter → Automatisierung
               </button>
             )}
           </div>
@@ -436,7 +462,7 @@ function HausautomationPanel() {
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:8 }}>
             <div>
               <div style={{ fontSize:13, color:'#22c55e', fontWeight:800 }}>✓ Alle aktiven Automationen – Live-Status</div>
-              <div style={{ fontSize:11, color:'rgba(248,250,252,0.35)', marginTop:2 }}>{connectedDevices.length} Gerät{connectedDevices.length !== 1 ? 'e' : ''} verbunden</div>
+              <div style={{ fontSize:11, color:'rgba(248,250,252,0.35)', marginTop:2 }}>{allConnected.length} Gerät{allConnected.length !== 1 ? 'e' : ''} verbunden</div>
             </div>
             <button type="button" onClick={handleReset}
               style={{ padding:'8px 18px', borderRadius:10, background:'rgba(255,149,0,0.1)', border:'1px solid rgba(255,149,0,0.25)', color:'#ff9500', fontWeight:700, fontSize:12, cursor:'pointer' }}>
@@ -445,107 +471,109 @@ function HausautomationPanel() {
           </div>
 
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {DEVICES.filter(d => deviceStates[d.id].active || deviceStates[d.id].coupled).map(d => {
-              const dstate = deviceStates[d.id];
-              const autoLabel = AUTOMATIONS.find(a => a.id === dstate.automation)?.label ?? '–';
-              const isManaging = managingId === d.id;
-              const isReconnecting = dstate.connStatus === 'scanning';
-
+            {DEVICES.map(d => {
+              const devList = slotDevices[d.id].filter(cd => cd.active || cd.connStatus === 'connected');
+              if (devList.length === 0) return null;
               return (
-                <div key={d.id} className="hap-device-row" style={{ borderRadius:14, background:`${d.color}07`, border:`1px solid ${dstate.coupled ? d.color+'30' : 'rgba(239,68,68,0.2)'}`, overflow:'hidden', transition:'all 0.3s' }}>
-                  {/* Main row */}
-                  <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px' }}>
-                    <span style={{ fontSize:24 }}>{d.icon}</span>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
-                        <span style={{ fontWeight:800, fontSize:14, color:'#f8fafc' }}>{d.label}</span>
-                        <span style={{ fontSize:10, color:d.color, background:`${d.color}15`, borderRadius:6, padding:'1px 8px', fontWeight:700 }}>{d.proto}</span>
-                        {dstate.active && <span style={{ fontSize:10, color:'#ff9500', background:'rgba(255,149,0,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700 }}>{autoLabel}</span>}
-                        {/* Connection status badge */}
-                        {dstate.coupled && !isReconnecting && (
-                          <span style={{ fontSize:9, color:'#22c55e', background:'rgba(34,197,94,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>● Online</span>
-                        )}
-                        {!dstate.coupled && !isReconnecting && (
-                          <span style={{ fontSize:9, color:'#ef4444', background:'rgba(239,68,68,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>○ Getrennt</span>
-                        )}
-                        {isReconnecting && (
-                          <span style={{ fontSize:9, color:'#ff9500', background:'rgba(255,149,0,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', display:'flex', alignItems:'center', gap:4 }}>
-                            <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', border:'1.5px solid #ff9500', borderTopColor:'transparent', animation:'wai-spin-slow 0.6s linear infinite' }}/>
-                            Verbinde…
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
-                        <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Verbrauch: <b style={{ color:d.color }}>{dstate.kwh} kWh</b></span>
-                        {dstate.coupled && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Signal: <b style={{ color:'#22c55e' }}>{dstate.signal}%</b></span>}
-                        {dstate.coupled && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>IP: <b style={{ color:'rgba(248,250,252,0.7)' }}>{dstate.ip}</b></span>}
-                        {dstate.lastSeen !== '–' && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Gesehen: <b style={{ color:'rgba(248,250,252,0.6)' }}>{dstate.lastSeen}</b></span>}
-                      </div>
-                    </div>
-                    {/* Action buttons */}
-                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                      <button type="button" onClick={() => setManagingId(isManaging ? null : d.id)}
-                        style={{ padding:'6px 13px', borderRadius:8, background:'rgba(255,255,255,0.05)', border:`1px solid ${isManaging ? 'rgba(255,149,0,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                          color: isManaging ? '#ff9500' : 'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600, transition:'all 0.25s' }}>
-                        {isManaging ? '✕ Schließen' : '⚙ Verwalten'}
-                      </button>
-                      {dstate.coupled && !isReconnecting && (
-                        <button type="button" onClick={() => handleDisconnect(d.id)}
-                          style={{ padding:'6px 13px', borderRadius:8, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)',
-                            color:'#ef4444', fontSize:11, cursor:'pointer', fontWeight:700, transition:'all 0.25s' }}>
-                          ✕ Trennen
-                        </button>
-                      )}
-                      {!dstate.coupled && !isReconnecting && (
-                        <button type="button" onClick={() => handleReconnect(d.id)}
-                          style={{ padding:'6px 13px', borderRadius:8, background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)',
-                            color:'#22c55e', fontSize:11, cursor:'pointer', fontWeight:700, transition:'all 0.25s' }}>
-                          ↻ Verbinden
-                        </button>
-                      )}
-                    </div>
+                <div key={d.id}>
+                  <div style={{ fontSize:10, color:d.color, letterSpacing:'0.1em', fontWeight:700, textTransform:'uppercase', marginBottom:6, paddingLeft:4 }}>
+                    {d.icon} {d.label} ({devList.length})
                   </div>
-
-                  {/* Expand: Gerät verwalten panel */}
-                  {isManaging && (
-                    <div style={{ borderTop:`1px solid ${d.color}18`, padding:'14px 16px', background:'rgba(0,0,0,0.12)', animation:'wai-fade-in 0.2s ease' }}>
-                      <div style={{ fontSize:10, color:'rgba(255,149,0,0.6)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:10 }}>Geräteeinstellungen</div>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:8, marginBottom:12 }}>
-                        {[
-                          { label:'Protokoll', value:d.proto, c:d.color },
-                          { label:'IP-Adresse', value:dstate.coupled ? dstate.ip : '–', c:'rgba(248,250,252,0.7)' },
-                          { label:'Signalstärke', value:dstate.coupled ? `${dstate.signal}%` : '–', c:'#22c55e' },
-                          { label:'Nennleistung', value:`${d.watt} W`, c:'#ff9500' },
-                          { label:'Automatisierung', value: dstate.active ? autoLabel : 'Inaktiv', c: dstate.active ? '#ff9500' : 'rgba(248,250,252,0.35)' },
-                          { label:'Kopplungscode', value:dstate.pairingCode, c:'rgba(248,250,252,0.5)' },
-                        ].map(({ label, value, c }) => (
-                          <div key={label} style={{ padding:'8px 12px', borderRadius:9, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
-                            <div style={{ fontSize:9, color:'rgba(248,250,252,0.35)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>{label}</div>
-                            <div style={{ fontSize:12, fontWeight:700, color:c, fontFamily:'monospace' }}>{value}</div>
+                  {devList.map(cd => {
+                    const autoLabel = AUTOMATIONS.find(a => a.id === cd.automation)?.label ?? '–';
+                    const isManaging = managingUid === cd.uid;
+                    const isReconnecting = cd.connStatus === 'scanning';
+                    return (
+                      <div key={cd.uid} className="hap-device-row" style={{ borderRadius:14, background:`${d.color}07`, border:`1px solid ${cd.connStatus === 'connected' ? d.color+'30' : 'rgba(239,68,68,0.2)'}`, overflow:'hidden', marginBottom:8, transition:'all 0.3s' }}>
+                        {/* Main row */}
+                        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px' }}>
+                          <span style={{ fontSize:24 }}>{d.icon}</span>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
+                              <span style={{ fontWeight:800, fontSize:14, color:'#f8fafc' }}>{d.label}</span>
+                              <span style={{ fontSize:10, color:d.color, background:`${d.color}15`, borderRadius:6, padding:'1px 8px', fontWeight:700 }}>{cd.proto}</span>
+                              {cd.active && <span style={{ fontSize:10, color:'#ff9500', background:'rgba(255,149,0,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700 }}>{autoLabel}</span>}
+                              {cd.connStatus === 'connected' && !isReconnecting && (
+                                <span style={{ fontSize:9, color:'#22c55e', background:'rgba(34,197,94,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>● Online</span>
+                              )}
+                              {cd.connStatus !== 'connected' && !isReconnecting && (
+                                <span style={{ fontSize:9, color:'#ef4444', background:'rgba(239,68,68,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>○ Getrennt</span>
+                              )}
+                              {isReconnecting && (
+                                <span style={{ fontSize:9, color:'#ff9500', background:'rgba(255,149,0,0.1)', borderRadius:6, padding:'1px 8px', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', display:'flex', alignItems:'center', gap:4 }}>
+                                  <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', border:'1.5px solid #ff9500', borderTopColor:'transparent', animation:'wai-spin-slow 0.6s linear infinite' }}/>
+                                  Verbinde…
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
+                              <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Verbrauch: <b style={{ color:d.color }}>{cd.kwh} kWh</b></span>
+                              {cd.connStatus === 'connected' && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Signal: <b style={{ color:'#22c55e' }}>{cd.signal}%</b></span>}
+                              {cd.connStatus === 'connected' && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>IP: <b style={{ color:'rgba(248,250,252,0.7)' }}>{cd.ip}</b></span>}
+                              {cd.lastSeen !== '–' && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Gesehen: <b style={{ color:'rgba(248,250,252,0.6)' }}>{cd.lastSeen}</b></span>}
+                            </div>
                           </div>
-                        ))}
+                          {/* Action buttons */}
+                          <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                            <button type="button" onClick={() => setManagingUid(isManaging ? null : cd.uid)}
+                              style={{ padding:'6px 13px', borderRadius:8, background:'rgba(255,255,255,0.05)', border:`1px solid ${isManaging ? 'rgba(255,149,0,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                                color: isManaging ? '#ff9500' : 'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600, transition:'all 0.25s' }}>
+                              {isManaging ? '✕ Schließen' : '⚙ Verwalten'}
+                            </button>
+                            {cd.connStatus === 'connected' && !isReconnecting && (
+                              <button type="button" onClick={() => handleDisconnect(d.id, cd.uid)}
+                                style={{ padding:'6px 13px', borderRadius:8, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)',
+                                  color:'#ef4444', fontSize:11, cursor:'pointer', fontWeight:700, transition:'all 0.25s' }}>
+                                ✕ Trennen
+                              </button>
+                            )}
+                            {cd.connStatus !== 'connected' && !isReconnecting && (
+                              <button type="button" onClick={() => handleReconnect(d.id, cd.uid)}
+                                style={{ padding:'6px 13px', borderRadius:8, background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)',
+                                  color:'#22c55e', fontSize:11, cursor:'pointer', fontWeight:700, transition:'all 0.25s' }}>
+                                ↻ Verbinden
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Expand: Gerät verwalten panel */}
+                        {isManaging && (
+                          <div style={{ borderTop:`1px solid ${d.color}18`, padding:'14px 16px', background:'rgba(0,0,0,0.12)', animation:'wai-fade-in 0.2s ease' }}>
+                            <div style={{ fontSize:10, color:'rgba(255,149,0,0.6)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:10 }}>Geräteeinstellungen</div>
+                            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:8, marginBottom:12 }}>
+                              {[
+                                { label:'Protokoll', value:cd.proto, c:d.color },
+                                { label:'IP-Adresse', value:cd.connStatus === 'connected' ? cd.ip : '–', c:'rgba(248,250,252,0.7)' },
+                                { label:'Signalstärke', value:cd.connStatus === 'connected' ? `${cd.signal}%` : '–', c:'#22c55e' },
+                                { label:'Automatisierung', value: cd.active ? autoLabel : 'Inaktiv', c: cd.active ? '#ff9500' : 'rgba(248,250,252,0.35)' },
+                                { label:'Kopplungscode', value:cd.pairingCode, c:'rgba(248,250,252,0.5)' },
+                              ].map(({ label, value, c }) => (
+                                <div key={label} style={{ padding:'8px 12px', borderRadius:9, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
+                                  <div style={{ fontSize:9, color:'rgba(248,250,252,0.35)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>{label}</div>
+                                  <div style={{ fontSize:12, fontWeight:700, color:c, fontFamily:'monospace' }}>{value}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                              <button type="button" style={{ padding:'7px 14px', borderRadius:8, background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.25)', color:'#60a5fa', fontSize:11, cursor:'pointer', fontWeight:600 }}>
+                                🔧 Diagnose starten
+                              </button>
+                              <button type="button" style={{ padding:'7px 14px', borderRadius:8, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600 }}>
+                                📋 Logfile anzeigen
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                        <button type="button" style={{ padding:'7px 14px', borderRadius:8, background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.25)', color:'#60a5fa', fontSize:11, cursor:'pointer', fontWeight:600 }}>
-                          🔧 Diagnose starten
-                        </button>
-                        <button type="button" style={{ padding:'7px 14px', borderRadius:8, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600 }}>
-                          📋 Logfile anzeigen
-                        </button>
-                        <button type="button" onClick={() => {
-                          setDeviceStates(prev => ({ ...prev, [d.id]: { ...prev[d.id], pairingCode: rndCode() } }));
-                        }} style={{ padding:'7px 14px', borderRadius:8, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600 }}>
-                          🔑 Code erneuern
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
 
-          {connectedDevices.length === 0 && (
+          {allConnected.length === 0 && (
             <div style={{ textAlign:'center', padding:'32px 20px', color:'rgba(248,250,252,0.3)', fontSize:13 }}>
               Noch keine Geräte verbunden.<br/>
               <button type="button" onClick={handleReset} style={{ marginTop:12, padding:'10px 22px', borderRadius:10, background:'rgba(255,149,0,0.1)', border:'1px solid rgba(255,149,0,0.25)', color:'#ff9500', fontWeight:700, fontSize:13, cursor:'pointer' }}>
