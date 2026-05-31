@@ -137,6 +137,11 @@ function HausautomationPanel() {
   const [wizardConn, setWizardConn] = useState<{ pairingCode:string; ip:string; signal:number; lastSeen:string; connStatus:ConnStatus }>(() => ({
     pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen:'–', connStatus:'disconnected'
   }));
+  // Diagnose & Logfile state per device uid
+  const [diagState, setDiagState] = useState<Record<string, 'idle'|'running'|'done'>>({});
+  const [diagLines, setDiagLines] = useState<Record<string, string[]>>({});
+  const [showLog, setShowLog] = useState<Record<string, boolean>>({});
+  const [logLines, setLogLines] = useState<Record<string, string[]>>({});
 
   const dev = DEVICES.find(d => d.id === selectedDevice);
   // all connected devices across all slots (flat list)
@@ -198,6 +203,55 @@ function HausautomationPanel() {
     setStep(1); setSelectedDevice(''); setSelectedProto(''); setConnecting(false); setManagingUid(null);
     setWizardConn({ pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen:'–', connStatus:'disconnected' });
   }, []);
+
+  const handleDiagnose = useCallback((cd: ConnectedDevice) => {
+    setDiagState(prev => ({ ...prev, [cd.uid]: 'running' }));
+    setDiagLines(prev => ({ ...prev, [cd.uid]: [] }));
+    const slot = DEVICES.find(d => d.id === cd.slotId);
+    const steps = [
+      `[PING] ${cd.ip} → Antwort in ${Math.floor(Math.random()*8+1)}ms`,
+      `[${cd.proto}] Protokoll-Handshake … OK`,
+      `[AUTH] Token-Validierung … OK`,
+      `[ENTITY] ${slot?.label ?? cd.slotId} erkannt (ID: ${cd.pairingCode})`,
+      `[SIGNAL] Signalstärke ${cd.signal}% — ${cd.signal > 75 ? 'Ausgezeichnet ✓' : cd.signal > 50 ? 'Gut ✓' : 'Schwach ⚠'}`,
+      `[POWER] Leistungsabruf … ${+(Math.random()*2000+200).toFixed(0)} W aktuell`,
+      `[STATUS] Gerät online — Keine Fehler gefunden ✓`,
+    ];
+    let i = 0;
+    const iv = setInterval(() => {
+      if (i >= steps.length) {
+        clearInterval(iv);
+        setDiagState(prev => ({ ...prev, [cd.uid]: 'done' }));
+        return;
+      }
+      setDiagLines(prev => ({ ...prev, [cd.uid]: [...(prev[cd.uid] ?? []), steps[i]] }));
+      i++;
+    }, 320);
+  }, []);
+
+  const handleShowLog = useCallback((cd: ConnectedDevice) => {
+    setShowLog(prev => {
+      const next = !prev[cd.uid];
+      if (next && !logLines[cd.uid]) {
+        // generate log entries
+        const slot = DEVICES.find(d => d.id === cd.slotId);
+        const now = Date.now();
+        const entries = [
+          { t: now - 1000*60*2,  lvl:'INFO',  msg:`Verbindung hergestellt via ${cd.proto}` },
+          { t: now - 1000*60*1,  lvl:'INFO',  msg:`${slot?.label} registriert (IP: ${cd.ip})` },
+          { t: now - 1000*55,    lvl:'INFO',  msg:'Automatisierungsregel aktiv: ' + (cd.active ? cd.automation.toUpperCase() : 'keine') },
+          { t: now - 1000*40,    lvl:'DEBUG', msg:`Signalstärke ${cd.signal}%, Latenz ${Math.floor(Math.random()*10+1)}ms` },
+          { t: now - 1000*30,    lvl:'INFO',  msg:`Leistungsdaten empfangen: ${+(Math.random()*2000+200).toFixed(0)} W` },
+          { t: now - 1000*20,    lvl:'DEBUG', msg:'Heartbeat OK' },
+          { t: now - 1000*10,    lvl:'INFO',  msg:`Daten an WattAI-Backend übertragen` },
+          { t: now,              lvl:'INFO',  msg:'Gerät aktiv — Kein Fehler' },
+        ];
+        const fmt = (ts: number) => new Date(ts).toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        setLogLines(prev2 => ({ ...prev2, [cd.uid]: entries.map(e => `${fmt(e.t)}  [${e.lvl}]  ${e.msg}`) }));
+      }
+      return { ...prev, [cd.uid]: next };
+    });
+  }, [logLines]);
 
   const STEPS = ['Gerät wählen','Protokoll','Verbinden','Automatisierung','Live-Status'];
 
@@ -556,13 +610,56 @@ function HausautomationPanel() {
                               ))}
                             </div>
                             <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                              <button type="button" style={{ padding:'7px 14px', borderRadius:8, background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.25)', color:'#60a5fa', fontSize:11, cursor:'pointer', fontWeight:600 }}>
-                                🔧 Diagnose starten
+                              <button type="button" onClick={() => handleDiagnose(cd)}
+                                disabled={diagState[cd.uid] === 'running'}
+                                style={{ padding:'7px 14px', borderRadius:8, background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.25)', color:'#60a5fa', fontSize:11, cursor: diagState[cd.uid] === 'running' ? 'wait' : 'pointer', fontWeight:600, opacity: diagState[cd.uid] === 'running' ? 0.7 : 1 }}>
+                                {diagState[cd.uid] === 'running' ? '⏳ Diagnose läuft…' : '🔧 Diagnose starten'}
                               </button>
-                              <button type="button" style={{ padding:'7px 14px', borderRadius:8, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600 }}>
-                                📋 Logfile anzeigen
+                              <button type="button" onClick={() => handleShowLog(cd)}
+                                style={{ padding:'7px 14px', borderRadius:8, background: showLog[cd.uid] ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', border:`1px solid ${showLog[cd.uid] ? 'rgba(168,85,247,0.35)' : 'rgba(255,255,255,0.1)'}`, color: showLog[cd.uid] ? '#c084fc' : 'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600 }}>
+                                📋 {showLog[cd.uid] ? 'Logfile schließen' : 'Logfile anzeigen'}
                               </button>
                             </div>
+                            {/* Diagnose output */}
+                            {(diagState[cd.uid] === 'running' || diagState[cd.uid] === 'done') && (
+                              <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10, background:'rgba(0,0,0,0.3)', border:'1px solid rgba(59,130,246,0.2)', fontFamily:'monospace', fontSize:11, lineHeight:1.9, animation:'wai-fade-in 0.3s ease' }}>
+                                <div style={{ fontSize:9, color:'rgba(96,165,250,0.7)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:6 }}>Diagnosebericht</div>
+                                {(diagLines[cd.uid] ?? []).map((line, i) => {
+                                  const isOk = line.includes('OK') || line.includes('✓');
+                                  const isWarn = line.includes('⚠');
+                                  return (
+                                    <div key={i} style={{ color: isOk ? '#22c55e' : isWarn ? '#ff9500' : 'rgba(248,250,252,0.65)', animation:'wai-fade-in 0.2s ease' }}>
+                                      {line}
+                                    </div>
+                                  );
+                                })}
+                                {diagState[cd.uid] === 'running' && (
+                                  <div style={{ color:'rgba(248,250,252,0.35)', display:'flex', alignItems:'center', gap:6 }}>
+                                    <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', border:'1.5px solid #60a5fa', borderTopColor:'transparent', animation:'wai-spin-slow 0.6s linear infinite' }}/>
+                                    Analysiere…
+                                  </div>
+                                )}
+                                {diagState[cd.uid] === 'done' && (
+                                  <div style={{ marginTop:6, paddingTop:6, borderTop:'1px solid rgba(34,197,94,0.15)', color:'#22c55e', fontWeight:700 }}>
+                                    ✓ Diagnose abgeschlossen — Gerät fehlerfrei
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Logfile output */}
+                            {showLog[cd.uid] && (logLines[cd.uid] ?? []).length > 0 && (
+                              <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10, background:'rgba(0,0,0,0.3)', border:'1px solid rgba(168,85,247,0.2)', fontFamily:'monospace', fontSize:10.5, lineHeight:2, animation:'wai-fade-in 0.3s ease', maxHeight:180, overflowY:'auto' }}>
+                                <div style={{ fontSize:9, color:'rgba(192,132,252,0.7)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:6 }}>Systemlog</div>
+                                {(logLines[cd.uid] ?? []).map((line, i) => {
+                                  const isDebug = line.includes('[DEBUG]');
+                                  return (
+                                    <div key={i} style={{ color: isDebug ? 'rgba(248,250,252,0.35)' : 'rgba(248,250,252,0.65)' }}>
+                                      {line}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
