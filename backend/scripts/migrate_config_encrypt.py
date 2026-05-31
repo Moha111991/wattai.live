@@ -285,13 +285,6 @@ def main(argv=None):
         print(f"Wrote encrypted config to {p}")
     except Exception as e:
         print("Failed to write encrypted config:", e)
-        # cleanup tmp
-        try:
-            if tmp.exists():
-                tmp.unlink()
-        except Exception:
-            pass
-        # Note: original file still exists since we only replace at the end
         return 6
 
     # Emit an audit log entry (best-effort)

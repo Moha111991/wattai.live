@@ -117,7 +117,6 @@ const EVChargeControl: React.FC = () => {
   const selectedWallbox = connectedWallboxes.find(w => w.id === selectedWallboxId) ?? connectedWallboxes[0] ?? allWallboxes[0] ?? null;
   // UI ist nutzbar sobald mindestens eine Wallbox bekannt ist (auch ohne Live-Verbindung → Sim-Modus)
   const wallboxConnected = allWallboxes.length > 0;
-  const wallboxLive = allConnected.length > 0; // wirklich online
   // Wallboxen, die in der API existieren aber nicht verbunden sind
   const disconnectedWallboxes = allWallboxes.filter(w => !isReallyConnected(w));
 

@@ -111,16 +111,6 @@ function AppShell() {
     boxSizing: 'border-box',
   };
 
-  const navStyle: CSSProperties = {
-    marginBottom: 'clamp(1rem, 1.8vw, 1.4rem)',
-    marginTop: 'clamp(1.5rem, 2.5vw, 2rem)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 'clamp(8px, 1.6vw, 14px)',
-    position: 'relative',
-  };
-
   const appStoreButtonStyle: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',

@@ -291,7 +291,7 @@ const ConnectPanel: React.FC<{
   // MQTT fields
   const [mqttBroker, setMqttBroker] = useState('localhost');
   const [mqttPort, setMqttPort] = useState(1883);
-  const [mqttTopic, setMqttTopic] = useState(slot.mqttTopicDefault ?? 'energy/#');
+  const [mqttTopic, setMqttTopic] = useState<string>(slot.mqttTopicDefault ?? 'energy/#');
   const [mqttUser, setMqttUser] = useState('');
   const [mqttPass, setMqttPass] = useState('');
   const [mqttTls, setMqttTls] = useState(false);

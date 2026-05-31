@@ -724,7 +724,6 @@ type WsStatus = 'connecting' | 'live' | 'offline';
 const HouseholdDashboard = () => {
   const [state, setState] = useState<SysState>({});
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting');
-  const [lastUpdate, setLastUpdate] = useState<string>('–');
 
   useEffect(() => {
     let ws: WebSocket;
@@ -739,7 +738,6 @@ const HouseholdDashboard = () => {
         ws.onmessage = e => {
           try {
             setState(JSON.parse(e.data));
-            setLastUpdate(new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit', second:'2-digit' }));
           } catch {}
         };
         ws.onerror = () => setWsStatus('offline');

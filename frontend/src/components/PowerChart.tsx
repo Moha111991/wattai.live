@@ -128,7 +128,7 @@ export default function PowerChart() {
       x: {
         ticks: {
           color: 'rgba(248,250,252,0.6)',
-          font: { size: 11, weight: '600' as const },
+          font: { size: 11, weight: 'bold' as const },
           maxRotation: 0,
           autoSkip: true,
           maxTicksLimit: 8,
@@ -139,7 +139,7 @@ export default function PowerChart() {
       y: {
         ticks: {
           color: 'rgba(248,250,252,0.6)',
-          font: { size: 11, weight: '600' as const },
+          font: { size: 11, weight: 'bold' as const },
           callback: (v) => `${Number(v).toFixed(1)} kW`,
         },
         grid: { color: 'rgba(255,255,255,0.04)', drawTicks: false },

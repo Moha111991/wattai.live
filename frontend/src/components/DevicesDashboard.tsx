@@ -1,4 +1,5 @@
-import { ReactElement, useEffect, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
+import { useEffect, useState } from 'react';
 import TabHeader from './TabHeader';
 import TabBar from './TabBar';
 import DeviceManager from './DeviceManager';
