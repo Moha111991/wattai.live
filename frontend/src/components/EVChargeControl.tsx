@@ -232,7 +232,7 @@ const EVChargeControl: React.FC = () => {
             { label:'Status', value: evState.ev_charging ? 'Lädt gerade' : 'Nicht am Laden', color: evState.ev_charging ? '#22c55e' : 'rgba(248,250,252,0.4)' },
             ...(cloudAvailable && cloudSoc !== null ? [{ label:`SOC (BMS${cloudProvider ? ' · '+cloudProvider : ''})`, value:`${cloudSoc}%`, color:'#a78bfa' }] : []),
           ].map(({label,value,color})=>(
-            <div key={label} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div key={label} className="wai-surface" style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <span style={{ fontSize:12, color:'rgba(248,250,252,0.42)', letterSpacing:'0.05em' }}>{label}</span>
               <span style={{ fontSize:15, fontWeight:800, color, fontFamily:'monospace' }}>{value}</span>
             </div>
@@ -298,7 +298,7 @@ const EVChargeControl: React.FC = () => {
       )}
 
       {/* Wallbox status */}
-      <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:'12px 16px', fontSize:12, color:'rgba(248,250,252,0.4)', lineHeight:1.6 }}>
+      <div className="wai-surface" style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:'12px 16px', fontSize:12, color:'rgba(248,250,252,0.4)', lineHeight:1.6 }}>
 
         {/* Keine Wallbox in API */}
         {allWallboxes.length === 0 && !wallboxError && (

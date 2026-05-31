@@ -37,6 +37,20 @@
   background: var(--wai-card-bg) !important;
   border-color: var(--wai-card-border) !important;
   box-shadow: 0 4px 24px var(--wai-shadow) !important;
+  /* Textfarben-Kaskade: alle nicht explizit gefärbten Kinder erben Dunkelfarbe */
+  color: #0f172a;
+}
+
+/* Surface-Elemente (innere Karten, Stat-Rows, Info-Boxen) im Light Mode */
+[data-theme="light"] .wai-surface {
+  background: rgba(15, 23, 42, 0.05) !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+  color: #0f172a;
+}
+
+/* Sektion-Label (Trennlinie-Texte wie "Ladeleistung wählen") */
+[data-theme="light"] .wai-section-label {
+  color: rgba(15, 23, 42, 0.55) !important;
 }
 
 [data-theme="light"] .main-app {
@@ -45,7 +59,13 @@
 
 /* ── Light Mode: alle weißen Texte → dunkel ──────────────────────────────── */
 
-/* Alle div/span/p/label/h1-h6/button-Texte die weiß sind → schwarz */
+/* Root text color im Light Mode */
+[data-theme="light"] body,
+[data-theme="light"] .main-app {
+  color: #0f172a;
+}
+
+/* Alle div/span/p/label/h1-h6/button-Texte die weiß sind → erben vom Parent */
 [data-theme="light"] div,
 [data-theme="light"] span,
 [data-theme="light"] p,
@@ -59,93 +79,80 @@
 [data-theme="light"] li,
 [data-theme="light"] td,
 [data-theme="light"] th {
-  /* Inline #f8fafc / #fff / white → ersetzen via filter nicht möglich,
-     daher: color inherit von body setzen und inline-styles via !important cascade brechen */
   color: inherit;
 }
 
-/* Root text color im Light Mode */
-[data-theme="light"] body,
-[data-theme="light"] .main-app {
-  color: #0f172a;
-}
-
-/* Elemente mit Inline-Stil color:#f8fafc oder color:white — CSS kann inline nicht direkt
-   überschreiben, aber wir nutzen den Cascade via starke Spezifität auf bekannte Container */
+/* ── Inline color: #f8fafc / #fff / white ─────────────────────────────────── */
 [data-theme="light"] [style*="color: #f8fafc"],
-[data-theme="light"] [style*="color:#f8fafc"],
-[data-theme="light"] [style*="color: rgba(248,250,252,1)"],
-[data-theme="light"] [style*='color: "#f8fafc"'] {
-  color: #0f172a !important;
-}
+[data-theme="light"] [style*="color:#f8fafc"] { color: #0f172a !important; }
 
 [data-theme="light"] [style*="color: #fff"],
 [data-theme="light"] [style*="color:#fff"],
 [data-theme="light"] [style*="color: white"],
-[data-theme="light"] [style*="color:white"] {
-  color: #0f172a !important;
-}
+[data-theme="light"] [style*="color:white"] { color: #0f172a !important; }
 
-/* Abgestufte weiße Texte (opacity-Varianten) → dunkel mit gleicher Opacity */
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.9)"],
+/* ── rgba(248,250,252,...) — BEIDE Varianten: ohne UND mit Leerzeichen ────── */
+/* Browser serialisieren rgba ggf. mit Leerzeichen: rgba(248, 250, 252, 0.45) */
+
 [data-theme="light"] [style*="color: rgba(248,250,252,0.9)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.9)"] { color: rgba(15,23,42,0.9) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.9)"] { color: rgba(15,23,42,0.9) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.8)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.8)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.8)"] { color: rgba(15,23,42,0.8) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.8)"] { color: rgba(15,23,42,0.8) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.7)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.7)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.7)"] { color: rgba(15,23,42,0.7) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.7)"] { color: rgba(15,23,42,0.7) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.6)"],
+[data-theme="light"] [style*="color: rgba(248,250,252,0.65)"],
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.65)"] { color: rgba(15,23,42,0.65) !important; }
+
 [data-theme="light"] [style*="color: rgba(248,250,252,0.6)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.6)"] { color: rgba(15,23,42,0.6) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.6)"] { color: rgba(15,23,42,0.6) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.55)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.55)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.55)"] { color: rgba(15,23,42,0.55) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.55)"] { color: rgba(15,23,42,0.55) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.5)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.5)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.5)"] { color: rgba(15,23,42,0.5) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.5)"] { color: rgba(15,23,42,0.5) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.45)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.45)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.45)"] { color: rgba(15,23,42,0.45) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.45)"] { color: rgba(15,23,42,0.45) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.4)"],
+[data-theme="light"] [style*="color: rgba(248,250,252,0.42)"],
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.42)"] { color: rgba(15,23,42,0.42) !important; }
+
 [data-theme="light"] [style*="color: rgba(248,250,252,0.4)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.4)"] { color: rgba(15,23,42,0.4) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.4)"] { color: rgba(15,23,42,0.4) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.35)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.35)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.35)"] { color: rgba(15,23,42,0.35) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.35)"] { color: rgba(15,23,42,0.35) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.3)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.3)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.3)"] { color: rgba(15,23,42,0.3) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.3)"] { color: rgba(15,23,42,0.3) !important; }
 
-[data-theme="light"] [style*="color: rgba(248,250,252, 0.25)"],
 [data-theme="light"] [style*="color: rgba(248,250,252,0.25)"],
-[data-theme="light"] [style*="color:rgba(248,250,252,0.25)"] { color: rgba(15,23,42,0.25) !important; }
+[data-theme="light"] [style*="color: rgba(248, 250, 252, 0.25)"] { color: rgba(15,23,42,0.25) !important; }
 
-/* Andere weiße Nuancen */
+/* ── rgba(255,255,255,...) Texte ─────────────────────────────────────────── */
 [data-theme="light"] [style*="color: rgba(255,255,255,0.8)"],
-[data-theme="light"] [style*="color:rgba(255,255,255,0.8)"] { color: rgba(15,23,42,0.8) !important; }
-[data-theme="light"] [style*="color: rgba(255,255,255,0.7)"],
-[data-theme="light"] [style*="color:rgba(255,255,255,0.7)"] { color: rgba(15,23,42,0.7) !important; }
-[data-theme="light"] [style*="color: rgba(255,255,255,0.6)"],
-[data-theme="light"] [style*="color:rgba(255,255,255,0.6)"] { color: rgba(15,23,42,0.6) !important; }
-[data-theme="light"] [style*="color: rgba(255,255,255,0.5)"],
-[data-theme="light"] [style*="color:rgba(255,255,255,0.5)"] { color: rgba(15,23,42,0.5) !important; }
-[data-theme="light"] [style*="color: rgba(255,255,255,0.4)"],
-[data-theme="light"] [style*="color:rgba(255,255,255,0.4)"] { color: rgba(15,23,42,0.4) !important; }
-[data-theme="light"] [style*="color: rgba(255,255,255,0.3)"],
-[data-theme="light"] [style*="color:rgba(255,255,255,0.3)"] { color: rgba(15,23,42,0.3) !important; }
+[data-theme="light"] [style*="color: rgba(255, 255, 255, 0.8)"] { color: rgba(15,23,42,0.8) !important; }
 
-/* Input-Felder im Light Mode */
+[data-theme="light"] [style*="color: rgba(255,255,255,0.7)"],
+[data-theme="light"] [style*="color: rgba(255, 255, 255, 0.7)"] { color: rgba(15,23,42,0.7) !important; }
+
+[data-theme="light"] [style*="color: rgba(255,255,255,0.6)"],
+[data-theme="light"] [style*="color: rgba(255, 255, 255, 0.6)"] { color: rgba(15,23,42,0.6) !important; }
+
+[data-theme="light"] [style*="color: rgba(255,255,255,0.5)"],
+[data-theme="light"] [style*="color: rgba(255, 255, 255, 0.5)"] { color: rgba(15,23,42,0.5) !important; }
+
+[data-theme="light"] [style*="color: rgba(255,255,255,0.4)"],
+[data-theme="light"] [style*="color: rgba(255, 255, 255, 0.4)"] { color: rgba(15,23,42,0.4) !important; }
+
+[data-theme="light"] [style*="color: rgba(255,255,255,0.3)"],
+[data-theme="light"] [style*="color: rgba(255, 255, 255, 0.3)"] { color: rgba(15,23,42,0.3) !important; }
+
+/* ── Input-Felder im Light Mode ─────────────────────────────────────────── */
 [data-theme="light"] input,
 [data-theme="light"] textarea,
 [data-theme="light"] select {
@@ -158,88 +165,101 @@
   color: rgba(15,23,42,0.35) !important;
 }
 
-/* Karten / Panel Hintergründe aufhellen */
+/* ── Karten-Hintergründe aufhellen ──────────────────────────────────────── */
+/* rgba(22,30,65,...) → weiß (BEIDE Varianten: mit/ohne Leerzeichen) */
 [data-theme="light"] [style*="background: rgba(22,30,65"],
+[data-theme="light"] [style*="background: rgba(22, 30, 65"],
 [data-theme="light"] [style*="background:rgba(22,30,65"] {
   background: rgba(255,255,255,0.88) !important;
   border-color: rgba(15,23,42,0.10) !important;
 }
+
+/* Sehr transparente Weiß-Hintergründe → leicht dunkles Äquivalent */
 [data-theme="light"] [style*="background: rgba(255,255,255,0.03)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,0.03)"] {
-  background: rgba(15,23,42,0.03) !important;
-}
-[data-theme="light"] [style*="background: rgba(255,255,255,0.04)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,0.04)"] {
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.03)"] {
   background: rgba(15,23,42,0.04) !important;
 }
+[data-theme="light"] [style*="background: rgba(255,255,255,0.04)"],
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.04)"] {
+  background: rgba(15,23,42,0.05) !important;
+}
 [data-theme="light"] [style*="background: rgba(255,255,255,0.05)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,0.05)"] {
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.05)"] {
   background: rgba(15,23,42,0.05) !important;
 }
 [data-theme="light"] [style*="background: rgba(255,255,255,0.06)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,0.06)"] {
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.06)"] {
   background: rgba(15,23,42,0.06) !important;
 }
 [data-theme="light"] [style*="background: rgba(255,255,255,0.07)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,0.07)"] {
-  background: rgba(15,23,42,0.07) !important;
-}
-[data-theme="light"] [style*="background: rgba(0,0,0,0.12)"],
-[data-theme="light"] [style*="background:rgba(0,0,0,0.12)"] {
-  background: rgba(15,23,42,0.05) !important;
-}
-[data-theme="light"] [style*="background: rgba(0,0,0,0.3)"],
-[data-theme="light"] [style*="background:rgba(0,0,0,0.3)"] {
+[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.07)"] {
   background: rgba(15,23,42,0.06) !important;
 }
 
-/* Monospace / Code-Ausgabe (Diagnose, Logfile) */
-[data-theme="light"] [style*="fontFamily:'monospace'"],
-[data-theme="light"] [style*='fontFamily:"monospace"'],
-[data-theme="light"] [style*="font-family: monospace"] {
-  color: #1e293b !important;
+/* Dunkle Overlay-Hintergründe → leicht */
+[data-theme="light"] [style*="background: rgba(0,0,0,0.12)"],
+[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.12)"] {
+  background: rgba(15,23,42,0.04) !important;
+}
+[data-theme="light"] [style*="background: rgba(0,0,0,0.3)"],
+[data-theme="light"] [style*="background: rgba(0, 0, 0, 0.3)"] {
+  background: rgba(15,23,42,0.05) !important;
 }
 
-/* Borders die weiß-transparent sind → dunkel-transparent */
-[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.07)"],
-[data-theme="light"] [style*="border:1px solid rgba(255,255,255,0.07)"] {
-  border-color: rgba(15,23,42,0.10) !important;
-}
-[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.08)"],
-[data-theme="light"] [style*="border:1px solid rgba(255,255,255,0.08)"] {
-  border-color: rgba(15,23,42,0.10) !important;
-}
-[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.09)"],
-[data-theme="light"] [style*="border:1px solid rgba(255,255,255,0.09)"] {
-  border-color: rgba(15,23,42,0.12) !important;
-}
-[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.1)"],
-[data-theme="light"] [style*="border:1px solid rgba(255,255,255,0.1)"] {
-  border-color: rgba(15,23,42,0.12) !important;
-}
-[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.12)"],
-[data-theme="light"] [style*="border:1px solid rgba(255,255,255,0.12)"] {
-  border-color: rgba(15,23,42,0.14) !important;
-}
-
-/* Step-Indikatoren & Badge-Hintergründe mit weißen Borders */
-[data-theme="light"] [style*="border: 1.5px solid rgba(255,255,255,0.1)"],
-[data-theme="light"] [style*="border:1.5px solid rgba(255,255,255,0.1)"] {
-  border-color: rgba(15,23,42,0.14) !important;
-}
-
-/* Backdrop/Overlay-Panels (z.B. Modals, floating Widgets) */
+/* Dunkle Panel-Hintergründe (Modals, floating) */
 [data-theme="light"] [style*="background: rgba(15,23,42,0.88)"],
-[data-theme="light"] [style*="background:rgba(15,23,42,0.88)"] {
-  background: rgba(255,255,255,0.94) !important;
-  border-color: rgba(15,23,42,0.14) !important;
+[data-theme="light"] [style*="background: rgba(15, 23, 42, 0.88)"] {
+  background: rgba(255,255,255,0.95) !important;
+  border-color: rgba(15,23,42,0.12) !important;
 }
 [data-theme="light"] [style*="background: rgba(15,23,42,0.82)"],
-[data-theme="light"] [style*="background:rgba(15,23,42,0.82)"] {
+[data-theme="light"] [style*="background: rgba(15, 23, 42, 0.82)"] {
   background: rgba(255,255,255,0.92) !important;
 }
 
-/* Akzentfarben werden nicht überschrieben — diese Selektoren sind nur zur Dokumentation */
+/* ── Borders: weiß-transparent → dunkel-transparent ────────────────────── */
+[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.06)"],
+[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.06)"] {
+  border-color: rgba(15,23,42,0.08) !important;
+}
+[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.07)"],
+[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.07)"] {
+  border-color: rgba(15,23,42,0.10) !important;
+}
+[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.08)"],
+[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.08)"] {
+  border-color: rgba(15,23,42,0.10) !important;
+}
+[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.09)"],
+[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.09)"] {
+  border-color: rgba(15,23,42,0.12) !important;
+}
+[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.1)"],
+[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.1)"] {
+  border-color: rgba(15,23,42,0.12) !important;
+}
+[data-theme="light"] [style*="border: 1px solid rgba(255,255,255,0.12)"],
+[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.12)"] {
+  border-color: rgba(15,23,42,0.14) !important;
+}
+/* 1.5px borders */
+[data-theme="light"] [style*="border: 1.5px solid rgba(255,255,255,0.07)"],
+[data-theme="light"] [style*="border: 1.5px solid rgba(255, 255, 255, 0.07)"] {
+  border-color: rgba(15,23,42,0.10) !important;
+}
+[data-theme="light"] [style*="border: 1.5px solid rgba(255,255,255,0.09)"],
+[data-theme="light"] [style*="border: 1.5px solid rgba(255, 255, 255, 0.09)"] {
+  border-color: rgba(15,23,42,0.12) !important;
+}
+
+/* ── Monospace / Code-Ausgabe (Diagnose, Logfile) ────────────────────────── */
+[data-theme="light"] [style*="fontFamily:'monospace'"],
+[data-theme="light"] [style*="font-family: monospace"],
+[data-theme="light"] [style*='fontFamily: "monospace"'] {
+  color: #1e293b !important;
+}
+
+/* Akzentfarben werden nicht überschrieben */
 /* #ff6b35 #ff9500 #22c55e #3b82f6 #ef4444 #60a5fa #c084fc #fbbf24 #22d3ee #a855f7 */
 
 /* Smooth theme transition for everything */

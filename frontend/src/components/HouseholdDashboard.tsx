@@ -615,7 +615,8 @@ function HausautomationPanel() {
 
                         {/* Expand: Gerät verwalten panel */}
                         {isManaging && (
-                          <div style={{ borderTop:`1px solid ${d.color}18`, padding:'14px 16px', background:'rgba(0,0,0,0.12)', animation:'wai-fade-in 0.2s ease' }}>
+                          <div style={{ borderTop:`1px solid ${d.color}18`, padding:'14px 16px', background:'rgba(0,0,0,0.12)', animation:'wai-fade-in 0.2s ease' }}
+                            className="wai-surface">
                             <div style={{ fontSize:10, color:'rgba(255,149,0,0.6)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:10 }}>Geräteeinstellungen</div>
                             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:8, marginBottom:12 }}>
                               {[
@@ -625,7 +626,7 @@ function HausautomationPanel() {
                                 { label:'Automatisierung', value: cd.active ? autoLabel : 'Inaktiv', c: cd.active ? '#ff9500' : 'rgba(248,250,252,0.35)' },
                                 { label:'Kopplungscode', value:cd.pairingCode, c:'rgba(248,250,252,0.5)' },
                               ].map(({ label, value, c }) => (
-                                <div key={label} style={{ padding:'8px 12px', borderRadius:9, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
+                                <div key={label} className="wai-surface" style={{ padding:'8px 12px', borderRadius:9, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
                                   <div style={{ fontSize:9, color:'rgba(248,250,252,0.35)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>{label}</div>
                                   <div style={{ fontSize:12, fontWeight:700, color:c, fontFamily:'monospace' }}>{value}</div>
                                 </div>
@@ -644,7 +645,7 @@ function HausautomationPanel() {
                             </div>
                             {/* Diagnose output */}
                             {(diagState[cd.uid] === 'running' || diagState[cd.uid] === 'done') && (
-                              <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10, background:'rgba(0,0,0,0.3)', border:'1px solid rgba(59,130,246,0.2)', fontFamily:'monospace', fontSize:11, lineHeight:1.9, animation:'wai-fade-in 0.3s ease' }}>
+                              <div className="wai-surface" style={{ marginTop:10, padding:'10px 14px', borderRadius:10, background:'rgba(0,0,0,0.3)', border:'1px solid rgba(59,130,246,0.2)', fontFamily:'monospace', fontSize:11, lineHeight:1.9, animation:'wai-fade-in 0.3s ease' }}>
                                 <div style={{ fontSize:9, color:'rgba(96,165,250,0.7)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:6 }}>Diagnosebericht</div>
                                 {(diagLines[cd.uid] ?? []).map((line, i) => {
                                   const isOk = line.includes('OK') || line.includes('✓');
@@ -670,7 +671,7 @@ function HausautomationPanel() {
                             )}
                             {/* Logfile output */}
                             {showLog[cd.uid] && (logLines[cd.uid] ?? []).length > 0 && (
-                              <div style={{ marginTop:10, padding:'10px 14px', borderRadius:10, background:'rgba(0,0,0,0.3)', border:'1px solid rgba(168,85,247,0.2)', fontFamily:'monospace', fontSize:10.5, lineHeight:2, animation:'wai-fade-in 0.3s ease', maxHeight:180, overflowY:'auto' }}>
+                              <div className="wai-surface" style={{ marginTop:10, padding:'10px 14px', borderRadius:10, background:'rgba(0,0,0,0.3)', border:'1px solid rgba(168,85,247,0.2)', fontFamily:'monospace', fontSize:10.5, lineHeight:2, animation:'wai-fade-in 0.3s ease', maxHeight:180, overflowY:'auto' }}>
                                 <div style={{ fontSize:9, color:'rgba(192,132,252,0.7)', letterSpacing:'0.12em', fontWeight:700, textTransform:'uppercase', marginBottom:6 }}>Systemlog</div>
                                 {(logLines[cd.uid] ?? []).map((line, i) => {
                                   const isDebug = line.includes('[DEBUG]');
