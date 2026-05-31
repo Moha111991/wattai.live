@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { API_URL, WS_URL } from '../lib/api';
 import { usePlan } from '../context/PlanContext';
+import { useTheme } from '../hooks/useTheme';
 
 interface EVState { ev_soc: number; ev_power_kw: number; ev_charging: boolean; }
 interface WallboxInfo { id?: string; type?: string; status?: string; enabled?: boolean; brand?: string; model?: string; ip?: string; }
@@ -36,6 +37,14 @@ const WAI = `
 const EVChargeControl: React.FC = () => {
   const { planId: plan } = usePlan();
   const planLimit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  const { isLight } = useTheme();
+
+  // Theme-abhängige Farben
+  const textPrimary   = isLight ? '#0f172a'             : '#f8fafc';
+  const textMuted     = isLight ? 'rgba(15,23,42,0.42)' : 'rgba(248,250,252,0.42)';
+  const textFaint     = isLight ? 'rgba(15,23,42,0.4)'  : 'rgba(248,250,252,0.4)';
+  const textVFaint    = isLight ? 'rgba(15,23,42,0.25)' : 'rgba(248,250,252,0.25)';
+  const svgTrack      = isLight ? 'rgba(15,23,42,0.07)' : 'rgba(255,255,255,0.05)';
 
   const [evState, setEvState] = useState<EVState>({ ev_soc: 0, ev_power_kw: 0, ev_charging: false });
   const [loading, setLoading] = useState(false);
@@ -191,7 +200,7 @@ const EVChargeControl: React.FC = () => {
       </div>
 
       {/* Subtitle */}
-      <p style={{ margin:'0 0 20px', fontSize:13, color:'rgba(248,250,252,0.42)', lineHeight:1.75 }}>
+      <p style={{ margin:'0 0 20px', fontSize:13, color: textMuted, lineHeight:1.75 }}>
         Start/Stop des Ladevorgangs und Ladeleistung direkt steuern.
         {!wallboxConnected && allWallboxes.length === 0 && (
           <span style={{ color:'#f59e0b', fontWeight:600 }}>
@@ -210,16 +219,16 @@ const EVChargeControl: React.FC = () => {
               <stop offset="100%" stopColor="#3b82f6"/>
             </linearGradient>
           </defs>
-          <circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.05)" strokeWidth="9" fill="none"/>
+          <circle cx={cx} cy={cy} r={r} stroke={svgTrack} strokeWidth="9" fill="none"/>
           <circle cx={cx} cy={cy} r={r} stroke="url(#ev-arc)" strokeWidth="9" fill="none"
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circ}`}
             style={{ transition:'stroke-dasharray 1s ease', filter:'drop-shadow(0 0 6px rgba(34,197,94,0.5))', transformOrigin:`${cx}px ${cy}px`, transform:'rotate(-90deg)' }}
           />
-          <text x={cx} y={cy-8} textAnchor="middle" fontSize="18" fill="#f8fafc">⚡</text>
+          <text x={cx} y={cy-8} textAnchor="middle" fontSize="18" fill={textPrimary}>⚡</text>
           <text x={cx} y={cy+12} textAnchor="middle" fontSize="20" fontWeight="800" fill={socColor} fontFamily="monospace">{soc}</text>
-          <text x={cx} y={cy+24} textAnchor="middle" fontSize="9" fill="rgba(248,250,252,0.4)" fontFamily="monospace">% SOC</text>
-          <text x={cx} y={cy+42} textAnchor="middle" fontSize="8" fill={evState.ev_charging ? '#22c55e' : 'rgba(248,250,252,0.3)'} fontFamily="monospace">
+          <text x={cx} y={cy+24} textAnchor="middle" fontSize="9" fill={textFaint} fontFamily="monospace">% SOC</text>
+          <text x={cx} y={cy+42} textAnchor="middle" fontSize="8" fill={evState.ev_charging ? '#22c55e' : textVFaint} fontFamily="monospace">
             {evState.ev_charging ? '▲ LÄDT' : '● BEREIT'}
           </text>
         </svg>
@@ -233,7 +242,7 @@ const EVChargeControl: React.FC = () => {
             ...(cloudAvailable && cloudSoc !== null ? [{ label:`SOC (BMS${cloudProvider ? ' · '+cloudProvider : ''})`, value:`${cloudSoc}%`, color:'#a78bfa' }] : []),
           ].map(({label,value,color})=>(
             <div key={label} className="wai-surface" style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontSize:12, color:'rgba(248,250,252,0.42)', letterSpacing:'0.05em' }}>{label}</span>
+              <span style={{ fontSize:12, color: textMuted, letterSpacing:'0.05em' }}>{label}</span>
               <span style={{ fontSize:15, fontWeight:800, color, fontFamily:'monospace' }}>{value}</span>
             </div>
           ))}

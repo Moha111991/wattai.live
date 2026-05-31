@@ -8,6 +8,7 @@ import ErrorAlarmMonitor from './ErrorAlarmMonitor';
 import BatteryWidget from './BatteryWidget';
 import AnimatedEnergyFlow from './AnimatedEnergyFlow';
 import { API_URL, WS_URL } from '../lib/api';
+import { useTheme } from '../hooks/useTheme';
 
 interface RealtimeData {
   pv_power_kw: number;
@@ -48,6 +49,11 @@ export default function Dashboard() {
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [devices, setDevices] = useState<DeviceSummary[]>([]);
   const [ready, setReady] = useState(false);
+  const { isLight } = useTheme();
+
+  // Theme-Farben für SVG-Elemente
+  const textPrimary = isLight ? '#0f172a' : '#f8fafc';
+  const textMuted   = isLight ? 'rgba(15,23,42,0.45)' : 'rgba(248,250,252,0.38)';
 
   useEffect(() => {
     fetch(`${API_BASE}/devices`, { headers: { 'X-API-Key': import.meta.env.VITE_API_KEY || 'YOUR_API_KEY_HERE', 'Content-Type': 'application/json' } })
@@ -110,8 +116,8 @@ export default function Dashboard() {
             <circle cx="36" cy="36" r="10" fill="rgba(255,149,0,0.2)"><animate attributeName="r" values="8;13;8" dur="2s" repeatCount="indefinite"/></circle>
             <circle cx="36" cy="36" r="4" fill="#ff9500"/>
           </svg>
-          <p style={{ color:'#f8fafc', fontSize:18, fontWeight:700, margin:'0 0 8px', letterSpacing:'-0.01em' }}>Verbinde mit Backend...</p>
-          <p style={{ color:'rgba(248,250,252,0.38)', fontSize:13, margin:0 }}>WebSocket: {wsStatus}</p>
+          <p style={{ color: textPrimary, fontSize:18, fontWeight:700, margin:'0 0 8px', letterSpacing:'-0.01em' }}>Verbinde mit Backend...</p>
+          <p style={{ color: textMuted, fontSize:13, margin:0 }}>WebSocket: {wsStatus}</p>
         </div>
       </div>
     );
