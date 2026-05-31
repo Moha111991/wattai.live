@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import TabHeader from './TabHeader';
 import TabBar from './TabBar';
 import BatteryWidget from './BatteryWidget';
@@ -142,6 +142,14 @@ function HausautomationPanel() {
   const [diagLines, setDiagLines] = useState<Record<string, string[]>>({});
   const [showLog, setShowLog] = useState<Record<string, boolean>>({});
   const [logLines, setLogLines] = useState<Record<string, string[]>>({});
+  // track active intervals so we can clean up safely
+  const diagIntervals = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+
+  // cleanup all intervals on unmount
+  useEffect(() => {
+    const ivs = diagIntervals.current;
+    return () => { Object.values(ivs).forEach(clearInterval); };
+  }, []);
 
   const dev = DEVICES.find(d => d.id === selectedDevice);
   // all connected devices across all slots (flat list)
@@ -205,53 +213,67 @@ function HausautomationPanel() {
   }, []);
 
   const handleDiagnose = useCallback((cd: ConnectedDevice) => {
+    // clear any existing interval for this uid (prevent double-run)
+    if (diagIntervals.current[cd.uid]) {
+      clearInterval(diagIntervals.current[cd.uid]);
+      delete diagIntervals.current[cd.uid];
+    }
     setDiagState(prev => ({ ...prev, [cd.uid]: 'running' }));
     setDiagLines(prev => ({ ...prev, [cd.uid]: [] }));
+
     const slot = DEVICES.find(d => d.id === cd.slotId);
-    const steps = [
-      `[PING] ${cd.ip} → Antwort in ${Math.floor(Math.random()*8+1)}ms`,
-      `[${cd.proto}] Protokoll-Handshake … OK`,
-      `[AUTH] Token-Validierung … OK`,
+    const signalLabel = cd.signal > 75 ? 'Ausgezeichnet ✓' : cd.signal > 50 ? 'Gut ✓' : 'Schwach ⚠';
+    const watt = Math.floor(Math.random() * 2000 + 200);
+    const latency = Math.floor(Math.random() * 8 + 1);
+    const steps: string[] = [
+      `[PING]   ${cd.ip} → Antwort in ${latency}ms`,
+      `[${cd.proto.padEnd(5)}] Protokoll-Handshake … OK`,
+      `[AUTH]   Token-Validierung … OK`,
       `[ENTITY] ${slot?.label ?? cd.slotId} erkannt (ID: ${cd.pairingCode})`,
-      `[SIGNAL] Signalstärke ${cd.signal}% — ${cd.signal > 75 ? 'Ausgezeichnet ✓' : cd.signal > 50 ? 'Gut ✓' : 'Schwach ⚠'}`,
-      `[POWER] Leistungsabruf … ${+(Math.random()*2000+200).toFixed(0)} W aktuell`,
+      `[SIGNAL] Stärke ${cd.signal}% — ${signalLabel}`,
+      `[POWER]  Leistungsabruf … ${watt} W aktuell`,
       `[STATUS] Gerät online — Keine Fehler gefunden ✓`,
     ];
-    let i = 0;
+
+    let idx = 0;
     const iv = setInterval(() => {
-      if (i >= steps.length) {
+      if (idx < steps.length) {
+        const line = steps[idx];
+        idx++;
+        setDiagLines(prev => ({ ...prev, [cd.uid]: [...(prev[cd.uid] ?? []), line] }));
+      } else {
         clearInterval(iv);
+        delete diagIntervals.current[cd.uid];
         setDiagState(prev => ({ ...prev, [cd.uid]: 'done' }));
-        return;
       }
-      setDiagLines(prev => ({ ...prev, [cd.uid]: [...(prev[cd.uid] ?? []), steps[i]] }));
-      i++;
-    }, 320);
+    }, 350);
+    diagIntervals.current[cd.uid] = iv;
   }, []);
 
   const handleShowLog = useCallback((cd: ConnectedDevice) => {
+    const slot = DEVICES.find(d => d.id === cd.slotId);
     setShowLog(prev => {
       const next = !prev[cd.uid];
-      if (next && !logLines[cd.uid]) {
-        // generate log entries
-        const slot = DEVICES.find(d => d.id === cd.slotId);
-        const now = Date.now();
-        const entries = [
-          { t: now - 1000*60*2,  lvl:'INFO',  msg:`Verbindung hergestellt via ${cd.proto}` },
-          { t: now - 1000*60*1,  lvl:'INFO',  msg:`${slot?.label} registriert (IP: ${cd.ip})` },
-          { t: now - 1000*55,    lvl:'INFO',  msg:'Automatisierungsregel aktiv: ' + (cd.active ? cd.automation.toUpperCase() : 'keine') },
-          { t: now - 1000*40,    lvl:'DEBUG', msg:`Signalstärke ${cd.signal}%, Latenz ${Math.floor(Math.random()*10+1)}ms` },
-          { t: now - 1000*30,    lvl:'INFO',  msg:`Leistungsdaten empfangen: ${+(Math.random()*2000+200).toFixed(0)} W` },
-          { t: now - 1000*20,    lvl:'DEBUG', msg:'Heartbeat OK' },
-          { t: now - 1000*10,    lvl:'INFO',  msg:`Daten an WattAI-Backend übertragen` },
-          { t: now,              lvl:'INFO',  msg:'Gerät aktiv — Kein Fehler' },
-        ];
-        const fmt = (ts: number) => new Date(ts).toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-        setLogLines(prev2 => ({ ...prev2, [cd.uid]: entries.map(e => `${fmt(e.t)}  [${e.lvl}]  ${e.msg}`) }));
-      }
       return { ...prev, [cd.uid]: next };
     });
-  }, [logLines]);
+    setLogLines(prev => {
+      if (prev[cd.uid]) return prev; // already generated
+      const now = Date.now();
+      const autoLabel = cd.active ? cd.automation.toUpperCase() : 'keine';
+      const entries = [
+        { t: now - 1000*60*2, lvl:'INFO',  msg:`Verbindung hergestellt via ${cd.proto}` },
+        { t: now - 1000*60*1, lvl:'INFO',  msg:`${slot?.label ?? cd.slotId} registriert (IP: ${cd.ip})` },
+        { t: now - 1000*55,   lvl:'INFO',  msg:`Automatisierungsregel aktiv: ${autoLabel}` },
+        { t: now - 1000*40,   lvl:'DEBUG', msg:`Signalstärke ${cd.signal}%, Latenz ${Math.floor(Math.random()*10+1)}ms` },
+        { t: now - 1000*30,   lvl:'INFO',  msg:`Leistungsdaten empfangen: ${Math.floor(Math.random()*2000+200)} W` },
+        { t: now - 1000*20,   lvl:'DEBUG', msg:'Heartbeat OK' },
+        { t: now - 1000*10,   lvl:'INFO',  msg:'Daten an WattAI-Backend übertragen' },
+        { t: now,             lvl:'INFO',  msg:'Gerät aktiv — Kein Fehler' },
+      ];
+      const fmt = (ts: number) => new Date(ts).toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      return { ...prev, [cd.uid]: entries.map(e => `${fmt(e.t)}  [${e.lvl}]  ${e.msg}`) };
+    });
+  }, []);
 
   const STEPS = ['Gerät wählen','Protokoll','Verbinden','Automatisierung','Live-Status'];
 
