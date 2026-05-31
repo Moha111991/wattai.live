@@ -59,7 +59,18 @@ function AppShell() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string | undefined>(undefined);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('wattai-theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const appContentRef = useRef<HTMLDivElement | null>(null);
+
+  // Apply theme to <html> element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('wattai-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   // Detect mobile screen size with finer granularity
   useEffect(() => {
@@ -99,7 +110,10 @@ function AppShell() {
     margin: 0,
     padding: 0,
     overflowX: 'hidden',
-    background: 'linear-gradient(160deg, #020617 0%, #0b1220 35%, #0f172a 100%)',
+    background: isDark
+      ? 'linear-gradient(160deg, #020617 0%, #0b1220 35%, #0f172a 100%)'
+      : 'linear-gradient(160deg, #f0f4ff 0%, #e8edf8 35%, #f1f5fb 100%)',
+    transition: 'background 0.4s ease',
   };
 
   const appContentStyle: CSSProperties = {
@@ -232,7 +246,7 @@ function AppShell() {
     </div>
     {/* End appContentRef div */}
 
-    {/* Floating Bottom-Right Widget: Upgrade + App Store */}
+    {/* Floating Bottom-Right Widget: Theme + Upgrade + App Store */}
     {(showBanner || plan.id !== 'business') && (
       <div style={{
         position: 'fixed',
@@ -244,6 +258,42 @@ function AppShell() {
         alignItems: 'flex-end',
         gap: 8,
       }}>
+        {/* ── Dark / Light Toggle ── */}
+        <button
+          onClick={() => setIsDark(d => !d)}
+          aria-label={isDark ? 'Light Mode aktivieren' : 'Dark Mode aktivieren'}
+          title={isDark ? 'Light Mode' : 'Dark Mode'}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: isMobile ? '0.38rem 0.75rem' : '0.44rem 0.9rem',
+            borderRadius: 999,
+            border: isDark
+              ? '1px solid rgba(248,250,252,0.15)'
+              : '1px solid rgba(15,23,42,0.18)',
+            background: isDark
+              ? 'rgba(15,23,42,0.82)'
+              : 'rgba(255,255,255,0.88)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            color: isDark ? '#f8fafc' : '#0f172a',
+            fontWeight: 700,
+            fontSize: isMobile ? 11 : 12,
+            cursor: 'pointer',
+            boxShadow: isDark
+              ? '0 4px 16px rgba(0,0,0,0.45)'
+              : '0 4px 16px rgba(15,23,42,0.15)',
+            transition: 'all 0.3s ease',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ fontSize: isMobile ? 14 : 16, lineHeight: 1 }}>
+            {isDark ? '☀️' : '🌙'}
+          </span>
+          {!isMobile && (isDark ? 'Light Mode' : 'Dark Mode')}
+        </button>
+
         {plan.id !== 'business' && (
           <button
             onClick={() => setIsUpgradeModalOpen(true)}
