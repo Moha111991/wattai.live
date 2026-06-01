@@ -162,6 +162,39 @@
 [data-theme="light"] [style*="color: rgba(255,255,255,0.3)"],
 [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.3)"] { color: rgba(15,23,42,0.3) !important; }
 
+/* ── DARK MODE: force text to light colors even if inline styles exist ─── */
+[data-theme="dark"] body,
+[data-theme="dark"] .main-app {
+  color: var(--wai-text);
+}
+
+[data-theme="dark"] .wai-card,
+[data-theme="dark"] .wai-surface {
+  color: var(--wai-text) !important;
+}
+
+/* Inline hex/rgb/rgba variants that browsers may serialize — map to light text */
+[data-theme="dark"] [style*="color: #0f172a"],
+[data-theme="dark"] [style*="color:#0f172a"],
+[data-theme="dark"] [style*="color: #213547"],
+[data-theme="dark"] [style*="color:rgb(15,17,42)"],
+[data-theme="dark"] [style*="color: rgb(15,17,42)"],
+[data-theme="dark"] [style*="color: rgb(33,53,71)"],
+[data-theme="dark"] [style*="color:rgba(15,23,42"],
+[data-theme="dark"] [style*="color: rgba(15, 23, 42"],
+[data-theme="dark"] [style*="color: #0f172a"] { color: var(--wai-text) !important; }
+
+/* rgba dark variants */
+[data-theme="dark"] [style*="color: rgba(15,23,42,0.9)"],
+[data-theme="dark"] [style*="color: rgba(15, 23, 42, 0.9)"],
+[data-theme="dark"] [style*="color: rgba(15,23,42,0.7)"],
+[data-theme="dark"] [style*="color: rgba(15, 23, 42, 0.7)"] { color: rgba(248,250,252,0.95) !important; }
+
+/* Strong fallback for .wai-card children: prefer light text unless accent colors are set */
+[data-theme="dark"] .wai-card *:not([style*="color: #ff"]):not([style*="color:#ff"]):not([style*="color: rgb(255, 149"]):not([style*="color: rgb(34, 197"]):not([style*="color: rgb(59, 130"]):not([style*="color: rgb(239, 68"]):not([style*="color: rgb(96, 165"]):not([style*="color: rgb(192, 132"]):not([style*="color: rgb(251, 191"]):not([style*="color: rgb(34, 211"]):not([style*="color: rgb(168, 85"]):not([style*="color: rgb(22, 197"]) {
+  color: var(--wai-text) !important;
+}
+
 /* ── Input-Felder im Light Mode ─────────────────────────────────────────── */
 [data-theme="light"] input,
 [data-theme="light"] textarea,
