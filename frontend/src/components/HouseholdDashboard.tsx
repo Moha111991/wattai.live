@@ -52,7 +52,40 @@ type ConnectedDevice = {
   uid: string; slotId: string; proto: string;
   automation: string; active: boolean; kwh: number; schedule: string;
   connStatus: ConnStatus; pairingCode: string; ip: string; signal: number; lastSeen: string;
+  isOn: boolean; powerW: number; voltageV: number; currentA: number;
 };
+
+// ── Base power per device type ────────────────────────────────────────────────
+const BASE_POWER: Record<string, number> = { wp:2400, wm:1800, tr:900, sp:1200, ac:1500, lx:8 };
+
+// ── Animated Toggle Switch ────────────────────────────────────────────────────
+function ToggleSwitch({ on, onChange, accent = '#22c55e', disabled = false }: { on: boolean; onChange: (v: boolean) => void; accent?: string; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      disabled={disabled}
+      onClick={() => onChange(!on)}
+      style={{
+        position: 'relative', display: 'inline-flex', alignItems: 'center',
+        width: 46, height: 26, borderRadius: 13, padding: 3, border: 'none',
+        background: on ? accent : 'rgba(255,255,255,0.12)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'background 0.35s cubic-bezier(.16,1,.3,1)',
+        boxShadow: on ? `0 0 12px ${accent}55` : 'none',
+        flexShrink: 0,
+      }}
+    >
+      <span style={{
+        display: 'block', width: 20, height: 20, borderRadius: '50%',
+        background: '#fff',
+        transform: on ? 'translateX(20px)' : 'translateX(0px)',
+        transition: 'transform 0.35s cubic-bezier(.16,1,.3,1)',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+      }}/>
+    </button>
+  );
+}
 
 const rndIP = () => `192.168.1.${Math.floor(Math.random()*200+10)}`;
 const rndCode = () => Math.random().toString(36).substring(2,8).toUpperCase();
@@ -164,6 +197,7 @@ function HausautomationPanel() {
   const handleConnectDone = useCallback(() => {
     setConnecting(false);
     const now = new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+    const bp = BASE_POWER[selectedDevice] ?? 500;
     const newDev: ConnectedDevice = {
       uid: Math.random().toString(36).slice(2,10),
       slotId: selectedDevice,
@@ -172,6 +206,7 @@ function HausautomationPanel() {
       kwh: +(Math.random()*3).toFixed(2), schedule: '11:00',
       connStatus: 'connected',
       pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen: now,
+      isOn: false, powerW: 0, voltageV: 230, currentA: 0,
     };
     setSlotDevices(prev => ({ ...prev, [selectedDevice]: [...prev[selectedDevice], newDev] }));
     setWizardConn({ pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen: '–', connStatus: 'disconnected' });
@@ -210,6 +245,16 @@ function HausautomationPanel() {
   const handleReset = useCallback(() => {
     setStep(1); setSelectedDevice(''); setSelectedProto(''); setConnecting(false); setManagingUid(null);
     setWizardConn({ pairingCode: rndCode(), ip: rndIP(), signal: rndSignal(), lastSeen:'–', connStatus:'disconnected' });
+  }, []);
+
+  const handleToggle = useCallback((slotId: string, uid: string, on: boolean) => {
+    const bp = BASE_POWER[slotId] ?? 500;
+    const pw = on ? +(bp * (0.85 + Math.random() * 0.3)).toFixed(0) : 0;
+    const cv = on ? +(pw / 230).toFixed(2) : 0;
+    setSlotDevices(prev => ({
+      ...prev,
+      [slotId]: prev[slotId].map(d => d.uid === uid ? { ...d, isOn: on, powerW: pw, voltageV: 230, currentA: cv } : d),
+    }));
   }, []);
 
   const handleDiagnose = useCallback((cd: ConnectedDevice) => {
@@ -588,6 +633,22 @@ function HausautomationPanel() {
                               {cd.connStatus === 'connected' && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>IP: <b style={{ color:'rgba(248,250,252,0.7)' }}>{cd.ip}</b></span>}
                               {cd.lastSeen !== '–' && <span style={{ fontSize:11, color:'rgba(248,250,252,0.4)' }}>Gesehen: <b style={{ color:'rgba(248,250,252,0.6)' }}>{cd.lastSeen}</b></span>}
                             </div>
+                          </div>
+                          {/* Toggle + Live values */}
+                          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flexShrink:0 }}>
+                            <ToggleSwitch
+                              on={cd.isOn}
+                              accent={d.color}
+                              disabled={cd.connStatus !== 'connected' || isReconnecting}
+                              onChange={(v) => handleToggle(d.id, cd.uid, v)}
+                            />
+                            {cd.isOn && cd.connStatus === 'connected' && (
+                              <div style={{ display:'flex', flexDirection:'column', gap:2, alignItems:'center', animation:'wai-fade-in 0.3s ease' }}>
+                                <span style={{ fontSize:10, fontWeight:800, color:d.color, fontFamily:'monospace' }}>{cd.powerW} W</span>
+                                <span style={{ fontSize:9, color:'rgba(248,250,252,0.5)', fontFamily:'monospace' }}>{cd.voltageV}V / {cd.currentA}A</span>
+                                <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background:d.color, animation:'wai-breathe 1.2s ease-in-out infinite' }}/>
+                              </div>
+                            )}
                           </div>
                           {/* Action buttons */}
                           <div style={{ display:'flex', gap:6, flexShrink:0 }}>
