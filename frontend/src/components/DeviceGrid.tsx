@@ -818,7 +818,7 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize:10, color:'rgba(248,250,252,0.3)', marginBottom:8 }}>{slot.sublabel}</div>
+                  <div style={{ fontSize:10, color:'rgba(248,250,252,0.82)', marginBottom:8 }}>{slot.sublabel}</div>
                   <span style={{ display:'inline-flex', alignItems:'center', gap:5,
                     background:`${si.color}12`, border:`1px solid ${si.color}28`, borderRadius:999,
                     padding:'3px 10px', fontSize:10, fontWeight:700, color:si.color,
@@ -827,10 +827,10 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                     {si.label}
                   </span>
                   {device && (
-                    <div style={{ marginTop:7, fontSize:10, color:'rgba(248,250,252,0.32)', fontFamily:'monospace', lineHeight:1.5 }}>
+                    <div style={{ marginTop:7, fontSize:10, color:'rgba(248,250,252,0.82)', fontFamily:'monospace', lineHeight:1.5 }}>
                       {device.brand && <span>{device.brand}</span>}
                       {device.model && <span> · {device.model}</span>}
-                      {device.ip && <div style={{ color:'rgba(248,250,252,0.2)' }}>{device.ip}</div>}
+                      {device.ip && <div style={{ color:'rgba(248,250,252,0.65)' }}>{device.ip}</div>}
                     </div>
                   )}
                   {/* Extra connected devices list */}
