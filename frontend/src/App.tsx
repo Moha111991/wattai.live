@@ -12,6 +12,7 @@ import UpgradeModal from "./components/UpgradeModal";
 import CookieConsent from "./components/CookieConsent";
 import { PlanProvider, usePlan } from "./context/PlanContext";
 import { TabContext } from "./context/TabContext";
+import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import StartPage from "./pages/StartPage";
 import ProduktePage from "./pages/ProduktePage";
 import AboutPage from "./pages/AboutPage";
@@ -27,30 +28,19 @@ type TabDefinition = {
 
 type NavPage = 'home' | 'startseite' | 'produkte' | 'about' | 'kontakt';
 
-const BASE_TABS: TabDefinition[] = [
-  { key: 'main', label: 'Dashboard', component: <Dashboard /> },
-  { key: 'ev', label: 'Elektroauto', component: <EVDashboard /> },
-  { key: 'devices', label: 'Geräte', component: <DevicesDashboard /> },
-  { key: 'house', label: 'Smart Home', component: <HouseholdDashboard /> },
-  { key: 'ki', label: 'KI-Empfehlung', component: <KIDashboard /> },
-];
-
-const FLEET_TAB: TabDefinition = {
-  key: 'fleet',
-  label: 'Flottenmanagement',
-  component: <FleetManagementTab />,
-};
-
 export default function App() {
   return (
-    <PlanProvider>
-      <AppShell />
-    </PlanProvider>
+    <LanguageProvider>
+      <PlanProvider>
+        <AppShell />
+      </PlanProvider>
+    </LanguageProvider>
   );
 }
 
 function AppShell() {
   const { plan, fleetUnlocked } = usePlan();
+  const { t } = useLanguage();
   const [tab, setTab] = useState('main');
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -93,6 +83,20 @@ function AppShell() {
     if (width < 480) return 50;
     if (width < 768) return 60;
     return 80;
+  };
+
+  const BASE_TABS: TabDefinition[] = [
+    { key: 'main', label: t('common.dashboard'), component: <Dashboard /> },
+    { key: 'ev', label: t('common.ev'), component: <EVDashboard /> },
+    { key: 'devices', label: t('common.devices'), component: <DevicesDashboard /> },
+    { key: 'house', label: t('common.smarthome'), component: <HouseholdDashboard /> },
+    { key: 'ki', label: t('common.aiRecom'), component: <KIDashboard /> },
+  ];
+
+  const FLEET_TAB: TabDefinition = {
+    key: 'fleet',
+    label: t('common.fleet'),
+    component: <FleetManagementTab />,
   };
 
   // Build tabs from plan — fleet tab only for Business

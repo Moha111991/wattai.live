@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import WattAILogo from './WattAILogo';
+import { useLanguage } from '../context/LanguageContext';
 
 type NavPage = 'home' | 'startseite' | 'produkte' | 'about' | 'kontakt';
 
@@ -14,13 +15,6 @@ type TopNavProps = {
   onLogout: () => void;
 };
 
-const NAV_LINKS: { key: NavPage; label: string }[] = [
-  { key: 'startseite', label: 'Startseite' },
-  { key: 'produkte', label: 'Produkte & Leistungen' },
-  { key: 'about', label: 'Über uns' },
-  { key: 'kontakt', label: 'Kontakt' },
-];
-
 export default function TopNav({
   isMobile,
   logoSize,
@@ -32,6 +26,14 @@ export default function TopNav({
   onLogout,
 }: TopNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
+
+  const NAV_LINKS: { key: NavPage; label: string }[] = [
+    { key: 'startseite', label: t('nav.startpage') },
+    { key: 'produkte', label: t('nav.products') },
+    { key: 'about', label: t('nav.about') },
+    { key: 'kontakt', label: t('nav.contact') },
+  ];
 
   const navBarStyle: CSSProperties = {
     width: '100%',
@@ -144,14 +146,52 @@ export default function TopNav({
           </div>
         )}
 
-        {/* Auth Button + Hamburger */}
+        {/* Language & Auth Button + Hamburger */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Language Switcher Buttons (Deutsch / English) */}
+          <div style={{ display: 'flex', gap: 4, marginRight: 8, background: 'rgba(255,255,255,0.04)', padding: '2px', borderRadius: 6, border: '1px solid rgba(103,232,249,0.1)' }}>
+            <button
+              onClick={() => setLanguage('de')}
+              style={{
+                background: language === 'de' ? 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)' : 'none',
+                border: 'none',
+                color: language === 'de' ? '#f8fafc' : '#94a3b8',
+                borderRadius: 4,
+                padding: '3px 8px',
+                fontSize: 10,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="Auf Deutsch übersetzen"
+            >
+              DE
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              style={{
+                background: language === 'en' ? 'linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%)' : 'none',
+                border: 'none',
+                color: language === 'en' ? '#f8fafc' : '#94a3b8',
+                borderRadius: 4,
+                padding: '3px 8px',
+                fontSize: 10,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="Translate to English"
+            >
+              EN
+            </button>
+          </div>
+
           {!isMobile && (
-            <button style={authBtnStyle} onClick={isLoggedIn ? undefined : onAuthClick} aria-label={isLoggedIn ? 'Mein Konto' : 'Anmelden'}>
+            <button style={authBtnStyle} onClick={isLoggedIn ? undefined : onAuthClick} aria-label={isLoggedIn ? t('nav.myAccount') : t('nav.login')}>
               {isLoggedIn ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span>👤</span>
-                  <span>{userName ?? 'Mein Konto'}</span>
+                  <span>{userName ?? t('nav.myAccount')}</span>
                   <button
                     onClick={onLogout}
                     style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 11, padding: '0 2px', marginLeft: 4 }}
@@ -163,7 +203,7 @@ export default function TopNav({
               ) : (
                 <>
                   <span>🔐</span>
-                  <span>Einloggen / Registrieren</span>
+                  <span>{t('nav.login')}</span>
                 </>
               )}
             </button>

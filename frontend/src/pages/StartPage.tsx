@@ -13,6 +13,7 @@ import {
   useEffect, useRef, useState, useCallback,
   type CSSProperties, type MouseEvent as RMouseEvent,
 } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { APPLICATIONS } from '../data/applications';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -1563,6 +1564,7 @@ function SectionHeadline({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: StartPageProps) {
+  const { t } = useLanguage();
   const heroRef = useRef<HTMLDivElement>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
@@ -1717,12 +1719,12 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               backgroundClip:'text', animation:'wai-shimmer 9s linear infinite',
               display:'block',
-            }}>Deine Energie.</span>
+            }}>{t('start.heroTitle').split('. ')[0]}</span>
             <span style={{
               background:'linear-gradient(135deg,#f8fafc 0%,#ff9500 45%,#1e40af 100%)',
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               backgroundClip:'text', display:'block', marginTop:4,
-            }}>Intelligent gesteuert.</span>
+            }}>{t('start.heroTitle').split('. ')[1] || 'Intelligent gesteuert.'}</span>
           </h1>
 
           {/* Subline */}
@@ -1731,8 +1733,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
             fontSize:'clamp(15px,1.8vw,19px)', color:T.ghost,
             maxWidth:620, margin:'0 auto 44px', lineHeight:1.85, textAlign:'center',
           }}>
-            WattAI.live verbindet PV-Anlage, Batteriespeicher, Wärmepumpe und Elektroauto
-            zu einem intelligenten Ökosystem — in Echtzeit, DSGVO-konform und planbasiert.
+            {t('start.heroSub')}
           </p>
 
           {/* CTAs */}
@@ -1748,7 +1749,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
                 animation:'wai-glow-o 5s ease-in-out infinite',
                 letterSpacing:'0.02em',
               }}>
-              Dashboard starten
+              {t('start.startTesting')}
             </button>
             <button type="button" onClick={() => onNavigate('produkte')} className="wai-cta-g"
               style={{

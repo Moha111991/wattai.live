@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { SALES_UPGRADE_LINK } from '../config/featureFlags';
 
 const sectionStyle: CSSProperties = {
@@ -9,25 +10,26 @@ const sectionStyle: CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const CONTACT_OPTIONS = [
-  { icon: '📧', label: 'E-Mail', value: 'kontakt@wattai.live', href: 'mailto:kontakt@wattai.live' },
-  { icon: '💼', label: 'Business & Vertrieb', value: 'kontakt@wattai.live', href: SALES_UPGRADE_LINK },
-  { icon: '🛠', label: 'Technischer Support', value: 'support@wattai.live', href: 'mailto:support@wattai.live' },
-];
-
 export default function KontaktPage() {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ name: '', email: '', subject: 'Allgemeine Anfrage', message: '' });
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
+  const CONTACT_OPTIONS = [
+    { icon: '📧', label: t('contact.directMail'), value: 'kontakt@wattai.live', href: 'mailto:kontakt@wattai.live' },
+    { icon: '💼', label: t('contact.directSales'), value: 'kontakt@wattai.live', href: SALES_UPGRADE_LINK },
+    { icon: '🛠', label: t('contact.directSupport'), value: 'support@wattai.live', href: 'mailto:support@wattai.live' },
+  ];
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-      setError('Bitte alle Pflichtfelder ausfüllen.');
+      setError(t('contact.validationRequired'));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setError('Bitte eine gültige E-Mail-Adresse eingeben.');
+      setError(t('contact.validationEmail'));
       return;
     }
     // mailto: fallback (replace with real backend API call)
@@ -66,10 +68,10 @@ export default function KontaktPage() {
       {/* ── Header ── */}
       <section style={{ ...sectionStyle, textAlign: 'center', paddingBottom: 0 }}>
         <h1 style={{ fontSize: 'clamp(24px,4vw,44px)', fontWeight: 900, color: '#f1f5f9', margin: '0 0 14px' }}>
-          Kontakt
+          {t('contact.title')}
         </h1>
         <p style={{ color: '#94a3b8', fontSize: 'clamp(14px,2vw,17px)', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
-          Fragen, Feedback oder Interesse an Business-Lösungen? Wir freuen uns von dir zu hören.
+          {t('contact.subtitle')}
         </p>
       </section>
 
@@ -80,32 +82,32 @@ export default function KontaktPage() {
           {/* Contact Form */}
           <div style={{ background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(103,232,249,0.15)', borderRadius: 18, padding: 'clamp(20px,3vw,32px)' }}>
             <h2 style={{ margin: '0 0 22px', fontSize: 18, fontWeight: 700, color: '#f1f5f9' }}>
-              ✉️ Nachricht senden
+              {t('contact.formTitle')}
             </h2>
 
             {sent ? (
               <div style={{ textAlign: 'center', padding: '32px 0' }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
                 <p style={{ color: '#4ade80', fontWeight: 700, fontSize: 16, margin: '0 0 8px' }}>
-                  Nachricht vorbereitet!
+                  {t('contact.formSubmitted')}
                 </p>
                 <p style={{ color: '#94a3b8', fontSize: 13 }}>
-                  Dein E-Mail-Programm öffnet sich mit der vorausgefüllten Nachricht.
+                  {t('contact.formSubmittedSub')}
                 </p>
                 <button
                   onClick={() => setSent(false)}
                   style={{ marginTop: 20, background: 'none', border: '1px solid rgba(103,232,249,0.3)', color: '#67e8f9', borderRadius: 8, padding: '0.5rem 1.2rem', cursor: 'pointer', fontSize: 13 }}
                 >
-                  Weitere Nachricht senden
+                  {t('contact.formMore')}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }} noValidate>
                 <div>
-                  <label style={labelStyle}>Name *</label>
+                  <label style={labelStyle}>{t('contact.formName')}</label>
                   <input
                     type="text"
-                    placeholder="Dein Name"
+                    placeholder={t('contact.formNamePlaceholder')}
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
                     style={inputStyle}
@@ -113,10 +115,10 @@ export default function KontaktPage() {
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>E-Mail *</label>
+                  <label style={labelStyle}>{t('contact.formEmail')}</label>
                   <input
                     type="email"
-                    placeholder="deine@email.de"
+                    placeholder={t('contact.formEmailPlaceholder')}
                     value={form.email}
                     onChange={e => setForm({ ...form, email: e.target.value })}
                     style={inputStyle}
@@ -124,25 +126,25 @@ export default function KontaktPage() {
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Betreff</label>
+                  <label style={labelStyle}>{t('contact.formSubject')}</label>
                   <select
                     value={form.subject}
                     onChange={e => setForm({ ...form, subject: e.target.value })}
                     style={{ ...inputStyle, cursor: 'pointer' }}
                   >
-                    <option>Allgemeine Anfrage</option>
-                    <option>Technischer Support</option>
-                    <option>Business / Vertrieb</option>
+                    <option>{t('contact.responseGeneral')}</option>
+                    <option>{t('contact.responseSupport')}</option>
+                    <option>{t('contact.responseSales')}</option>
                     <option>Partnerschaft</option>
                     <option>Datenschutz</option>
                     <option>Sonstiges</option>
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Nachricht *</label>
+                  <label style={labelStyle}>{t('contact.formMessage')}</label>
                   <textarea
                     rows={5}
-                    placeholder="Wie können wir helfen?"
+                    placeholder={t('contact.formMessagePlaceholder')}
                     value={form.message}
                     onChange={e => setForm({ ...form, message: e.target.value })}
                     style={{ ...inputStyle, resize: 'vertical', minHeight: 120 }}
@@ -160,10 +162,10 @@ export default function KontaktPage() {
                     fontSize: 14, cursor: 'pointer', boxShadow: '0 6px 20px rgba(6,182,212,0.3)',
                   }}
                 >
-                  📤 Nachricht senden
+                  {t('contact.formSubmit')}
                 </button>
                 <p style={{ margin: 0, fontSize: 11, color: '#475569', textAlign: 'center' }}>
-                  * Pflichtfelder · Daten werden nur zur Beantwortung deiner Anfrage genutzt (DSGVO Art. 6 Abs. 1b)
+                  {t('contact.formRequired')}
                 </p>
               </form>
             )}
@@ -172,7 +174,7 @@ export default function KontaktPage() {
           {/* Contact Info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(103,232,249,0.12)', borderRadius: 16, padding: 24 }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>📬 Direkte Kontaktwege</h3>
+              <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{t('contact.direct')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {CONTACT_OPTIONS.map(c => (
                   <a
@@ -191,12 +193,12 @@ export default function KontaktPage() {
             </div>
 
             <div style={{ background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(103,232,249,0.12)', borderRadius: 16, padding: 24 }}>
-              <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>🕐 Reaktionszeit</h3>
+              <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{t('contact.responseTitle')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { label: 'Allgemeine Anfragen', time: '1–2 Werktage' },
-                  { label: 'Technischer Support', time: '< 24 Stunden' },
-                  { label: 'Business / Vertrieb', time: '< 4 Stunden' },
+                  { label: t('contact.responseGeneral'), time: '1–2 Werktage' },
+                  { label: t('contact.responseSupport'), time: '< 24 Stunden' },
+                  { label: t('contact.responseSales'), time: '< 4 Stunden' },
                 ].map(r => (
                   <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#94a3b8' }}>
                     <span>{r.label}</span>
@@ -208,10 +210,10 @@ export default function KontaktPage() {
 
             <div style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.12),rgba(6,182,212,0.08))', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 16, padding: 24 }}>
               <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 700, color: '#f1f5f9' }}>
-                🏭 Business-Interesse?
+                {t('contact.salesInterest')}
               </h3>
               <p style={{ margin: '0 0 16px', fontSize: 13, color: '#94a3b8', lineHeight: 1.65 }}>
-                Flottenmanagement, API-Integration oder individuelle Enterprise-Lösung? Wir beraten dich kostenlos.
+                {t('contact.salesInterestText')}
               </p>
               <a
                 href={SALES_UPGRADE_LINK}
@@ -223,7 +225,7 @@ export default function KontaktPage() {
                   color: '#a78bfa', fontSize: 13, fontWeight: 700,
                 }}
               >
-                📧 Business-Anfrage starten →
+                {t('contact.salesInterest')}
               </a>
             </div>
           </div>
@@ -233,9 +235,7 @@ export default function KontaktPage() {
       {/* ── Impressum Kurzinfo ── */}
       <section style={{ ...sectionStyle, paddingTop: 0 }}>
         <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(148,163,184,0.1)', borderRadius: 14, padding: '20px 24px', fontSize: 12, color: '#475569', lineHeight: 1.8 }}>
-          <strong style={{ color: '#64748b' }}>Impressum (§ 5 TMG):</strong> WattAI.live · Mohammad Hameed ·
-          Verantwortlich für den Inhalt: Mohammad Hameed · E-Mail: kontakt@wattai.live · Tel.: +49 151 28163757 ·
-          Plattform der EU-Kommission zur Online-Streitbeilegung: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" style={{ color: '#64748b' }}>ec.europa.eu/consumers/odr</a>
+          <strong style={{ color: '#64748b' }}>{t('contact.legalText').split(': ')[0]}:</strong> {t('contact.legalText').split(': ')[1] || 'WattAI.live · Mohammad Hameed · Verantwortlich für den Inhalt: Mohammad Hameed · E-Mail: kontakt@wattai.live · Tel.: +49 151 28163757 · Plattform der EU-Kommission zur Online-Streitbeilegung:'} <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" style={{ color: '#64748b' }}>ec.europa.eu/consumers/odr</a>
         </div>
       </section>
     </div>

@@ -1,114 +1,13 @@
 import { useState, type CSSProperties } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { PaymentModal } from '../components/PaymentModal';
 
 type ProduktePageProps = {
   onUpgradeClick: () => void;
 };
 
-const PLANS = [
-  {
-    id: 'free',
-    label: 'Free',
-    segment: 'B2C',
-    price: null,
-    priceNote: 'Kostenlos',
-    color: '#67e8f9',
-    border: 'rgba(103,232,249,0.25)',
-    bg: 'rgba(15,23,42,0.7)',
-    badge: null,
-    recommended: false,
-    features: [
-      '📊 Live-Energieverbrauch & PV-Ertrag',
-      '🔋 Basis-Speichervisualisierung',
-      '🚗 1 EV-Profil',
-      '📱 Mobile App (iOS & Android)',
-      '⚡ Echtzeit-Energiefluss-Anzeige',
-    ],
-    locked: [
-      'Smart-Home-Automatisierungen',
-      'KI-Ladeoptimierung',
-      'V2H / V2G-Strategien',
-      'Flottenmanagement',
-    ],
-    cta: 'Kostenlos starten',
-    ctaHref: null,
-  },
-  {
-    id: 'pro',
-    label: 'Pro',
-    segment: 'B2C',
-    price: '19',
-    priceNote: '€ / Monat',
-    color: '#06b6d4',
-    border: 'rgba(6,182,212,0.6)',
-    bg: 'linear-gradient(160deg,rgba(6,182,212,0.12),rgba(14,165,233,0.07))',
-    badge: '⭐ Empfohlen',
-    recommended: true,
-    features: [
-      '✅ Alles aus Free',
-      '🤖 KI-Ladeoptimierung & Zeitfenster',
-      '🏠 Smart-Home-Automatisierungen',
-      '🔮 Verbrauchs- & PV-Prognosen',
-      '⚡ Dynamische Tarifintegration (Tibber etc.)',
-      '🔋 V2H / V2G-Strategien',
-      '🚗 Multi-EV (bis zu 3 Fahrzeuge)',
-      '📈 Erweiterte Insights & Berichte',
-    ],
-    locked: [],
-    cta: '🛒 Jetzt kaufen & freischalten',
-    ctaHref: null,
-  },
-  {
-    id: 'business',
-    label: 'Business',
-    segment: 'B2B',
-    price: '49',
-    priceNote: '€ / Standort / Monat',
-    color: '#a78bfa',
-    border: 'rgba(167,139,250,0.4)',
-    bg: 'linear-gradient(160deg,rgba(139,92,246,0.10),rgba(167,139,250,0.05))',
-    badge: 'B2B',
-    recommended: false,
-    features: [
-      '✅ Alles aus Pro',
-      '🏭 Flottenmanagement (unbegrenzt EVs)',
-      '📡 KI-Dispatch & Lastspitzen-Management',
-      '🔗 API-Zugang & Webhooks',
-      '🔒 SSO & Mandantenfähigkeit',
-      '📋 Compliance- & Audit-Reporting',
-      '🛠 SLA, Alerting & dedizierter Support',
-      '🤝 OEM- & Installateurkanal',
-    ],
-    locked: [],
-    cta: '📧 Kontakt aufnehmen',
-    ctaHref: null,
-  },
-];
-
-const FAQS = [
-  {
-    q: 'Kann ich jederzeit kündigen?',
-    a: 'Ja. Pro-Abos können monatlich gekündigt werden, ohne Mindestlaufzeit.',
-  },
-  {
-    q: 'Welche Geräte werden unterstützt?',
-    a: 'Wallboxen (OCPP), Heimspeicher (SMA, Fronius, BYD), Wechselrichter, Wärmepumpen und alle gängigen EV-Modelle via ISO 15118.',
-  },
-  {
-    q: 'Ist meine Nutzerdaten sicher?',
-    a: 'Alle Daten werden DSGVO-konform in der EU verarbeitet (Art. 6, 13, 15–22 DSGVO). Keine Weitergabe an Dritte.',
-  },
-  {
-    q: 'Was ist der Unterschied zwischen Pro und Business?',
-    a: 'Pro richtet sich an Privathaushalte (bis 3 EVs). Business ergänzt Flottenmanagement, KI-Dispatch, API-Zugang und SLA für gewerbliche Betreiber.',
-  },
-  {
-    q: 'Gibt es eine kostenlose Testphase für Pro?',
-    a: 'Aktuell gibt es kein Probe-Abo. Der Free-Plan bietet jedoch dauerhaft die Basis-Funktionen ohne Zeitlimit.',
-  },
-];
-
 export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
+  const { t } = useLanguage();
   const [paymentPlan, setPaymentPlan] = useState<{
     id: 'pro' | 'business';
     label: string;
@@ -116,6 +15,109 @@ export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
     priceNote: string;
     color: string;
   } | null>(null);
+
+  const PLANS = [
+    {
+      id: 'free',
+      label: t('products.free'),
+      segment: 'B2C',
+      price: null,
+      priceNote: t('products.freeNote'),
+      color: '#67e8f9',
+      border: 'rgba(103,232,249,0.25)',
+      bg: 'rgba(15,23,42,0.7)',
+      badge: null,
+      recommended: false,
+      features: [
+        t('products.freeF1'),
+        t('products.freeF2'),
+        t('products.freeF3'),
+        t('products.freeF4'),
+        t('products.freeF5'),
+      ],
+      locked: [
+        t('products.lSmartHome'),
+        t('products.lKi'),
+        t('products.lV2g'),
+        t('products.lFleet'),
+      ],
+      cta: t('products.freeCta'),
+      ctaHref: null,
+    },
+    {
+      id: 'pro',
+      label: t('products.pro'),
+      segment: 'B2C',
+      price: '19',
+      priceNote: t('products.proNote'),
+      color: '#06b6d4',
+      border: 'rgba(6,182,212,0.6)',
+      bg: 'linear-gradient(160deg,rgba(6,182,212,0.12),rgba(14,165,233,0.07))',
+      badge: t('products.recommended'),
+      recommended: true,
+      features: [
+        t('products.proF1'),
+        t('products.proF2'),
+        t('products.proF3'),
+        t('products.proF4'),
+        t('products.proF5'),
+        t('products.proF6'),
+        t('products.proF7'),
+        t('products.proF8'),
+      ],
+      locked: [],
+      cta: t('products.proCta'),
+      ctaHref: null,
+    },
+    {
+      id: 'business',
+      label: t('products.business'),
+      segment: 'B2B',
+      price: '49',
+      priceNote: t('products.businessNote'),
+      color: '#a78bfa',
+      border: 'rgba(167,139,250,0.4)',
+      bg: 'linear-gradient(160deg,rgba(139,92,246,0.10),rgba(167,139,250,0.05))',
+      badge: 'B2B',
+      recommended: false,
+      features: [
+        t('products.busF1'),
+        t('products.busF2'),
+        t('products.busF3'),
+        t('products.busF4'),
+        t('products.busF5'),
+        t('products.busF6'),
+        t('products.busF7'),
+        t('products.busF8'),
+      ],
+      locked: [],
+      cta: t('products.businessCta'),
+      ctaHref: null,
+    },
+  ];
+
+  const FAQS = [
+    {
+      q: t('products.faq1Q'),
+      a: t('products.faq1A'),
+    },
+    {
+      q: t('products.faq2Q'),
+      a: t('products.faq2A'),
+    },
+    {
+      q: t('products.faq3Q'),
+      a: t('products.faq3A'),
+    },
+    {
+      q: t('products.faq4Q'),
+      a: t('products.faq4A'),
+    },
+    {
+      q: t('products.faq5Q'),
+      a: t('products.faq5A'),
+    },
+  ];
 
   const sectionStyle: CSSProperties = {
     width: '100%',
@@ -144,10 +146,10 @@ export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
       {/* ── Header ── */}
       <section style={{ ...sectionStyle, textAlign: 'center', paddingBottom: 0 }}>
         <h1 style={{ fontSize: 'clamp(24px,4vw,44px)', fontWeight: 900, color: '#f1f5f9', margin: '0 0 14px' }}>
-          Produkte & Leistungen
+          {t('products.title')}
         </h1>
         <p style={{ color: '#94a3b8', fontSize: 'clamp(14px,2vw,17px)', maxWidth: 600, margin: '0 auto 10px', lineHeight: 1.7 }}>
-          Wähle den Plan, der zu deinem Zuhause oder Betrieb passt. Jederzeit upgradebar.
+          {t('products.subtitle')}
         </p>
       </section>
 
@@ -253,20 +255,20 @@ export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
           ))}
         </div>
         <p style={{ textAlign: 'center', marginTop: 18, fontSize: 12, color: '#475569' }}>
-          🔒 Keine Kreditkarte nötig für Free · DSGVO-konform · Jederzeit kündbar
+          {t('products.disclaimer')}
         </p>
       </section>
 
       {/* ── Feature Comparison Table ── */}
       <section style={{ ...sectionStyle, paddingTop: 0 }}>
         <h2 style={{ textAlign: 'center', fontSize: 'clamp(18px,2.5vw,26px)', fontWeight: 800, color: '#f1f5f9', marginBottom: 28 }}>
-          Funktionsvergleich
+          {t('products.compTitle')}
         </h2>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, color: '#cbd5e1' }}>
             <thead>
               <tr>
-                {['Funktion', 'Free', 'Pro', 'Business'].map((h, i) => (
+                {[t('products.compFeature'), 'Free', 'Pro', 'Business'].map((h, i) => (
                   <th key={h} style={{
                     padding: '10px 16px', textAlign: i === 0 ? 'left' : 'center',
                     borderBottom: '1px solid rgba(148,163,184,0.15)',
@@ -280,21 +282,21 @@ export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
             </thead>
             <tbody>
               {[
-                ['Live-Energieverbrauch & PV', '✅', '✅', '✅'],
-                ['Basis-Speichervisualisierung', '✅', '✅', '✅'],
-                ['1 EV-Profil', '✅', '✅', '✅'],
-                ['Smart-Home-Automatisierungen', '✗', '✅', '✅'],
-                ['KI-Ladeoptimierung', '✗', '✅', '✅'],
-                ['V2H / V2G-Strategien', '✗', '✅', '✅'],
-                ['Multi-EV (bis 3)', '✗', '✅', '✅'],
-                ['Dynamische Tarife (Tibber etc.)', '✗', '✅', '✅'],
-                ['Erweiterte Insights & Berichte', '✗', '✅', '✅'],
-                ['Flottenmanagement', '✗', '✗', '✅'],
-                ['KI-Dispatch & Lastspitzen', '✗', '✗', '✅'],
-                ['API-Zugang & Webhooks', '✗', '✗', '✅'],
-                ['SSO & Mandantenfähigkeit', '✗', '✗', '✅'],
-                ['Compliance- & Audit-Reporting', '✗', '✗', '✅'],
-                ['SLA & dedizierter Support', '✗', '✗', '✅'],
+                [t('products.freeF1').slice(2), '✅', '✅', '✅'],
+                [t('products.freeF2').slice(2), '✅', '✅', '✅'],
+                [t('products.freeF3').slice(2), '✅', '✅', '✅'],
+                [t('products.lSmartHome'), '✗', '✅', '✅'],
+                [t('products.lKi'), '✗', '✅', '✅'],
+                [t('products.lV2g'), '✗', '✅', '✅'],
+                [t('products.proF7').slice(2), '✗', '✅', '✅'],
+                [t('products.proF5').slice(2), '✗', '✅', '✅'],
+                [t('products.proF8').slice(2), '✗', '✅', '✅'],
+                [t('products.lFleet'), '✗', '✗', '✅'],
+                [t('products.busF3').slice(2), '✗', '✗', '✅'],
+                [t('products.busF4').slice(2), '✗', '✗', '✅'],
+                [t('products.busF5').slice(2), '✗', '✗', '✅'],
+                [t('products.busF6').slice(2), '✗', '✗', '✅'],
+                [t('products.busF7').slice(2), '✗', '✗', '✅'],
               ].map((row, ri) => (
                 <tr key={ri} style={{ background: ri % 2 === 0 ? 'rgba(15,23,42,0.3)' : 'transparent' }}>
                   {row.map((cell, ci) => (
@@ -318,7 +320,7 @@ export default function ProduktePage({ onUpgradeClick }: ProduktePageProps) {
       {/* ── FAQs ── */}
       <section style={{ ...sectionStyle, paddingTop: 0 }}>
         <h2 style={{ textAlign: 'center', fontSize: 'clamp(18px,2.5vw,26px)', fontWeight: 800, color: '#f1f5f9', marginBottom: 24 }}>
-          Häufige Fragen
+          {t('products.faqTitle')}
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 720, margin: '0 auto' }}>
           {FAQS.map(faq => (
