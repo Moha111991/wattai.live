@@ -33,6 +33,8 @@ const WAI_CSS = `
   @keyframes wai-pulse{0%,100%{opacity:.6}50%{opacity:1}}
   @keyframes wai-ping{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.4);opacity:0}}
   @keyframes wai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes sh-toggle-on{0%{left:3px}100%{left:23px}}
+  @keyframes sh-toggle-off{0%{left:23px}100%{left:3px}}
   @keyframes wai-slide-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
   @keyframes wai-spin-bar{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
@@ -312,7 +314,7 @@ const ToggleSwitch: React.FC<{ on: boolean; disabled?: boolean; onChange: () => 
   </button>
 );
 
-const SmartHomePanel: React.FC<{ accent: string; deviceId?: string }> = ({ accent, deviceId }) => {
+const SmartHomePanel: React.FC<{ accent: string; deviceId?: string; isDemo?: boolean }> = ({ accent, deviceId, isDemo }) => {
   const [devices, setDevices] = useState<SHDevice[]>(() =>
     SH_DEFAULTS.map(d => ({ ...d, on: false, power_w: null, voltage_v: null, current_a: null, temp_c: null, online: true }))
   );
@@ -394,6 +396,17 @@ const SmartHomePanel: React.FC<{ accent: string; deviceId?: string }> = ({ accen
 
   return (
     <div style={{ padding:'0 20px 20px', borderTop:'1px solid rgba(20,184,166,0.12)' }}>
+      {/* Demo banner */}
+      {isDemo && (
+        <div style={{ display:'flex', alignItems:'center', gap:8, margin:'12px 0 8px',
+          padding:'8px 14px', borderRadius:10,
+          background:'rgba(251,191,36,0.08)', border:'1px solid rgba(251,191,36,0.22)' }}>
+          <span style={{ fontSize:14 }}>⚠️</span>
+          <span style={{ fontSize:11, color:'rgba(254,243,199,0.8)', fontWeight:600 }}>
+            Demo-Modus · Verbinde ein echtes Smart-Home-Gerät für Live-Steuerung
+          </span>
+        </div>
+      )}
       {/* Summary bar */}
       <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:10, padding:'12px 0 14px' }}>
         <span style={{ fontSize:11, fontWeight:700, color:'rgba(248,250,252,0.5)', letterSpacing:'0.1em', textTransform:'uppercase' }}>
@@ -1218,9 +1231,9 @@ const DeviceGrid: React.FC<DeviceGridProps> = ({ devices }) => {
                 />
               )}
 
-              {/* ── Smart Home Control Panel (shown when connected) ── */}
-              {slot.key === 'smarthome' && cState === 'connected' && !isOpen && !isAddOpen && (
-                <SmartHomePanel accent={slot.accent} deviceId={device?.id} />
+              {/* ── Smart Home Control Panel (always visible for smarthome slot) ── */}
+              {slot.key === 'smarthome' && !isOpen && !isAddOpen && (
+                <SmartHomePanel accent={slot.accent} deviceId={device?.id} isDemo={cState !== 'connected'} />
               )}
 
               {/* ── Inline connect panel (additional device) ── */}
