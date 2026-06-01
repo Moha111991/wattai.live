@@ -305,6 +305,72 @@
 /* Akzentfarben werden nicht überschrieben */
 /* #ff6b35 #ff9500 #22c55e #3b82f6 #ef4444 #60a5fa #c084fc #fbbf24 #22d3ee #a855f7 */
 
+/* ── Fehler- & Alarmmonitor: vollständige Theme-Overrides ─────────────────── */
+
+/* LIGHT MODE — card background aufhellen, alle Texte dunkel */
+[data-theme="light"] .wai-alarm-monitor {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.10) !important;
+  color: #0f172a !important;
+}
+
+/* Alle Kinder-Elemente: Textfarbe dunkel (cascade) */
+[data-theme="light"] .wai-alarm-monitor * {
+  color: inherit;
+}
+
+/* Heading (#f1f5f9 → dunkel) */
+[data-theme="light"] .wai-alarm-monitor h2,
+[data-theme="light"] .wai-alarm-monitor [style*="color: rgb(241, 245, 249)"],
+[data-theme="light"] .wai-alarm-monitor [style*="color: #f1f5f9"],
+[data-theme="light"] .wai-alarm-monitor [style*="color:#f1f5f9"] {
+  color: #0f172a !important;
+}
+
+/* Muted slate text (#94a3b8, #64748b → dunkleres Äquivalent) */
+[data-theme="light"] .wai-alarm-monitor [style*="color: rgb(148, 163, 184)"],
+[data-theme="light"] .wai-alarm-monitor [style*="color: #94a3b8"],
+[data-theme="light"] .wai-alarm-monitor [style*="color:#94a3b8"] {
+  color: #475569 !important;
+}
+[data-theme="light"] .wai-alarm-monitor [style*="color: rgb(100, 116, 139)"],
+[data-theme="light"] .wai-alarm-monitor [style*="color: #64748b"],
+[data-theme="light"] .wai-alarm-monitor [style*="color:#64748b"] {
+  color: #334155 !important;
+}
+
+/* Inactive badge text (#475569 → dunkel genug) */
+[data-theme="light"] .wai-alarm-monitor [style*="color: rgb(71, 85, 105)"],
+[data-theme="light"] .wai-alarm-monitor [style*="color: #475569"],
+[data-theme="light"] .wai-alarm-monitor [style*="color:#475569"] {
+  color: #1e293b !important;
+}
+
+/* Status bar background (rgba(2,6,23) → hell) */
+[data-theme="light"] .wai-alarm-monitor [style*="background: rgba(2,6,23"],
+[data-theme="light"] .wai-alarm-monitor [style*="background: rgba(2, 6, 23"],
+[data-theme="light"] .wai-alarm-monitor [style*="background:rgba(2,6,23"] {
+  background: rgba(15, 23, 42, 0.06) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+/* Badge backgrounds (rgba(30,41,59) → hell) */
+[data-theme="light"] .wai-alarm-monitor [style*="background: rgba(30,41,59"],
+[data-theme="light"] .wai-alarm-monitor [style*="background: rgba(30, 41, 59"],
+[data-theme="light"] .wai-alarm-monitor [style*="background:rgba(30,41,59"] {
+  background: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* DARK MODE — explizit sicherstellen dass alles hell bleibt */
+[data-theme="dark"] .wai-alarm-monitor {
+  background: rgba(15, 23, 42, 0.82) !important;
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .wai-alarm-monitor h2 {
+  color: #f1f5f9 !important;
+}
+
 /* ── Starke Fallback-Regel: .wai-card-Kinder ohne Akzentfarbe → dunkel ──── */
 /* Deckt alle verbleibenden weißen Inline-Texte ab, die der Browser als rgb() serialisiert */
 [data-theme="light"] .wai-card *:not([style*="color: #ff"]):not([style*="color:#ff"]):not([style*="color: rgb(255, 149"]):not([style*="color: rgb(34, 197"]):not([style*="color: rgb(59, 130"]):not([style*="color: rgb(239, 68"]):not([style*="color: rgb(96, 165"]):not([style*="color: rgb(192, 132"]):not([style*="color: rgb(251, 191"]):not([style*="color: rgb(34, 211"]):not([style*="color: rgb(168, 85"]):not([style*="color: rgb(22, 197"]) {

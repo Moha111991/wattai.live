@@ -46,7 +46,7 @@ export default function ErrorAlarmMonitor() {
   return (
     <>
       {/* ── Card ─────────────────────────────────────────────── */}
-      <div style={{
+      <div className="wai-alarm-monitor" style={{
         width: "100%", maxWidth: "100%", margin: "28px 0", boxSizing: "border-box",
         background: "rgba(15,23,42,0.82)",
         border: alarms.length === 0 ? "1px solid rgba(34,197,94,0.28)" : "1px solid rgba(239,68,68,0.32)",
