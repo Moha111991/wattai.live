@@ -226,10 +226,10 @@ async def security_middleware(request: Request, call_next: Callable[..., Any]):
     response.headers.setdefault(
         "Content-Security-Policy",
         "default-src 'self'; "
-        "script-src 'self'; "
+        "script-src 'self' https://cloud.umami.is; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https://wattai.live; "
-        "connect-src 'self' wss://wattai.live wss://wattailive-production.up.railway.app https://wattai.live; "
+        "connect-src 'self' wss://wattai.live wss://wattailive-production.up.railway.app https://wattai.live https://cloud.umami.is; "
         "font-src 'self'; "
         "object-src 'none'; "
         "frame-ancestors 'none'; "
