@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { startDomAutoTranslation, stopDomAutoTranslation } from '../utils/autoTranslateDom';
 
 type Language = 'de' | 'en';
 
@@ -296,6 +297,37 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
   }
 };
 
+const AUTO_TRANSLATION_OVERRIDES: Record<string, string> = {
+  'Abmelden': 'Log out',
+  'Einloggen / Registrieren': 'Log in / Sign up',
+  'Menü öffnen': 'Open menu',
+  'Menü schließen': 'Close menu',
+  'Zur Startseite': 'Go to home page',
+  'Hauptnavigation': 'Main navigation',
+  'Schließen': 'Close',
+  'Auf Pro upgraden': 'Upgrade to Pro',
+  'Auf Business upgraden': 'Upgrade to Business',
+};
+
+const DOM_AUTO_TRANSLATION_MAP: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  const deTranslations = TRANSLATIONS.de;
+  const enTranslations = TRANSLATIONS.en;
+
+  for (const [key, germanText] of Object.entries(deTranslations)) {
+    const englishText = enTranslations[key];
+    if (!germanText || !englishText || germanText === englishText) {
+      continue;
+    }
+    map[germanText] = englishText;
+  }
+
+  return {
+    ...map,
+    ...AUTO_TRANSLATION_OVERRIDES,
+  };
+})();
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('wattai-language');
@@ -305,6 +337,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     localStorage.setItem('wattai-language', language);
+  }, [language]);
+
+  useEffect(() => {
+    if (language === 'en') {
+      startDomAutoTranslation(DOM_AUTO_TRANSLATION_MAP);
+    } else {
+      stopDomAutoTranslation();
+    }
+
+    return () => stopDomAutoTranslation();
   }, [language]);
 
   const t = (key: string): string => {
