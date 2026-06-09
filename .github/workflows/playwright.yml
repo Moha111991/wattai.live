@@ -9,8 +9,8 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    runs-on: ubuntu-22.04
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
@@ -28,6 +28,15 @@ jobs:
     - name: 📦 Install Dependencies
       working-directory: ./frontend
       run: npm ci
+
+    - name: 🗂️ Cache Playwright Browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          playwright-${{ runner.os }}-
 
     - name: 📦 Install Playwright Browsers
       working-directory: ./frontend
