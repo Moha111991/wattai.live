@@ -1,5 +1,3 @@
-import type { Language } from '../context/LanguageContext';
-
 export type ApplicationItem = {
   slug: string;
   icon: string;
@@ -12,6 +10,7 @@ export type ApplicationItem = {
 
 type LocalizedText = Record<Language, string>;
 type LocalizedTextList = Record<Language, string[]>;
+type Language = 'de' | 'en';
 
 type LocalizedApplicationItem = {
   slug: string;

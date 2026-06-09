@@ -13,7 +13,7 @@ import {
   useEffect, useRef, useState, useCallback,
   type CSSProperties, type MouseEvent as RMouseEvent,
 } from 'react';
-import { useLanguage, type Language } from '../context/LanguageContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getApplications } from '../data/applications';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -25,6 +25,8 @@ type StartPageProps = {
   onAuthClick: () => void;
   onUpgradeClick: () => void;
 };
+
+type Language = 'de' | 'en';
 
 // ── Tokens ───────────────────────────────────────────────────────────────────
 

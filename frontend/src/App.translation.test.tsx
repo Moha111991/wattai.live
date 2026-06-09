@@ -13,6 +13,12 @@ beforeAll(() => {
     removeEventListener: () => {},
     dispatchEvent: () => false,
   }));
+  vi.stubGlobal('IntersectionObserver', class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  });
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as typeof HTMLCanvasElement.prototype.getContext;
 });
 
 beforeEach(() => {
