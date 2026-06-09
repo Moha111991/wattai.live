@@ -40,7 +40,7 @@ export default function App() {
 
 function AppShell() {
   const { plan, fleetUnlocked } = usePlan();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [tab, setTab] = useState('main');
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -326,8 +326,8 @@ function AppShell() {
             {isMobile
               ? 'Upgrade'
               : plan.id === 'free'
-                ? 'Auf Pro upgraden'
-                : 'Auf Business upgraden'}
+                ? language === 'en' ? 'Upgrade to Pro' : 'Auf Pro upgraden'
+                : language === 'en' ? 'Upgrade to Business' : 'Auf Business upgraden'}
           </button>
         )}
         {showBanner && (
@@ -354,7 +354,7 @@ function AppShell() {
             </a>
             <button
               onClick={() => setShowBanner(false)}
-              aria-label="Schließen"
+              aria-label={language === 'en' ? 'Close' : 'Schließen'}
               style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 13, padding: '1px 3px', lineHeight: 1 }}
             >✕</button>
           </div>

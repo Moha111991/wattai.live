@@ -4,6 +4,7 @@
  * Nur technisch notwendige Cookies werden ohne Einwilligung gesetzt.
  */
 import { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const STORAGE_KEY = 'wattai_cookie_consent';
 
@@ -11,6 +12,8 @@ type ConsentState = 'accepted' | 'declined' | null;
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const { language } = useLanguage();
+  const isEnglish = language === 'en';
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as ConsentState;
@@ -35,10 +38,13 @@ export default function CookieConsent() {
     }}>
       <div style={{ flex: 1, minWidth: 260 }}>
         <p style={{ color: '#e2e8f0', fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
-          🍪 Wir verwenden ausschließlich <strong>technisch notwendige Cookies</strong> für den Betrieb der Plattform (Session, Sicherheit). 
-          Keine Tracking- oder Werbe-Cookies. Mehr in unserer{' '}
+          {isEnglish ? '🍪 We only use ' : '🍪 Wir verwenden ausschließlich '}
+          <strong>{isEnglish ? 'technically necessary cookies' : 'technisch notwendige Cookies'}</strong>
+          {isEnglish
+            ? ' for operating the platform (session, security). No tracking or advertising cookies. More details in our '
+            : ' für den Betrieb der Plattform (Session, Sicherheit). Keine Tracking- oder Werbe-Cookies. Mehr in unserer '}
           <a href="/datenschutz" style={{ color: '#67e8f9', textDecoration: 'underline' }}>
-            Datenschutzerklärung
+            {isEnglish ? 'privacy policy' : 'Datenschutzerklärung'}
           </a>.
         </p>
       </div>
@@ -50,7 +56,7 @@ export default function CookieConsent() {
             background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.9rem',
           }}
         >
-          Nur notwendige
+          {isEnglish ? 'Necessary only' : 'Nur notwendige'}
         </button>
         <button
           onClick={() => handle('accepted')}
@@ -60,7 +66,7 @@ export default function CookieConsent() {
             color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem',
           }}
         >
-          Verstanden & Akzeptieren
+          {isEnglish ? 'Got it & accept' : 'Verstanden & Akzeptieren'}
         </button>
       </div>
     </div>

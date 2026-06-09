@@ -1,9 +1,12 @@
 import { useState, type CSSProperties } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 type FooterSection = 'impressum' | 'datenschutz' | 'agb' | null;
 
 export default function AppFooter() {
   const [openSection, setOpenSection] = useState<FooterSection>(null);
+  const { language } = useLanguage();
+  const isEnglish = language === 'en';
 
   const footerStyle: CSSProperties = {
     width: '100%',
@@ -85,13 +88,21 @@ export default function AppFooter() {
     lineHeight: 1.7,
   };
 
-  const FAQS = [
-    { q: 'Was ist WattAI.live?', a: 'WattAI.live ist eine KI-gestützte Energiemanagementsoftware für Privathaushalte und Unternehmen. Sie optimiert den Energieverbrauch von Elektrofahrzeugen, Heimspeichern, PV-Anlagen und Smart-Home-Geräten.' },
-    { q: 'Ist die App kostenlos?', a: 'Ja, der Free-Plan ist dauerhaft kostenlos und beinhaltet Echtzeit-Energiedaten und Basisvisualisierung. Für erweiterte KI-Funktionen bieten wir Pro (19 €/Monat) und Business-Pläne an.' },
-    { q: 'Welche Geräte werden unterstützt?', a: 'WattAI.live unterstützt alle gängigen Wallboxen, PV-Wechselrichter, Heimspeichersysteme und Smart-Home-Plattformen. Die Liste der kompatiblen Geräte wird laufend erweitert.' },
-    { q: 'Sind meine Daten sicher?', a: 'Alle Daten werden verschlüsselt übertragen (TLS 1.3) und auf deutschen Servern gespeichert. Wir verkaufen keine Daten an Dritte. Details finden Sie in unserer Datenschutzerklärung.' },
-    { q: 'Kann ich den Plan jederzeit kündigen?', a: 'Ja, bezahlte Pläne sind monatlich kündbar, ohne Mindestlaufzeit.' },
-  ];
+  const FAQS = isEnglish
+    ? [
+        { q: 'What is WattAI.live?', a: 'WattAI.live is an AI-powered energy management platform for private homes and businesses. It optimizes energy usage for EVs, home batteries, PV systems, and smart home devices.' },
+        { q: 'Is the app free?', a: 'Yes. The Free plan remains permanently free and includes real-time energy data and basic visualization. Advanced AI features are available in Pro (€19/month) and Business plans.' },
+        { q: 'Which devices are supported?', a: 'WattAI.live supports common chargers, PV inverters, home battery systems, and smart home platforms. The compatibility list is continuously expanding.' },
+        { q: 'Is my data safe?', a: 'All data is encrypted in transit with TLS 1.3 and stored on servers in Germany. We do not sell data to third parties. More details are available in our privacy policy.' },
+        { q: 'Can I cancel anytime?', a: 'Yes. Paid plans can be canceled monthly with no minimum term.' },
+      ]
+    : [
+        { q: 'Was ist WattAI.live?', a: 'WattAI.live ist eine KI-gestützte Energiemanagementsoftware für Privathaushalte und Unternehmen. Sie optimiert den Energieverbrauch von Elektrofahrzeugen, Heimspeichern, PV-Anlagen und Smart-Home-Geräten.' },
+        { q: 'Ist die App kostenlos?', a: 'Ja, der Free-Plan ist dauerhaft kostenlos und beinhaltet Echtzeit-Energiedaten und Basisvisualisierung. Für erweiterte KI-Funktionen bieten wir Pro (19 €/Monat) und Business-Pläne an.' },
+        { q: 'Welche Geräte werden unterstützt?', a: 'WattAI.live unterstützt alle gängigen Wallboxen, PV-Wechselrichter, Heimspeichersysteme und Smart-Home-Plattformen. Die Liste der kompatiblen Geräte wird laufend erweitert.' },
+        { q: 'Sind meine Daten sicher?', a: 'Alle Daten werden verschlüsselt übertragen (TLS 1.3) und auf deutschen Servern gespeichert. Wir verkaufen keine Daten an Dritte. Details finden Sie in unserer Datenschutzerklärung.' },
+        { q: 'Kann ich den Plan jederzeit kündigen?', a: 'Ja, bezahlte Pläne sind monatlich kündbar, ohne Mindestlaufzeit.' },
+      ];
 
   const IMPRESSUM_TEXT = `
 **Angaben gemäß § 5 TMG**
@@ -242,9 +253,9 @@ Kontakt: kontakt@wattai.live
   const renderModal = () => {
     if (!openSection) return null;
     const titles: Record<NonNullable<FooterSection>, string> = {
-      impressum: 'Impressum',
-      datenschutz: 'Datenschutzerklärung',
-      agb: 'Allgemeine Geschäftsbedingungen',
+      impressum: isEnglish ? 'Imprint' : 'Impressum',
+      datenschutz: isEnglish ? 'Privacy Policy' : 'Datenschutzerklärung',
+      agb: isEnglish ? 'Terms and Conditions' : 'Allgemeine Geschäftsbedingungen',
     };
     const texts: Record<NonNullable<FooterSection>, string> = {
       impressum: IMPRESSUM_TEXT,
@@ -255,7 +266,7 @@ Kontakt: kontakt@wattai.live
     return (
       <div style={modalOverlayStyle} onClick={e => { if (e.target === e.currentTarget) setOpenSection(null); }}>
         <div style={modalStyle}>
-          <button onClick={() => setOpenSection(null)} aria-label="Schließen" style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: '#64748b', fontSize: 20, cursor: 'pointer' }}>✕</button>
+          <button onClick={() => setOpenSection(null)} aria-label={isEnglish ? 'Close' : 'Schließen'} style={{ position: 'absolute', top: 12, right: 16, background: 'none', border: 'none', color: '#64748b', fontSize: 20, cursor: 'pointer' }}>✕</button>
           <h2 style={{ color: '#67e8f9', fontSize: 20, fontWeight: 800, marginTop: 0, marginBottom: '1rem' }}>{titles[openSection]}</h2>
           <div style={{ whiteSpace: 'pre-line', color: '#cbd5e1', fontSize: 13, lineHeight: 1.8 }}>
             {texts[openSection].trim().split('\n').map((line, i) => {
@@ -273,24 +284,26 @@ Kontakt: kontakt@wattai.live
   return (
     <>
       {renderModal()}
-      <footer style={footerStyle} aria-label="Fußzeile">
+      <footer style={footerStyle} aria-label={isEnglish ? 'Footer' : 'Fußzeile'}>
         <div style={innerStyle}>
           <div style={gridStyle}>
             {/* Produkt */}
             <div>
               <p style={colTitleStyle}>WattAI.live</p>
               <p style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6, margin: '0 0 0.8rem' }}>
-                KI-gestütztes Energiemanagement für EVs, PV, Speicher und Smart Home.
+                {isEnglish
+                  ? 'AI-powered energy management for EVs, PV, batteries, and smart homes.'
+                  : 'KI-gestütztes Energiemanagement für EVs, PV, Speicher und Smart Home.'}
               </p>
               <span style={{ fontSize: 12, color: '#475569' }}>© {new Date().getFullYear()} WattAI.live</span>
             </div>
 
             {/* Produkte */}
             <div>
-              <p style={colTitleStyle}>Produkte</p>
+              <p style={colTitleStyle}>{isEnglish ? 'Products' : 'Produkte'}</p>
               <span style={linkStyle}>Free Plan</span>
-              <span style={linkStyle}>Pro Plan – 19 €/Monat</span>
-              <span style={linkStyle}>Business – 49 €/Standort</span>
+              <span style={linkStyle}>{isEnglish ? 'Pro Plan – €19/month' : 'Pro Plan – 19 €/Monat'}</span>
+              <span style={linkStyle}>{isEnglish ? 'Business – €49/site' : 'Business – 49 €/Standort'}</span>
               <span style={linkStyle}>Mobile App</span>
             </div>
 
@@ -310,12 +323,12 @@ Kontakt: kontakt@wattai.live
 
             {/* Kontakt */}
             <div>
-              <p style={colTitleStyle}>Kontakt</p>
+              <p style={colTitleStyle}>{isEnglish ? 'Contact' : 'Kontakt'}</p>
               <a href="mailto:kontakt@wattai.live" style={{ ...linkStyle, color: '#67e8f9' }}>📧 kontakt@wattai.live</a>
               <a href="tel:+4912345678" style={linkStyle}>📞 +49 (0)123 456 789</a>
-              <span style={{ ...linkStyle, marginTop: 8, color: '#64748b', fontSize: 11 }}>Mo–Fr, 9–18 Uhr</span>
-              <span style={{ ...linkStyle, color: '#64748b', fontSize: 11 }}>WattAI.live, Musterstr. 1</span>
-              <span style={{ ...linkStyle, color: '#64748b', fontSize: 11 }}>12345 Musterstadt, DE</span>
+              <span style={{ ...linkStyle, marginTop: 8, color: '#64748b', fontSize: 11 }}>{isEnglish ? 'Mon–Fri, 9am–6pm' : 'Mo–Fr, 9–18 Uhr'}</span>
+              <span style={{ ...linkStyle, color: '#64748b', fontSize: 11 }}>{isEnglish ? 'WattAI.live, Sample Street 1' : 'WattAI.live, Musterstr. 1'}</span>
+              <span style={{ ...linkStyle, color: '#64748b', fontSize: 11 }}>{isEnglish ? '12345 Sample City, DE' : '12345 Musterstadt, DE'}</span>
             </div>
           </div>
 
@@ -324,14 +337,14 @@ Kontakt: kontakt@wattai.live
           {/* Bottom legal bar */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.2rem 0.8rem', alignItems: 'center' }}>
-              <button style={legalBtnStyle} onClick={() => setOpenSection('impressum')}>Impressum</button>
+              <button style={legalBtnStyle} onClick={() => setOpenSection('impressum')}>{isEnglish ? 'Imprint' : 'Impressum'}</button>
               <span style={{ color: '#334155', fontSize: 12 }}>|</span>
-              <button style={legalBtnStyle} onClick={() => setOpenSection('datenschutz')}>Datenschutz</button>
+              <button style={legalBtnStyle} onClick={() => setOpenSection('datenschutz')}>{isEnglish ? 'Privacy' : 'Datenschutz'}</button>
               <span style={{ color: '#334155', fontSize: 12 }}>|</span>
-              <button style={legalBtnStyle} onClick={() => setOpenSection('agb')}>AGB</button>
+              <button style={legalBtnStyle} onClick={() => setOpenSection('agb')}>{isEnglish ? 'Terms' : 'AGB'}</button>
             </div>
             <span style={{ color: '#475569', fontSize: 11 }}>
-              Alle Angaben ohne Gewähr · Kein Rechtsrat
+              {isEnglish ? 'All information without guarantee · Not legal advice' : 'Alle Angaben ohne Gewähr · Kein Rechtsrat'}
             </span>
           </div>
         </div>

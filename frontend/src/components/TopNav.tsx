@@ -27,6 +27,15 @@ export default function TopNav({
 }: TopNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
+  const logoutLabel = language === 'en' ? 'Log Out' : 'Abmelden';
+  const mobileAuthLabel = isLoggedIn
+    ? `👤 ${userName ?? t('nav.myAccount')}`
+    : language === 'en'
+      ? '🔐 Log In / Sign Up'
+      : '🔐 Einloggen / Registrieren';
+  const menuToggleLabel = menuOpen
+    ? language === 'en' ? 'Close menu' : 'Menü schließen'
+    : language === 'en' ? 'Open menu' : 'Menü öffnen';
 
   const NAV_LINKS: { key: NavPage; label: string }[] = [
     { key: 'startseite', label: t('nav.startpage') },
@@ -195,9 +204,9 @@ export default function TopNav({
                   <button
                     onClick={onLogout}
                     style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 11, padding: '0 2px', marginLeft: 4 }}
-                    aria-label="Abmelden"
+                    aria-label={logoutLabel}
                   >
-                    Abmelden
+                    {logoutLabel}
                   </button>
                 </span>
               ) : (
@@ -215,7 +224,7 @@ export default function TopNav({
               style={hamburgerStyle}
               onClick={() => setMenuOpen(v => !v)}
               aria-expanded={menuOpen}
-              aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
+              aria-label={menuToggleLabel}
             >
               {menuOpen ? (
                 <span style={{ fontSize: 20, lineHeight: 1, color: '#67e8f9' }}>✕</span>
@@ -267,14 +276,14 @@ export default function TopNav({
             }}
             onClick={() => { if (!isLoggedIn) { onAuthClick(); setMenuOpen(false); } }}
           >
-            {isLoggedIn ? `👤 ${userName ?? 'Mein Konto'}` : '🔐 Einloggen / Registrieren'}
+            {mobileAuthLabel}
           </button>
           {isLoggedIn && (
             <button
               onClick={() => { onLogout(); setMenuOpen(false); }}
               style={{ background: 'none', border: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', fontSize: 13, marginTop: 4 }}
             >
-              Abmelden
+              {logoutLabel}
             </button>
           )}
         </div>

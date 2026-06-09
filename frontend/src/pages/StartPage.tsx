@@ -13,8 +13,8 @@ import {
   useEffect, useRef, useState, useCallback,
   type CSSProperties, type MouseEvent as RMouseEvent,
 } from 'react';
-import { useLanguage } from '../context/LanguageContext';
-import { APPLICATIONS } from '../data/applications';
+import { useLanguage, type Language } from '../context/LanguageContext';
+import { getApplications } from '../data/applications';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -331,151 +331,167 @@ function Tilt({ children, style = {} }: { children: React.ReactNode; style?: CSS
 
 // ── Technical Details Data ──────────────────────────────────────────────────────
 
-const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; protocols: string[]; plan: string; workflow: { step: string; desc: string }[]; workflowTitle: string; workflowSubtitle: string; legal: string; legalTitle: string }> = {
-  'pv-optimierung': {
-    specs: [
-      { label: 'Algorithmus', value: 'MPPT + ML-Ertragsprognose' },
-      { label: 'Prognose-Horizont', value: '72 h (OpenMeteo-Wetterdaten)' },
-      { label: 'Eigenverbrauchsquote', value: 'Ø +28 % gegenüber unkontrolliert' },
-      { label: 'Einspeisung', value: '§ 9 EEG-konform, dyn. Abregelung' },
-      { label: 'Auflösung', value: '1-Minuten-Intervall, Echtzeit-API' },
-      { label: 'Wechselrichter', value: 'SMA, Fronius, Huawei, Enphase, Kostal' },
-    ],
-    protocols: ['Modbus TCP', 'SunSpec', 'REST API', 'MQTT'],
-    plan: 'Free',
-    workflowTitle: 'PV-Optimierung Pro',
-    workflowSubtitle: 'Maximieren Sie Ihren Solarertrag mit KI-gestützter Ertragsprognose und automatischer Eigenverbrauchsoptimierung.',
-    workflow: [
-      { step: 'Wechselrichter auswählen', desc: 'SMA, Fronius, Huawei, Enphase, Kostal – Hersteller und Modell auswählen' },
-      { step: 'Protokoll wählen', desc: 'Verbindungsart festlegen: Modbus TCP, SunSpec REST, MQTT oder Cloud-API' },
-      { step: 'IP-Adresse & Port konfigurieren', desc: 'Lokale Netzwerkverbindung oder Cloud-Zugangsdaten eingeben' },
-      { step: 'Echtzeit-Monitoring starten', desc: 'Ertrag, Einstrahlung, Wirkungsgrad live überwachen' },
-      { step: 'Prognose & Automatisierung aktivieren', desc: '72h-Wetterprognose für optimale Speicher- und Einspeisestrategie' },
-    ],
-    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
-    legal: 'Die Einspeisevergütung richtet sich nach § 21 EEG 2023. Dynamische Abregelung erfolgt gemäß § 9 EEG. Alle Messdaten werden DSGVO-konform verschlüsselt gespeichert. Die Anbindung an den Netzbetreiber (Einspeisemanagement) obliegt dem Anlagenbetreiber. WattAI übernimmt keine Haftung für Ertragsausfälle durch Netzanforderungen.',
-  },
-  'batteriemanagement': {
-    specs: [
-      { label: 'SOC-Grenzen', value: '15 – 95 % (konfig.), SOH-Schutz aktiv' },
-      { label: 'Tarifintegration', value: 'Tibber, aWATTar, EPEX Spot' },
-      { label: 'Lastprognose', value: '15-Min-Intervall, LSTM-Modell' },
-      { label: 'Zyklen-Optimierung', value: 'Kalend. + Lebensdauer-Prädiktor' },
-      { label: 'Reaktionszeit', value: '< 500 ms Steuerbefehl' },
-      { label: 'Kompatibilität', value: 'LG RESU, BYD Box, Sonnen, Sungrow' },
-    ],
-    protocols: ['CAN Bus', 'Modbus RTU', 'REST API', 'MQTT'],
-    plan: 'Free',
-    workflowTitle: 'Batteriemanagement Pro',
-    workflowSubtitle: 'Verlängern Sie die Lebensdauer Ihres Speichers und senken Sie Stromkosten durch intelligente Ladestrategien.',
-    workflow: [
-      { step: 'Batteriespeicher auswählen', desc: 'LG RESU, BYD Box, Sonnen, Sungrow, SMA – Modell und Kapazität eingeben' },
-      { step: 'Kommunikationsprotokoll festlegen', desc: 'CAN Bus, Modbus RTU/TCP oder Cloud-API des Herstellers wählen' },
-      { step: 'SOC-Grenzen & Schutzparameter konfigurieren', desc: 'Min./Max. Ladezustand, SOH-Schutz und Temperaturgrenzen einstellen' },
-      { step: 'Tarifintegration aktivieren', desc: 'Tibber, aWATTar oder EPEX Spot verknüpfen für tarifsensibles Laden' },
-      { step: 'Automatisierung & Monitoring starten', desc: 'Lade-/Entladezyklen optimieren, Lebensdauerprognose überwachen' },
-    ],
-    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
-    legal: 'Batteriespeicher unterliegen der IEC 62619 (Sicherheitsanforderungen). Garantiebedingungen der Hersteller (z.B. LG, BYD) bleiben durch WattAI unberührt. Alle Steuerbefehle erfolgen im Rahmen der vom Hersteller freigegebenen Parameter. Datenübertragung erfolgt verschlüsselt (TLS 1.3) gemäß DSGVO. Netzdienste (Regelenergie) erfordern separate Verträge mit dem Netzbetreiber.',
-  },
-  'ev-v2h-v2g': {
-    specs: [
-      { label: 'Ladestandard', value: 'ISO 15118 Plug & Charge, OCPP 2.0.1' },
-      { label: 'V2H-Leistung', value: 'bis 11 kW bidirektional' },
-      { label: 'V2G-Support', value: 'Netzdienst, Regelenergie (ab Pro)' },
-      { label: 'Multi-EV', value: 'bis 5 Fahrzeugprofile (ab Pro)' },
-      { label: 'Wallboxen', value: 'Wallbe, ABB Terra, KEBA, Easee' },
-      { label: 'Tarif-Laden', value: 'Spot-Preis-Laden, PV-Überschuss' },
-    ],
-    protocols: ['OCPP 1.6/2.0.1', 'ISO 15118', 'MQTT', 'Modbus TCP'],
-    plan: 'Pro (Multi-EV)',
-    workflowTitle: 'EV · V2H · V2G Pro',
-    workflowSubtitle: 'Laden Sie Ihr Elektroauto intelligent und nutzen Sie es als bidirektionalen Energiespeicher für Haus und Netz.',
-    workflow: [
-      { step: 'Wallbox & Fahrzeug auswählen', desc: 'Wallbe, ABB Terra, KEBA, Easee – Modell und EV-Profil anlegen' },
-      { step: 'Protokoll konfigurieren', desc: 'OCPP 2.0.1 oder ISO 15118 Plug & Charge aktivieren' },
-      { step: 'Ladeprofil & SOC-Ziel festlegen', desc: 'Abfahrtszeit, Mindest-SOC und Ladebudget definieren' },
-      { step: 'V2H / V2G freigeben', desc: 'Bidirektionales Laden aktivieren und Rückspeise-Schwellwert einstellen' },
-      { step: 'Spot-Tarif-Laden & Monitoring', desc: 'Günstige Ladezeitfenster automatisch nutzen, Ladehistorie einsehen' },
-    ],
-    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
-    legal: 'Bidirektionales Laden (V2G) erfordert eine Genehmigung des Netzbetreibers gemäß § 14a EnWG. Die Wallbox muss für V2G zertifiziert sein (ISO 15118-20). Netzrückspeisung unterliegt dem Erneuerbare-Energien-Gesetz (EEG). WattAI agiert als HEMS gemäß EN 50631-1. Alle Fahrzeug- und Ladedaten werden DSGVO-konform verarbeitet.',
-  },
-  'smart-home': {
-    specs: [
-      { label: 'Zeitfenster', value: 'Dynamisch, tarifbasiert + PV-Prognose' },
-      { label: 'Wärmepumpe', value: 'SG-Ready Schnittstelle, COP-Optimierung' },
-      { label: 'Standard', value: 'HEMS nach EN 50631-1' },
-      { label: 'Schnittstellen', value: 'KNX, Home Assistant, openHAB, Loxone' },
-      { label: 'Lastspitzen', value: 'Peak-Shaving, kW-Begrenzung konfig.' },
-      { label: 'Geräte', value: 'Waschmaschine, Trockner, Spülmaschine, HP' },
-    ],
-    protocols: ['KNX', 'Z-Wave', 'Zigbee', 'REST/MQTT'],
-    plan: 'Pro',
-    workflowTitle: 'Hausautomation Pro',
-    workflowSubtitle: 'Steuern Sie Wärmepumpe, Waschmaschine, Trockner, Spülmaschine und mehr automatisch in günstige Zeitfenster.',
-    workflow: [
-      { step: 'Gerät auswählen', desc: 'Wärmepumpe, Waschmaschine, Trockner, Spülmaschine oder weiteres IoT-Gerät hinzufügen' },
-      { step: 'Protokoll wählen', desc: 'KNX, Zigbee, Z-Wave, Home Assistant, openHAB oder Loxone als Kommunikationsweg festlegen' },
-      { step: 'Gerät koppeln & freigeben', desc: 'Netzwerkverbindung herstellen, Gerät authentifizieren und Steuerrechte erteilen' },
-      { step: 'Automatisierung aktivieren', desc: 'Zeitfenster, PV-Überschuss-Trigger oder dynamischen Stromtarif als Auslöser konfigurieren' },
-      { step: 'Live-Status & Verbrauch überwachen', desc: 'Echtzeitdaten, Verbrauchshistorie und Einsparpotenzial im Dashboard einsehen' },
-    ],
-    legalTitle: 'Rechtlicher Hinweis (Deutschland)',
-    legal: 'Die Integration von IoT-Geräten erfolgt gemäß DSGVO und IT-Sicherheitsgesetz 2.0. Alle Daten werden verschlüsselt übertragen (TLS 1.3). Kompatibel mit deutschen Smart-Home-Standards (KNX, EN 50631-1). Die Steuerung von Wärmepumpen über SG-Ready ist gemäß VDE-AR-N 4105 zulässig. WattAI haftet nicht für Schäden durch fehlerhafte Gerätekonfiguration des Nutzers.',
-  },
-  'ki-empfehlung': {
-    specs: [
-      { label: 'Modell', value: 'Deep-Q-Network (DQN), 128-Node Hidden' },
-      { label: 'Trainingsdaten', value: '3 Jahre historische Energiedaten' },
-      { label: 'Inference', value: '< 50 ms Latenz, Edge-AI fähig' },
-      { label: 'Runtime', value: 'TensorFlow Lite / ONNX Runtime' },
-      { label: 'Konfidenz', value: 'Score pro Empfehlung, Begründung sichtbar' },
-      { label: 'Update', value: 'Wöchentliches Re-Training, Auto-Deploy' },
-    ],
-    protocols: ['ONNX', 'TFLite', 'REST API', 'WebSocket'],
-    plan: 'Pro',
-    workflowTitle: 'KI-Empfehlung Pro',
-    workflowSubtitle: 'Erhalten Sie optimale Lade-, Speicher- und Einspeisestrategien durch Deep-Q-Network-basierte Entscheidungen in Echtzeit.',
-    workflow: [
-      { step: 'KI-Analyse starten', desc: 'DQN-Agent liest Echtzeitdaten: Strompreis, SOC, PV-Prognose, Wetter' },
-      { step: 'Konfidenz & Empfehlung prüfen', desc: 'Empfehlung mit Konfidenz-Score und Begründung einsehen und verstehen' },
-      { step: 'Aktion bestätigen oder automatisieren', desc: 'Manuell bestätigen oder vollautomatische Ausführung durch HEMS aktivieren' },
-      { step: 'Feedback & Lernzyklus', desc: 'Ergebnis bewerten – verbessert das KI-Modell beim wöchentlichen Re-Training' },
-      { step: 'Verlauf & Reporting', desc: 'Alle Empfehlungen, Einsparungen und CO₂-Reduktionen im Verlauf nachverfolgen' },
-    ],
-    legalTitle: 'Rechtlicher Hinweis (Deutschland & EU)',
-    legal: 'WattAI-Empfehlungen sind Optimierungsvorschläge – keine Finanz- oder Rechtsberatung. Der Nutzer trägt die Verantwortung für die Umsetzung. KI-Systeme unterliegen der EU-KI-Verordnung (AI Act, Risikoklasse „niedrig"). Alle Trainingsdaten werden anonymisiert und DSGVO-konform verarbeitet. Modellentscheidungen sind nachvollziehbar (Konfidenz-Score, XAI-Erklärung).',
-  },
-  'flottenmanagement': {
-    specs: [
-      { label: 'Standorte', value: 'bis 50 Standorte gleichzeitig (Business)' },
-      { label: 'Dispatch', value: 'KI-Optimierung, Lastspitzen-Capping' },
-      { label: 'Alerting', value: 'SLA-Monitoring, E-Mail + Push-Benachricht.' },
-      { label: 'Reporting', value: 'CO₂-Bilanz, Kostenreport, CSV-Export' },
-      { label: 'API', value: 'REST + MQTT, Webhook, OpenAPI 3.1' },
-      { label: 'Compliance', value: 'ISO 27001-konformes Logging, DSGVO' },
-    ],
-    protocols: ['REST API', 'MQTT', 'Webhook', 'OpenAPI 3.1'],
-    plan: 'Business',
-    workflowTitle: 'Flottenmanagement Business',
-    workflowSubtitle: 'Verwalten Sie mehrere EV-Standorte zentral, optimieren Sie den Ladevorgang und erstellen Sie revisionssichere Berichte.',
-    workflow: [
-      { step: 'Standort & Infrastruktur anlegen', desc: 'Ladestandorte mit Adresse, Wallbox-Anzahl und Netzanschluss-Kapazität registrieren' },
-      { step: 'Fahrzeuge & Fahrer registrieren', desc: 'EV-Profile, RFID-Karten und Fahrerberechtigungen hinterlegen' },
-      { step: 'Dispatch-Regeln konfigurieren', desc: 'Lastspitzen-Capping, Prioritätsregeln und KI-Optimierung aktivieren' },
-      { step: 'SLA-Monitoring & Alerting', desc: 'Verfügbarkeits-SLA überwachen, bei Ausfall automatisch E-Mail/Push senden' },
-      { step: 'Reporting & Compliance-Export', desc: 'CO₂-Bilanz, Kostenreport und revisionssicheres Logging als CSV/PDF exportieren' },
-    ],
-    legalTitle: 'Rechtlicher Hinweis (Deutschland & EU)',
-    legal: 'Flottenmanagement-Daten werden ISO 27001-konform geloggt und 10 Jahre revisionssicher archiviert (GoBD). Fahrzeug- und Fahrerdaten unterliegen der DSGVO – Auftragsverarbeitungsvertrag (AVV) auf Anfrage verfügbar. Ladeinfrastruktur muss gemäß AFIR (Alternative Fuels Infrastructure Regulation) registriert sein. Die Abrechnung von Ladevorgängen erfordert eine eichrechtskonforme Messung (MID-Zulassung der Wallbox).',
-  },
+type TechDataItem = {
+  specs: { label: string; value: string }[];
+  protocols: string[];
+  plan: string;
+  workflow: { step: string; desc: string }[];
+  workflowTitle: string;
+  workflowSubtitle: string;
+  legal: string;
+  legalTitle: string;
+};
+
+const getTechData = (language: Language): Record<string, TechDataItem> => {
+  const isEnglish = language === 'en';
+  const txt = (de: string, en: string) => (isEnglish ? en : de);
+
+  return {
+    'pv-optimierung': {
+      specs: [
+        { label: txt('Algorithmus', 'Algorithm'), value: txt('MPPT + ML-Ertragsprognose', 'MPPT + ML yield forecasting') },
+        { label: txt('Prognose-Horizont', 'Forecast horizon'), value: txt('72 h (OpenMeteo-Wetterdaten)', '72 h (OpenMeteo weather data)') },
+        { label: txt('Eigenverbrauchsquote', 'Self-consumption rate'), value: txt('Ø +28 % gegenüber unkontrolliert', 'Avg. +28% vs. uncontrolled operation') },
+        { label: txt('Einspeisung', 'Feed-in'), value: txt('§ 9 EEG-konform, dyn. Abregelung', 'EEG § 9 compliant, dynamic curtailment') },
+        { label: txt('Auflösung', 'Resolution'), value: txt('1-Minuten-Intervall, Echtzeit-API', '1-minute interval, real-time API') },
+        { label: txt('Wechselrichter', 'Inverters'), value: 'SMA, Fronius, Huawei, Enphase, Kostal' },
+      ],
+      protocols: ['Modbus TCP', 'SunSpec', 'REST API', 'MQTT'],
+      plan: 'Free',
+      workflowTitle: txt('PV-Optimierung Pro', 'PV Optimization Pro'),
+      workflowSubtitle: txt('Maximieren Sie Ihren Solarertrag mit KI-gestützter Ertragsprognose und automatischer Eigenverbrauchsoptimierung.', 'Maximize your solar yield with AI-assisted production forecasts and automatic self-consumption optimization.'),
+      workflow: [
+        { step: txt('Wechselrichter auswählen', 'Select inverter'), desc: txt('SMA, Fronius, Huawei, Enphase, Kostal – Hersteller und Modell auswählen', 'Choose manufacturer and model from SMA, Fronius, Huawei, Enphase, or Kostal') },
+        { step: txt('Protokoll wählen', 'Choose protocol'), desc: txt('Verbindungsart festlegen: Modbus TCP, SunSpec REST, MQTT oder Cloud-API', 'Set the connection type: Modbus TCP, SunSpec REST, MQTT, or cloud API') },
+        { step: txt('IP-Adresse & Port konfigurieren', 'Configure IP address & port'), desc: txt('Lokale Netzwerkverbindung oder Cloud-Zugangsdaten eingeben', 'Enter a local network connection or cloud credentials') },
+        { step: txt('Echtzeit-Monitoring starten', 'Start real-time monitoring'), desc: txt('Ertrag, Einstrahlung, Wirkungsgrad live überwachen', 'Monitor yield, irradiation, and efficiency live') },
+        { step: txt('Prognose & Automatisierung aktivieren', 'Enable forecasting & automation'), desc: txt('72h-Wetterprognose für optimale Speicher- und Einspeisestrategie', 'Use the 72-hour weather forecast for optimal storage and feed-in strategies') },
+      ],
+      legalTitle: txt('Rechtlicher Hinweis (Deutschland)', 'Legal notice (Germany)'),
+      legal: txt('Die Einspeisevergütung richtet sich nach § 21 EEG 2023. Dynamische Abregelung erfolgt gemäß § 9 EEG. Alle Messdaten werden DSGVO-konform verschlüsselt gespeichert. Die Anbindung an den Netzbetreiber (Einspeisemanagement) obliegt dem Anlagenbetreiber. WattAI übernimmt keine Haftung für Ertragsausfälle durch Netzanforderungen.', 'Feed-in remuneration follows EEG 2023 § 21. Dynamic curtailment is handled in accordance with EEG § 9. All measured data is stored encrypted in a GDPR-compliant way. Grid operator integration remains the responsibility of the plant operator. WattAI does not assume liability for yield losses caused by grid requirements.'),
+    },
+    'batteriemanagement': {
+      specs: [
+        { label: txt('SOC-Grenzen', 'SoC limits'), value: txt('15 – 95 % (konfig.), SOH-Schutz aktiv', '15–95% (configurable), SoH protection active') },
+        { label: txt('Tarifintegration', 'Tariff integration'), value: 'Tibber, aWATTar, EPEX Spot' },
+        { label: txt('Lastprognose', 'Load forecast'), value: txt('15-Min-Intervall, LSTM-Modell', '15-minute interval, LSTM model') },
+        { label: txt('Zyklen-Optimierung', 'Cycle optimization'), value: txt('Kalend. + Lebensdauer-Prädiktor', 'Calendar + lifetime predictor') },
+        { label: txt('Reaktionszeit', 'Response time'), value: txt('< 500 ms Steuerbefehl', '< 500 ms control command') },
+        { label: txt('Kompatibilität', 'Compatibility'), value: 'LG RESU, BYD Box, Sonnen, Sungrow' },
+      ],
+      protocols: ['CAN Bus', 'Modbus RTU', 'REST API', 'MQTT'],
+      plan: 'Free',
+      workflowTitle: txt('Batteriemanagement Pro', 'Battery Management Pro'),
+      workflowSubtitle: txt('Verlängern Sie die Lebensdauer Ihres Speichers und senken Sie Stromkosten durch intelligente Ladestrategien.', 'Extend battery lifetime and lower electricity costs with intelligent charging strategies.'),
+      workflow: [
+        { step: txt('Batteriespeicher auswählen', 'Select battery storage'), desc: txt('LG RESU, BYD Box, Sonnen, Sungrow, SMA – Modell und Kapazität eingeben', 'Choose model and capacity for LG RESU, BYD Box, Sonnen, Sungrow, or SMA systems') },
+        { step: txt('Kommunikationsprotokoll festlegen', 'Define communication protocol'), desc: txt('CAN Bus, Modbus RTU/TCP oder Cloud-API des Herstellers wählen', 'Select CAN bus, Modbus RTU/TCP, or the manufacturer cloud API') },
+        { step: txt('SOC-Grenzen & Schutzparameter konfigurieren', 'Configure SoC limits & protection'), desc: txt('Min./Max. Ladezustand, SOH-Schutz und Temperaturgrenzen einstellen', 'Set minimum and maximum charge levels, SoH protection, and temperature limits') },
+        { step: txt('Tarifintegration aktivieren', 'Enable tariff integration'), desc: txt('Tibber, aWATTar oder EPEX Spot verknüpfen für tarifsensibles Laden', 'Connect Tibber, aWATTar, or EPEX Spot for tariff-aware charging') },
+        { step: txt('Automatisierung & Monitoring starten', 'Start automation & monitoring'), desc: txt('Lade-/Entladezyklen optimieren, Lebensdauerprognose überwachen', 'Optimize charge and discharge cycles and monitor lifetime forecasts') },
+      ],
+      legalTitle: txt('Rechtlicher Hinweis (Deutschland)', 'Legal notice (Germany)'),
+      legal: txt('Batteriespeicher unterliegen der IEC 62619 (Sicherheitsanforderungen). Garantiebedingungen der Hersteller (z.B. LG, BYD) bleiben durch WattAI unberührt. Alle Steuerbefehle erfolgen im Rahmen der vom Hersteller freigegebenen Parameter. Datenübertragung erfolgt verschlüsselt (TLS 1.3) gemäß DSGVO. Netzdienste (Regelenergie) erfordern separate Verträge mit dem Netzbetreiber.', 'Battery systems are subject to IEC 62619 safety requirements. Manufacturer warranty terms (for example LG or BYD) remain unaffected by WattAI. All control commands stay within manufacturer-approved parameters. Data transmission is encrypted with TLS 1.3 in compliance with GDPR. Grid services require separate agreements with the grid operator.'),
+    },
+    'ev-v2h-v2g': {
+      specs: [
+        { label: txt('Ladestandard', 'Charging standard'), value: 'ISO 15118 Plug & Charge, OCPP 2.0.1' },
+        { label: txt('V2H-Leistung', 'V2H power'), value: txt('bis 11 kW bidirektional', 'up to 11 kW bidirectional') },
+        { label: txt('V2G-Support', 'V2G support'), value: txt('Netzdienst, Regelenergie (ab Pro)', 'Grid services, balancing energy (from Pro)') },
+        { label: txt('Multi-EV', 'Multi-EV'), value: txt('bis 5 Fahrzeugprofile (ab Pro)', 'up to 5 vehicle profiles (from Pro)') },
+        { label: txt('Wallboxen', 'Chargers'), value: 'Wallbe, ABB Terra, KEBA, Easee' },
+        { label: txt('Tarif-Laden', 'Tariff charging'), value: txt('Spot-Preis-Laden, PV-Überschuss', 'Spot price charging, PV surplus') },
+      ],
+      protocols: ['OCPP 1.6/2.0.1', 'ISO 15118', 'MQTT', 'Modbus TCP'],
+      plan: 'Pro (Multi-EV)',
+      workflowTitle: txt('EV · V2H · V2G Pro', 'EV · V2H · V2G Pro'),
+      workflowSubtitle: txt('Laden Sie Ihr Elektroauto intelligent und nutzen Sie es als bidirektionalen Energiespeicher für Haus und Netz.', 'Charge your EV intelligently and use it as a bidirectional energy buffer for home and grid.'),
+      workflow: [
+        { step: txt('Wallbox & Fahrzeug auswählen', 'Select charger & vehicle'), desc: txt('Wallbe, ABB Terra, KEBA, Easee – Modell und EV-Profil anlegen', 'Create a model and EV profile for Wallbe, ABB Terra, KEBA, or Easee hardware') },
+        { step: txt('Protokoll konfigurieren', 'Configure protocol'), desc: txt('OCPP 2.0.1 oder ISO 15118 Plug & Charge aktivieren', 'Enable OCPP 2.0.1 or ISO 15118 Plug & Charge') },
+        { step: txt('Ladeprofil & SOC-Ziel festlegen', 'Set charging profile & SoC target'), desc: txt('Abfahrtszeit, Mindest-SOC und Ladebudget definieren', 'Define departure time, minimum SoC, and charging budget') },
+        { step: txt('V2H / V2G freigeben', 'Enable V2H / V2G'), desc: txt('Bidirektionales Laden aktivieren und Rückspeise-Schwellwert einstellen', 'Enable bidirectional charging and configure the export threshold') },
+        { step: txt('Spot-Tarif-Laden & Monitoring', 'Enable spot tariff charging & monitoring'), desc: txt('Günstige Ladezeitfenster automatisch nutzen, Ladehistorie einsehen', 'Use cheap charging windows automatically and review charging history') },
+      ],
+      legalTitle: txt('Rechtlicher Hinweis (Deutschland)', 'Legal notice (Germany)'),
+      legal: txt('Bidirektionales Laden (V2G) erfordert eine Genehmigung des Netzbetreibers gemäß § 14a EnWG. Die Wallbox muss für V2G zertifiziert sein (ISO 15118-20). Netzrückspeisung unterliegt dem Erneuerbare-Energien-Gesetz (EEG). WattAI agiert als HEMS gemäß EN 50631-1. Alle Fahrzeug- und Ladedaten werden DSGVO-konform verarbeitet.', 'Bidirectional charging (V2G) requires approval from the grid operator under § 14a EnWG. The charger must be certified for V2G (ISO 15118-20). Grid export remains subject to the German Renewable Energy Sources Act (EEG). WattAI operates as a HEMS under EN 50631-1. All vehicle and charging data is processed in a GDPR-compliant manner.'),
+    },
+    'smart-home': {
+      specs: [
+        { label: txt('Zeitfenster', 'Time windows'), value: txt('Dynamisch, tarifbasiert + PV-Prognose', 'Dynamic, tariff-based + PV forecast') },
+        { label: txt('Wärmepumpe', 'Heat pump'), value: txt('SG-Ready Schnittstelle, COP-Optimierung', 'SG-Ready interface, COP optimization') },
+        { label: txt('Standard', 'Standard'), value: txt('HEMS nach EN 50631-1', 'HEMS according to EN 50631-1') },
+        { label: txt('Schnittstellen', 'Interfaces'), value: 'KNX, Home Assistant, openHAB, Loxone' },
+        { label: txt('Lastspitzen', 'Peak loads'), value: txt('Peak-Shaving, kW-Begrenzung konfig.', 'Peak shaving, configurable kW limits') },
+        { label: txt('Geräte', 'Devices'), value: txt('Waschmaschine, Trockner, Spülmaschine, HP', 'Washer, dryer, dishwasher, heat pump') },
+      ],
+      protocols: ['KNX', 'Z-Wave', 'Zigbee', 'REST/MQTT'],
+      plan: 'Pro',
+      workflowTitle: txt('Hausautomation Pro', 'Home Automation Pro'),
+      workflowSubtitle: txt('Steuern Sie Wärmepumpe, Waschmaschine, Trockner, Spülmaschine und mehr automatisch in günstige Zeitfenster.', 'Automatically schedule your heat pump, washer, dryer, dishwasher, and more into lower-cost time windows.'),
+      workflow: [
+        { step: txt('Gerät auswählen', 'Select device'), desc: txt('Wärmepumpe, Waschmaschine, Trockner, Spülmaschine oder weiteres IoT-Gerät hinzufügen', 'Add a heat pump, washer, dryer, dishwasher, or another IoT device') },
+        { step: txt('Protokoll wählen', 'Choose protocol'), desc: txt('KNX, Zigbee, Z-Wave, Home Assistant, openHAB oder Loxone als Kommunikationsweg festlegen', 'Choose KNX, Zigbee, Z-Wave, Home Assistant, openHAB, or Loxone as the communication path') },
+        { step: txt('Gerät koppeln & freigeben', 'Pair & authorize device'), desc: txt('Netzwerkverbindung herstellen, Gerät authentifizieren und Steuerrechte erteilen', 'Establish the network connection, authenticate the device, and grant control permissions') },
+        { step: txt('Automatisierung aktivieren', 'Enable automation'), desc: txt('Zeitfenster, PV-Überschuss-Trigger oder dynamischen Stromtarif als Auslöser konfigurieren', 'Configure time windows, PV surplus triggers, or dynamic tariffs as automation triggers') },
+        { step: txt('Live-Status & Verbrauch überwachen', 'Monitor live status & consumption'), desc: txt('Echtzeitdaten, Verbrauchshistorie und Einsparpotenzial im Dashboard einsehen', 'Review live data, consumption history, and savings potential in the dashboard') },
+      ],
+      legalTitle: txt('Rechtlicher Hinweis (Deutschland)', 'Legal notice (Germany)'),
+      legal: txt('Die Integration von IoT-Geräten erfolgt gemäß DSGVO und IT-Sicherheitsgesetz 2.0. Alle Daten werden verschlüsselt übertragen (TLS 1.3). Kompatibel mit deutschen Smart-Home-Standards (KNX, EN 50631-1). Die Steuerung von Wärmepumpen über SG-Ready ist gemäß VDE-AR-N 4105 zulässig. WattAI haftet nicht für Schäden durch fehlerhafte Gerätekonfiguration des Nutzers.', "IoT device integration follows GDPR and Germany's IT Security Act 2.0. All data is transmitted in encrypted form with TLS 1.3. The platform remains compatible with German smart home standards such as KNX and EN 50631-1. Heat pump control via SG-Ready is supported within the scope of VDE-AR-N 4105. WattAI is not liable for damage caused by incorrect device configuration by the user."),
+    },
+    'ki-empfehlung': {
+      specs: [
+        { label: txt('Modell', 'Model'), value: 'Deep-Q-Network (DQN), 128-Node Hidden' },
+        { label: txt('Trainingsdaten', 'Training data'), value: txt('3 Jahre historische Energiedaten', '3 years of historical energy data') },
+        { label: 'Inference', value: txt('< 50 ms Latenz, Edge-AI fähig', '< 50 ms latency, edge AI capable') },
+        { label: 'Runtime', value: 'TensorFlow Lite / ONNX Runtime' },
+        { label: txt('Konfidenz', 'Confidence'), value: txt('Score pro Empfehlung, Begründung sichtbar', 'Score per recommendation, explanation visible') },
+        { label: txt('Update', 'Update'), value: txt('Wöchentliches Re-Training, Auto-Deploy', 'Weekly retraining, auto-deploy') },
+      ],
+      protocols: ['ONNX', 'TFLite', 'REST API', 'WebSocket'],
+      plan: 'Pro',
+      workflowTitle: txt('KI-Empfehlung Pro', 'AI Recommendation Pro'),
+      workflowSubtitle: txt('Erhalten Sie optimale Lade-, Speicher- und Einspeisestrategien durch Deep-Q-Network-basierte Entscheidungen in Echtzeit.', 'Receive optimal charging, storage, and feed-in strategies through deep Q-network decisions in real time.'),
+      workflow: [
+        { step: txt('KI-Analyse starten', 'Start AI analysis'), desc: txt('DQN-Agent liest Echtzeitdaten: Strompreis, SOC, PV-Prognose, Wetter', 'The DQN agent reads live data: power price, SoC, PV forecast, and weather') },
+        { step: txt('Konfidenz & Empfehlung prüfen', 'Review confidence & recommendation'), desc: txt('Empfehlung mit Konfidenz-Score und Begründung einsehen und verstehen', 'Inspect the recommendation together with its confidence score and explanation') },
+        { step: txt('Aktion bestätigen oder automatisieren', 'Confirm or automate the action'), desc: txt('Manuell bestätigen oder vollautomatische Ausführung durch HEMS aktivieren', 'Confirm manually or enable fully automatic execution through the HEMS') },
+        { step: txt('Feedback & Lernzyklus', 'Feedback & learning cycle'), desc: txt('Ergebnis bewerten – verbessert das KI-Modell beim wöchentlichen Re-Training', 'Evaluate the outcome to improve the AI model during weekly retraining') },
+        { step: txt('Verlauf & Reporting', 'History & reporting'), desc: txt('Alle Empfehlungen, Einsparungen und CO₂-Reduktionen im Verlauf nachverfolgen', 'Track recommendations, savings, and CO₂ reductions over time') },
+      ],
+      legalTitle: txt('Rechtlicher Hinweis (Deutschland & EU)', 'Legal notice (Germany & EU)'),
+      legal: txt('WattAI-Empfehlungen sind Optimierungsvorschläge – keine Finanz- oder Rechtsberatung. Der Nutzer trägt die Verantwortung für die Umsetzung. KI-Systeme unterliegen der EU-KI-Verordnung (AI Act, Risikoklasse „niedrig"). Alle Trainingsdaten werden anonymisiert und DSGVO-konform verarbeitet. Modellentscheidungen sind nachvollziehbar (Konfidenz-Score, XAI-Erklärung).', 'WattAI recommendations are optimization suggestions and not financial or legal advice. The user remains responsible for implementation. AI systems are subject to the EU AI Act in the low-risk category. All training data is anonymized and processed in a GDPR-compliant manner. Model decisions remain traceable through confidence scores and explainability data.'),
+    },
+    'flottenmanagement': {
+      specs: [
+        { label: txt('Standorte', 'Sites'), value: txt('bis 50 Standorte gleichzeitig (Business)', 'up to 50 concurrent sites (Business)') },
+        { label: 'Dispatch', value: txt('KI-Optimierung, Lastspitzen-Capping', 'AI optimization, peak capping') },
+        { label: 'Alerting', value: txt('SLA-Monitoring, E-Mail + Push-Benachricht.', 'SLA monitoring, email + push notifications') },
+        { label: 'Reporting', value: txt('CO₂-Bilanz, Kostenreport, CSV-Export', 'CO₂ balance, cost reports, CSV export') },
+        { label: 'API', value: 'REST + MQTT, Webhook, OpenAPI 3.1' },
+        { label: 'Compliance', value: txt('ISO 27001-konformes Logging, DSGVO', 'ISO 27001-compliant logging, GDPR') },
+      ],
+      protocols: ['REST API', 'MQTT', 'Webhook', 'OpenAPI 3.1'],
+      plan: 'Business',
+      workflowTitle: txt('Flottenmanagement Business', 'Fleet Management Business'),
+      workflowSubtitle: txt('Verwalten Sie mehrere EV-Standorte zentral, optimieren Sie den Ladevorgang und erstellen Sie revisionssichere Berichte.', 'Manage multiple EV sites centrally, optimize charging operations, and generate audit-ready reports.'),
+      workflow: [
+        { step: txt('Standort & Infrastruktur anlegen', 'Create site & infrastructure'), desc: txt('Ladestandorte mit Adresse, Wallbox-Anzahl und Netzanschluss-Kapazität registrieren', 'Register charging sites with address, charger count, and grid connection capacity') },
+        { step: txt('Fahrzeuge & Fahrer registrieren', 'Register vehicles & drivers'), desc: txt('EV-Profile, RFID-Karten und Fahrerberechtigungen hinterlegen', 'Store EV profiles, RFID cards, and driver permissions') },
+        { step: txt('Dispatch-Regeln konfigurieren', 'Configure dispatch rules'), desc: txt('Lastspitzen-Capping, Prioritätsregeln und KI-Optimierung aktivieren', 'Enable peak capping, priority rules, and AI optimization') },
+        { step: txt('SLA-Monitoring & Alerting', 'SLA monitoring & alerting'), desc: txt('Verfügbarkeits-SLA überwachen, bei Ausfall automatisch E-Mail/Push senden', 'Monitor availability SLAs and send automatic email or push alerts on failure') },
+        { step: txt('Reporting & Compliance-Export', 'Reporting & compliance export'), desc: txt('CO₂-Bilanz, Kostenreport und revisionssicheres Logging als CSV/PDF exportieren', 'Export CO₂ balances, cost reports, and audit-ready logs as CSV or PDF') },
+      ],
+      legalTitle: txt('Rechtlicher Hinweis (Deutschland & EU)', 'Legal notice (Germany & EU)'),
+      legal: txt('Flottenmanagement-Daten werden ISO 27001-konform geloggt und 10 Jahre revisionssicher archiviert (GoBD). Fahrzeug- und Fahrerdaten unterliegen der DSGVO – Auftragsverarbeitungsvertrag (AVV) auf Anfrage verfügbar. Ladeinfrastruktur muss gemäß AFIR (Alternative Fuels Infrastructure Regulation) registriert sein. Die Abrechnung von Ladevorgängen erfordert eine eichrechtskonforme Messung (MID-Zulassung der Wallbox).', 'Fleet management data is logged in an ISO 27001-compliant manner and archived for 10 years in an audit-ready format under GoBD requirements. Vehicle and driver data is subject to GDPR, and a data processing agreement is available on request. Charging infrastructure must be registered in line with AFIR. Billing charging sessions requires legally compliant metering, such as MID-certified chargers.'),
+    },
+  };
 };
 
 // ── Tech Details Modal ────────────────────────────────────────────────────────
 
-function TechModal({ slug, title, onClose }: { slug: string; title: string; onClose: () => void }) {
-  const data = TECH_DATA[slug];
+function TechModal({ slug, title, onClose, language }: { slug: string; title: string; onClose: () => void; language: Language }) {
+  const data = getTechData(language)[slug];
   useEffect(() => {
     const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', fn);
@@ -522,13 +538,13 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
               fontSize: 10, color: planColor, letterSpacing: '0.12em', fontWeight: 700,
               textTransform: 'uppercase',
             }}>
-              Verfügbar ab Plan: {data.plan}
+              {language === 'en' ? 'Available from plan:' : 'Verfügbar ab Plan:'} {data.plan}
             </div>
             <h2 style={{ margin: 0, fontSize: 'clamp(18px,2.5vw,26px)', fontWeight: 900, color: '#f8fafc', lineHeight: 1.2 }}>
               {title}
             </h2>
             <p style={{ margin: '6px 0 0', fontSize: 12, color: 'rgba(248,250,252,0.4)', letterSpacing: '0.06em' }}>
-              Technische Spezifikation
+              {language === 'en' ? 'Technical specification' : 'Technische Spezifikation'}
             </p>
           </div>
           <button
@@ -540,7 +556,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}
-            aria-label="Schließen"
+            aria-label={language === 'en' ? 'Close' : 'Schließen'}
           >✕</button>
         </div>
 
@@ -563,7 +579,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
         {/* Protocols */}
         <div style={{ padding: '0 28px 24px' }}>
           <div style={{ fontSize: 10, color: 'rgba(59,130,246,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10, fontWeight: 700 }}>
-            Protokolle &amp; Schnittstellen
+            {language === 'en' ? 'Protocols & interfaces' : 'Protokolle & Schnittstellen'}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {data.protocols.map((p, i) => (
@@ -587,7 +603,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
               {data.workflowSubtitle}
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,149,0,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12, fontWeight: 700 }}>
-              IoT-Workflow:
+              {language === 'en' ? 'IoT workflow:' : 'IoT-Workflow:'}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {data.workflow.map((w, i) => (
@@ -1563,8 +1579,12 @@ function SectionHeadline({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: StartPageProps) {
-  const { t } = useLanguage();
+export default function StartPage({ onNavigate }: StartPageProps) {
+  const { t, language } = useLanguage();
+  const applications = getApplications(language);
+  const heroTitleLines = language === 'en'
+    ? ['Intelligent AI Control', 'for Your Home']
+    : ['Die intelligente KI-Steuerung', 'für dein Zuhause'];
   const heroRef = useRef<HTMLDivElement>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
@@ -1703,7 +1723,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
               width:6, height:6, borderRadius:'50%', background:T.orange, display:'inline-block',
               animation:'wai-breathe 4s ease-in-out infinite',
             }} />
-            Die smarte Energieplattform für Heim &amp; Flotte
+            {language === 'en' ? 'The smart energy platform for home & fleet' : 'Die smarte Energieplattform für Heim & Flotte'}
           </div>
 
           {/* H1 */}
@@ -1719,12 +1739,12 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               backgroundClip:'text', animation:'wai-shimmer 9s linear infinite',
               display:'block',
-            }}>{t('start.heroTitle').split('. ')[0]}</span>
+            }}>{heroTitleLines[0]}</span>
             <span style={{
               background:'linear-gradient(135deg,#f8fafc 0%,#ff9500 45%,#1e40af 100%)',
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               backgroundClip:'text', display:'block', marginTop:4,
-            }}>{t('start.heroTitle').split('. ')[1] || 'Intelligent gesteuert.'}</span>
+            }}>{heroTitleLines[1]}</span>
           </h1>
 
           {/* Subline */}
@@ -1758,13 +1778,13 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
                 padding:'15px 38px', fontWeight:700, fontSize:16, cursor:'pointer',
                 backdropFilter:'blur(12px)', letterSpacing:'0.02em',
               }}>
-              Preise &amp; Pläne ansehen
+              {language === 'en' ? 'View pricing & plans' : 'Preise & Pläne ansehen'}
             </button>
           </div>
 
           {/* Scroll indicator */}
           <div style={{ marginTop:56, display:'flex', flexDirection:'column', alignItems:'center', gap:8, opacity:0.32 }}>
-            <span style={{ fontSize:9, letterSpacing:'0.5em', textTransform:'uppercase', color:T.muted }}>Explore</span>
+            <span style={{ fontSize:9, letterSpacing:'0.5em', textTransform:'uppercase', color:T.muted }}>{language === 'en' ? 'Explore' : 'Entdecken'}</span>
             <div style={{
               width:1, height:52,
               background:`linear-gradient(to bottom, ${T.orange}, transparent)`,
@@ -1809,11 +1829,11 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
           <div style={{ ...sec, padding:'0 clamp(16px,4vw,32px)' }}>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:12 }}>
               {[
-                { v:'< 2 min', l:'Einrichtungszeit' },
-                { v:'98 %',    l:'Uptime SLA' },
-                { v:'30 %',    l:'Ø Einsparung' },
-                { v:'ISO 15118', l:'V2G-Standard' },
-                { v:'DSGVO',  l:'Datenschutz Art. 6' },
+                { v:'< 2 min', l: language === 'en' ? 'Setup time' : 'Einrichtungszeit' },
+                { v:'98 %', l:'Uptime SLA' },
+                { v:'30 %', l: language === 'en' ? 'Avg. savings' : 'Ø Einsparung' },
+                { v:'ISO 15118', l: language === 'en' ? 'V2G standard' : 'V2G-Standard' },
+                { v:'DSGVO', l: language === 'en' ? 'Privacy Art. 6' : 'Datenschutz Art. 6' },
               ].map((s, i) => (
                 <div key={i} className="wai-stat" style={{
                   textAlign:'center', padding:'22px 12px', borderRadius:14,
@@ -1838,14 +1858,14 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
       ══════════════════════════════════════════════ */}
       <section style={{ ...sec, position:'relative', zIndex:1 }}>
         <SectionHeadline
-          label="Alles in einem System"
-          title="High-End Energie- und Lademanagement"
-          subtitle="Modulare KI-Architektur, 3D-Dashboards und Echtzeit-Steuerung für PV, Speicher, EV und Smart Home."
+          label={language === 'en' ? 'Everything in one system' : 'Alles in einem System'}
+          title={language === 'en' ? 'High-end energy and charging management' : 'High-End Energie- und Lademanagement'}
+          subtitle={language === 'en' ? 'Modular AI architecture, 3D dashboards, and real-time control for PV, storage, EV, and smart home.' : 'Modulare KI-Architektur, 3D-Dashboards und Echtzeit-Steuerung für PV, Speicher, EV und Smart Home.'}
           accentColor={T.orange}
         />
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(310px,1fr))', gap:20 }}>
-          {APPLICATIONS.map((app, i) => {
+          {applications.map((app, i) => {
             const Visual = VISUAL_MAP[app.slug];
             const isH = hovered === app.slug;
             return (
@@ -1898,7 +1918,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
                           transition:'all 1s cubic-bezier(0.16,1,0.3,1)',
                           textTransform:'uppercase',
                         }}>
-                        Technische Details
+                        {language === 'en' ? 'Technical details' : 'Technische Details'}
                       </button>
                     </div>
 
@@ -1931,6 +1951,7 @@ export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: S
           slug={techModal.slug}
           title={techModal.title}
           onClose={() => setTechModal(null)}
+          language={language}
         />
       )}
     </div>
