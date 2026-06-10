@@ -10,7 +10,10 @@ on:
 jobs:
   test:
     timeout-minutes: 120
-    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-22.04
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
@@ -21,7 +24,7 @@ jobs:
     - name: 🔧 Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '24'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
