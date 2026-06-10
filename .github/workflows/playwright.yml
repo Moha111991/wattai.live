@@ -32,6 +32,18 @@ jobs:
       working-directory: ./frontend
       run: npm ci
 
+    - name: 🔍 Get Playwright Version
+      id: playwright-version
+      working-directory: ./frontend
+      run: echo "version=$(npx playwright --version | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+    - name: 💾 Cache Playwright Browsers
+      id: playwright-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
     - name: 📦 Install Playwright Browsers
       working-directory: ./frontend
       run: npx playwright install --with-deps
