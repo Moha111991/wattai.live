@@ -197,7 +197,6 @@ function HausautomationPanel() {
   const handleConnectDone = useCallback(() => {
     setConnecting(false);
     const now = new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
-    const bp = BASE_POWER[selectedDevice] ?? 500;
     const newDev: ConnectedDevice = {
       uid: Math.random().toString(36).slice(2,10),
       slotId: selectedDevice,

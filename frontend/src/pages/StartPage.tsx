@@ -1563,7 +1563,7 @@ function SectionHeadline({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function StartPage({ onNavigate, onAuthClick, onUpgradeClick }: StartPageProps) {
+export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpgradeClick: _onUpgradeClick }: StartPageProps) {
   const { t } = useLanguage();
   const heroRef = useRef<HTMLDivElement>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });

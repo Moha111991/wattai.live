@@ -217,7 +217,7 @@ async function pollUntilConnected(
         if (data.status === 'connected') return;
         if (data.status === 'failed') throw new Error('Backend: connection failed');
       }
-    } catch (e) {
+    } catch {
       if (signal.aborted) return;
     }
     if (Date.now() - start > 90000) throw new Error('Timeout');
