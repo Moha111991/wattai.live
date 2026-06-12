@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateToApp } from './helpers';
 
 /**
  * Navigation Tests für WattAI.live
@@ -8,9 +9,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Navigation Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(1000);
+    await navigateToApp(page);
   });
 
   test('sollte alle 5 Tabs sichtbar haben', async ({ page }) => {

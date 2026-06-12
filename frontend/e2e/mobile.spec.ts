@@ -1,4 +1,5 @@
 import { test, expect, devices } from '@playwright/test';
+import { navigateToApp } from './helpers';
 
 /**
  * Mobile Optimization Tests
@@ -12,9 +13,7 @@ mobileTest.use({ ...devices['iPhone 12'] });
 
 test.describe('Mobile Optimization Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(1000);
+    await navigateToApp(page);
   });
 
   mobileTest('sollte auf Mobile responsive sein', async ({ page }) => {

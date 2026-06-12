@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateToApp } from './helpers';
 
 /**
  * 3D Header Animation Tests
@@ -8,10 +9,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('3D Header Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/', { waitUntil: 'networkidle' });
-    // Warte auf Tab-Navigation als stabiler App-Ready-Indikator
-    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(1000);
+    await navigateToApp(page);
   });
 
   const headers = [
