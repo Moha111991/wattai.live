@@ -9,7 +9,7 @@ import { navigateToApp } from './helpers';
 
 // test.use() muss auf oberster Ebene sein, nicht in describe()
 const mobileTest = test.extend({});
-mobileTest.use({ ...devices['iPhone 12'] });
+mobileTest.use({ ...devices['Pixel 5'] });
 
 test.describe('Mobile Optimization Tests', () => {
   test.beforeEach(async ({ page }) => {
