@@ -29,8 +29,8 @@ test.describe('Navigation Tests', () => {
     // Prüfe ob Header SVG sichtbar ist
     await expect(page.locator('svg').first()).toBeVisible();
     
-    // Prüfe ob DevicesDashboard geladen wurde - "Verbundene Geräte" ist der Titel
-    await expect(page.locator('text=Verbundene Geräte')).toBeVisible({ timeout: 10000 });
+  // Prüfe ob DevicesDashboard geladen wurde (Titel wurde auf "Geräte & Adapter" geändert)
+  await expect(page.getByText(/Geräte\s*&\s*Adapter|Verbundene Geräte/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('sollte zum Elektroauto-Tab navigieren und V2H Animation zeigen', async ({ page }) => {

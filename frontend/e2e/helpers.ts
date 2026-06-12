@@ -5,6 +5,11 @@ import { Page, expect } from '@playwright/test';
  * The app starts on the landing page by default; we must click the CTA to enter the app.
  */
 export async function navigateToApp(page: Page): Promise<void> {
+  // Keep tests deterministic across CI runners (browser locale can vary)
+  await page.addInitScript(() => {
+    window.localStorage.setItem('wattai-language', 'de');
+  });
+
   await page.goto('/', { waitUntil: 'networkidle' });
 
   // If the tab bar is already visible (e.g. direct app URL), skip the CTA click
