@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateToApp } from './helpers';
 
 /**
  * Navigation Tests für WattAI.live
@@ -8,9 +9,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Navigation Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(1000);
+    await navigateToApp(page);
   });
 
   test('sollte alle 5 Tabs sichtbar haben', async ({ page }) => {
@@ -30,8 +29,8 @@ test.describe('Navigation Tests', () => {
     // Prüfe ob Header SVG sichtbar ist
     await expect(page.locator('svg').first()).toBeVisible();
     
-    // Prüfe ob DevicesDashboard geladen wurde - "Verbundene Geräte" ist der Titel
-    await expect(page.locator('text=Verbundene Geräte')).toBeVisible({ timeout: 10000 });
+  // Prüfe ob DevicesDashboard geladen wurde (Titel wurde auf "Geräte & Adapter" geändert)
+  await expect(page.getByText(/Geräte\s*&\s*Adapter|Verbundene Geräte/i)).toBeVisible({ timeout: 10000 });
   });
 
   test('sollte zum Elektroauto-Tab navigieren und V2H Animation zeigen', async ({ page }) => {
