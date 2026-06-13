@@ -27,7 +27,7 @@ interface AIRecommendation {
     label: string;
     type: 'accept' | 'schedule' | 'dismiss';
     endpoint?: string;
-    payload?: Record<string, any>;
+    payload?: Record<string, unknown>;
   }[];
   
   // Context
@@ -37,7 +37,7 @@ interface AIRecommendation {
 
 interface AIRecommendationsWidgetProps {
   recommendations?: AIRecommendation[];
-  onActionClick?: (recommendationId: string, actionType: string, payload?: any) => void;
+  onActionClick?: (recommendationId: string, actionType: string, payload?: Record<string, unknown>) => void;
   maxDisplay?: number;
 }
 
@@ -139,7 +139,7 @@ const ImpactMetrics: React.FC<{
 
 const RecommendationCard: React.FC<{
   recommendation: AIRecommendation;
-  onAction?: (actionType: string, payload?: any) => void;
+  onAction?: (actionType: string, payload?: Record<string, unknown>) => void;
 }> = ({ recommendation, onAction }) => {
   const [expanded, setExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -272,6 +272,10 @@ const AIRecommendationsWidget: React.FC<AIRecommendationsWidgetProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'critical' | 'high' | 'medium'>('all');
   const [sortBy, setSortBy] = useState<'priority' | 'confidence' | 'savings'>('priority');
+
+  const isSortByValue = (value: string): value is 'priority' | 'confidence' | 'savings' => {
+    return value === 'priority' || value === 'confidence' || value === 'savings';
+  };
   
   // Sort recommendations
   const sortedRecommendations = [...recommendations].sort((a, b) => {
@@ -361,7 +365,10 @@ const AIRecommendationsWidget: React.FC<AIRecommendationsWidgetProps> = ({
         
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as any)}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (isSortByValue(value)) setSortBy(value);
+          }}
           className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
         >
           <option value="priority">Nach Priorität</option>
