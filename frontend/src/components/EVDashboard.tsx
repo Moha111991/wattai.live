@@ -25,7 +25,8 @@ const EVDashboard = () => {
   const [wsStatus, setWsStatus] = useState<'connecting'|'live'|'offline'>('connecting');
   const wsRef = useRef<WebSocket | null>(null);
   useEffect(() => {
-    const WS_BASE = import.meta.env.VITE_WS_URL
+    const wsOverride = (import.meta.env.VITE_WS_URL || '').replace(/\/\/api\.wattai\.live/i, '//www.wattai.live');
+    const WS_BASE = wsOverride
       || (typeof window !== 'undefined'
           ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
           : '');

@@ -4,7 +4,8 @@ import TabBar from './TabBar';
 import BatteryWidget from './BatteryWidget';
 import SmartMeterEnergyWidget from './SmartMeterEnergyWidget';
 
-const WS_URL = import.meta.env.VITE_WS_URL || '';
+const normalizeWsUrl = (raw: string): string => raw.replace(/\/\/api\.wattai\.live/i, '//www.wattai.live');
+const WS_URL = normalizeWsUrl(import.meta.env.VITE_WS_URL || '');
 
 const WAI = `
   @keyframes wai-breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
