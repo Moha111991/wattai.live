@@ -2,6 +2,7 @@
 
 exports[`ErrorAlarmMonitor – alarm list state > DOM snapshot – dark mode (with alarms) 1`] = `
 <div
+  class="wai-alarm-monitor"
   style="width: 100%; max-width: 100%; margin: 28px 0px; box-sizing: border-box; background: rgba(15, 23, 42, 0.82); border-radius: 18px; padding: 20px 22px 18px; box-shadow: 0 16px 40px rgba(2,6,23,0.38); transition: border-color 0.4s ease; border: 1px solid rgba(239, 68, 68, 0.32);"
 >
   <div
@@ -191,6 +192,7 @@ exports[`ErrorAlarmMonitor – alarm list state > DOM snapshot – dark mode (wi
 
 exports[`ErrorAlarmMonitor – alarm list state > DOM snapshot – light mode (with alarms) 1`] = `
 <div
+  class="wai-alarm-monitor"
   style="width: 100%; max-width: 100%; margin: 28px 0px; box-sizing: border-box; background: rgba(15, 23, 42, 0.82); border-radius: 18px; padding: 20px 22px 18px; box-shadow: 0 16px 40px rgba(2,6,23,0.38); transition: border-color 0.4s ease; border: 1px solid rgba(239, 68, 68, 0.32);"
 >
   <div
@@ -380,6 +382,7 @@ exports[`ErrorAlarmMonitor – alarm list state > DOM snapshot – light mode (w
 
 exports[`ErrorAlarmMonitor – clean state (no alarms) > DOM snapshot – dark mode (no alarms) — catches structural regressions 1`] = `
 <div
+  class="wai-alarm-monitor"
   style="width: 100%; max-width: 100%; margin: 28px 0px; box-sizing: border-box; background: rgba(15, 23, 42, 0.82); border: 1px solid rgba(34, 197, 94, 0.28); border-radius: 18px; padding: 20px 22px 18px; box-shadow: 0 16px 40px rgba(2,6,23,0.38); transition: border-color 0.4s ease;"
 >
   <div
@@ -478,6 +481,7 @@ exports[`ErrorAlarmMonitor – clean state (no alarms) > DOM snapshot – dark m
 
 exports[`ErrorAlarmMonitor – clean state (no alarms) > DOM snapshot – light mode (no alarms) 1`] = `
 <div
+  class="wai-alarm-monitor"
   style="width: 100%; max-width: 100%; margin: 28px 0px; box-sizing: border-box; background: rgba(15, 23, 42, 0.82); border: 1px solid rgba(34, 197, 94, 0.28); border-radius: 18px; padding: 20px 22px 18px; box-shadow: 0 16px 40px rgba(2,6,23,0.38); transition: border-color 0.4s ease;"
 >
   <div

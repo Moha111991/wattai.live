@@ -26,6 +26,68 @@ type StartPageProps = {
   onUpgradeClick: () => void;
 };
 
+const LANDING_COPY = {
+  de: {
+    badge: 'Die smarte Energieplattform für Heim & Flotte',
+    heroTitleLine1: 'Die intelligente KI-Steuerung',
+    heroTitleLine2: 'für dein Zuhause',
+    ctaPlans: 'Preise & Pläne ansehen',
+    explore: 'Erkunden',
+    statSetup: 'Einrichtungszeit',
+    statUptime: 'Uptime SLA',
+    statSavings: 'Ø Einsparung',
+    statV2g: 'V2G-Standard',
+    statPrivacy: 'Datenschutz Art. 6',
+    featuresLabel: 'Alles in einem System',
+    featuresTitle: 'High-End Energie- und Lademanagement',
+    featuresSubtitle: 'Modulare KI-Architektur, 3D-Dashboards und Echtzeit-Steuerung für PV, Speicher, EV und Smart Home.',
+    techDetails: 'Technische Details',
+  },
+  en: {
+    badge: 'The smart energy platform for home & fleet',
+    heroTitleLine1: 'Intelligent AI Control',
+    heroTitleLine2: 'for your home',
+    ctaPlans: 'View pricing & plans',
+    explore: 'Explore',
+    statSetup: 'Setup time',
+    statUptime: 'Uptime SLA',
+    statSavings: 'Avg. savings',
+    statV2g: 'V2G standard',
+    statPrivacy: 'Privacy · Art. 6 GDPR',
+    featuresLabel: 'All in one system',
+    featuresTitle: 'High-end energy & charging management',
+    featuresSubtitle: 'Modular AI architecture, 3D dashboards, and real-time control for PV, battery, EV, and smart home.',
+    techDetails: 'Technical details',
+  },
+} as const;
+
+const APPLICATION_CARD_EN: Record<string, { title: string; desc: string }> = {
+  'pv-optimierung': {
+    title: 'PV Optimization',
+    desc: 'Intelligently control real-time yield forecasts, self-consumption maximization, and grid feed-in.',
+  },
+  batteriemanagement: {
+    title: 'Battery Management',
+    desc: 'Automatically optimize charging and discharging cycles by tariff, SOC limits, and household load.',
+  },
+  'ev-v2h-v2g': {
+    title: 'Electric Vehicle & Vehicle to Home/Grid',
+    desc: 'Intelligent charging, bidirectional power usage, and multi-EV profiles (from Pro).',
+  },
+  'smart-home': {
+    title: 'Smart Home',
+    desc: 'Automatically shift heat pump, washing machine, and more into low-cost time windows (from Pro).',
+  },
+  'ki-empfehlung': {
+    title: 'AI Recommendation',
+    desc: 'Deep-Q-Network analyzes live data and provides concrete action recommendations (from Pro).',
+  },
+  flottenmanagement: {
+    title: 'Fleet Management',
+    desc: 'AI dispatching, peak-load management, and SLA alerting for commercial sites (Business).',
+  },
+};
+
 // ── Tokens ───────────────────────────────────────────────────────────────────
 
 const T = {
@@ -1564,11 +1626,17 @@ function SectionHeadline({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpgradeClick: _onUpgradeClick }: StartPageProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const heroRef = useRef<HTMLDivElement>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
   const [techModal, setTechModal] = useState<{ slug: string; title: string } | null>(null);
+  const copy = LANDING_COPY[language];
+  const localizedApplications = APPLICATIONS.map((app) => {
+    if (language !== 'en') return app;
+    const translated = APPLICATION_CARD_EN[app.slug];
+    return translated ? { ...app, ...translated } : app;
+  });
 
   const onMove = useCallback((e: RMouseEvent<HTMLDivElement>) => {
     const r = heroRef.current?.getBoundingClientRect();
@@ -1703,7 +1771,7 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
               width:6, height:6, borderRadius:'50%', background:T.orange, display:'inline-block',
               animation:'wai-breathe 4s ease-in-out infinite',
             }} />
-            Die smarte Energieplattform für Heim &amp; Flotte
+            {copy.badge}
           </div>
 
           {/* H1 */}
@@ -1719,12 +1787,12 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               backgroundClip:'text', animation:'wai-shimmer 9s linear infinite',
               display:'block',
-            }}>{t('start.heroTitle').split('. ')[0]}</span>
+            }}>{copy.heroTitleLine1}</span>
             <span style={{
               background:'linear-gradient(135deg,#f8fafc 0%,#ff9500 45%,#1e40af 100%)',
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               backgroundClip:'text', display:'block', marginTop:4,
-            }}>{t('start.heroTitle').split('. ')[1] || 'Intelligent gesteuert.'}</span>
+            }}>{copy.heroTitleLine2}</span>
           </h1>
 
           {/* Subline */}
@@ -1758,13 +1826,13 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
                 padding:'15px 38px', fontWeight:700, fontSize:16, cursor:'pointer',
                 backdropFilter:'blur(12px)', letterSpacing:'0.02em',
               }}>
-              Preise &amp; Pläne ansehen
+              {copy.ctaPlans}
             </button>
           </div>
 
           {/* Scroll indicator */}
           <div style={{ marginTop:56, display:'flex', flexDirection:'column', alignItems:'center', gap:8, opacity:0.32 }}>
-            <span style={{ fontSize:9, letterSpacing:'0.5em', textTransform:'uppercase', color:T.muted }}>Explore</span>
+            <span style={{ fontSize:9, letterSpacing:'0.5em', textTransform:'uppercase', color:T.muted }}>{copy.explore}</span>
             <div style={{
               width:1, height:52,
               background:`linear-gradient(to bottom, ${T.orange}, transparent)`,
@@ -1809,11 +1877,11 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
           <div style={{ ...sec, padding:'0 clamp(16px,4vw,32px)' }}>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:12 }}>
               {[
-                { v:'< 2 min', l:'Einrichtungszeit' },
-                { v:'98 %',    l:'Uptime SLA' },
-                { v:'30 %',    l:'Ø Einsparung' },
-                { v:'ISO 15118', l:'V2G-Standard' },
-                { v:'DSGVO',  l:'Datenschutz Art. 6' },
+                { v:'< 2 min', l:copy.statSetup },
+                { v:'98 %',    l:copy.statUptime },
+                { v:'30 %',    l:copy.statSavings },
+                { v:'ISO 15118', l:copy.statV2g },
+                { v:'DSGVO',  l:copy.statPrivacy },
               ].map((s, i) => (
                 <div key={i} className="wai-stat" style={{
                   textAlign:'center', padding:'22px 12px', borderRadius:14,
@@ -1838,14 +1906,14 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
       ══════════════════════════════════════════════ */}
       <section style={{ ...sec, position:'relative', zIndex:1 }}>
         <SectionHeadline
-          label="Alles in einem System"
-          title="High-End Energie- und Lademanagement"
-          subtitle="Modulare KI-Architektur, 3D-Dashboards und Echtzeit-Steuerung für PV, Speicher, EV und Smart Home."
+          label={copy.featuresLabel}
+          title={copy.featuresTitle}
+          subtitle={copy.featuresSubtitle}
           accentColor={T.orange}
         />
 
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(310px,1fr))', gap:20 }}>
-          {APPLICATIONS.map((app, i) => {
+          {localizedApplications.map((app, i) => {
             const Visual = VISUAL_MAP[app.slug];
             const isH = hovered === app.slug;
             return (
@@ -1898,7 +1966,7 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
                           transition:'all 1s cubic-bezier(0.16,1,0.3,1)',
                           textTransform:'uppercase',
                         }}>
-                        Technische Details
+                        {copy.techDetails}
                       </button>
                     </div>
 
