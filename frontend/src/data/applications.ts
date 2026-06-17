@@ -8,6 +8,8 @@ export type ApplicationItem = {
   technicalHighlights: string[];
 };
 
+type SupportedLanguage = 'de' | 'en';
+
 export const APPLICATIONS: ApplicationItem[] = [
   {
     slug: 'pv-optimierung',
@@ -94,6 +96,94 @@ export const APPLICATIONS: ApplicationItem[] = [
     ],
   },
 ];
+
+const APPLICATION_TRANSLATIONS_EN: Record<string, Pick<ApplicationItem, 'title' | 'desc' | 'technicalOverview' | 'technicalHighlights'>> = {
+  'pv-optimierung': {
+    title: 'PV Optimization',
+    desc: 'Intelligently control real-time yield forecasts, self-consumption maximization, and grid feed-in.',
+    technicalOverview: 'PV optimization combines weather forecasts, inverter telemetry, and load profiles into a rolling 15-minute dispatch. The system prioritizes self-consumption, minimizes peak imports, and controls feed-in under dynamic tariff and grid constraints.',
+    technicalHighlights: [
+      'Forecast pipeline with short-term nowcasting (cloud cover) and day-ahead AC/DC generation prediction.',
+      'Real-time inverter and smart meter feedback to correct forecast errors.',
+      'Priority cascade control: household load → battery charging → EV charging → grid feed-in.',
+      'Grid-compliant feed-in control (ramp-rate, export limits, tariff-aware dispatch strategy).',
+    ],
+  },
+  batteriemanagement: {
+    title: 'Battery Management',
+    desc: 'Automatically optimize charging and discharging cycles by tariff, SOC limits, and household load.',
+    technicalOverview: 'Battery management uses a hierarchical EMS with scheduler-based planning and sub-second real-time control. It optimizes charge windows against spot/grid tariffs, protects cell health with SOC/C-rate limits, and smooths peak demand at the grid connection.',
+    technicalHighlights: [
+      'Multi-stage control: day-ahead planning, intraday re-optimization, and fallback controller on communication failure.',
+      'SOC window management with reserve for backup operation, peak shaving, and EV charging priorities.',
+      'Tariff- and load-sensitive charge/discharge decisions with efficiency and degradation cost modeling.',
+      'Safety logic for temperature, BMS status, min/max power, and grid-side export limits.',
+    ],
+  },
+  'ev-v2h-v2g': {
+    title: 'Electric Vehicle & Vehicle-to-Home/Grid',
+    desc: 'Intelligent charging, bidirectional energy usage, and multi-EV profiles (from Pro).',
+    technicalOverview: 'The EV module orchestrates charging plans, departure windows, and bidirectional energy flows for V2H/V2G capable vehicles. Multi-EV profiles and connector priorities optimize range, grid load, and costs at the same time.',
+    technicalHighlights: [
+      'Vehicle and wallbox telemetry for charging power control, target SOC, and departure windows.',
+      'Bidirectional strategy with grid price, load, and SOC dependent V2H/V2G decisions.',
+      'Multi-EV prioritization via user profiles, SLA targets, and available connection power.',
+      'Fail-safe behavior on communication loss (Safe Charge Mode with conservative SOC target).',
+    ],
+  },
+  'smart-home': {
+    title: 'Smart Home',
+    desc: 'Automatically shift heat pump, washing machine, and more into low-cost time windows (from Pro).',
+    technicalOverview: 'Smart home scheduling coordinates flexible loads based on tariff, PV forecast, and comfort constraints. It shifts loads into favorable windows while respecting hard constraints like hysteresis, minimum runtimes, and user preferences.',
+    technicalHighlights: [
+      'Device classes with different constraints (thermal, cyclic, manually prioritized).',
+      'Constraint-based time-window optimization with conflict resolution under power limits.',
+      'Coupling with PV and battery forecasts to maximize self-consumption.',
+      'Event-based overrides for instant start, vacation mode, and comfort guardrails.',
+    ],
+  },
+  'ki-empfehlung': {
+    title: 'AI Recommendation',
+    desc: 'Deep-Q-Network analyzes live data and provides concrete action recommendations (from Pro).',
+    technicalOverview: 'AI recommendation evaluates states from load, generation, storage, and tariffs using a Deep-Q-Network. The model outputs prioritized actions with expected cost/CO₂ impact and transparent reasoning for operational decisions.',
+    technicalHighlights: [
+      'Feature stack from real-time telemetry, weather, historical load patterns, and price series.',
+      'Policy scoring with confidence and counterfactual analysis for transparent recommendations.',
+      'Online validation against strict safety and comfort constraints before execution.',
+      'Continuous monitoring of model quality, drift indicators, and fallback policies.',
+    ],
+  },
+  flottenmanagement: {
+    title: 'Fleet Management',
+    desc: 'AI dispatching, peak-load management, and SLA alerting for commercial sites (Business).',
+    technicalOverview: 'Fleet management aggregates many charge points and sites into a central dispatch layer. It optimizes power limits, availability targets, and SLA constraints to avoid peak loads and reduce operational cost across all assets.',
+    technicalHighlights: [
+      'Cross-site dispatch with power corridors per connection and contract.',
+      'SLA alerting for availability, charging progress, and priority vehicles.',
+      'Peak shaving with load forecasting and limit control at site and fleet level.',
+      'API-ready integrations for back office, ticketing, and energy/billing workflows.',
+    ],
+  },
+};
+
+const localizeApplication = (application: ApplicationItem, language: SupportedLanguage): ApplicationItem => {
+  if (language !== 'en') {
+    return application;
+  }
+  const translated = APPLICATION_TRANSLATIONS_EN[application.slug];
+  return translated ? { ...application, ...translated } : application;
+};
+
+export const getLocalizedApplications = (language: SupportedLanguage): ApplicationItem[] =>
+  APPLICATIONS.map((application) => localizeApplication(application, language));
+
+export const getLocalizedApplicationBySlug = (
+  slug: string,
+  language: SupportedLanguage,
+): ApplicationItem | undefined => {
+  const base = APPLICATION_MAP[slug];
+  return base ? localizeApplication(base, language) : undefined;
+};
 
 export const APPLICATION_MAP: Record<string, ApplicationItem> = APPLICATIONS.reduce<Record<string, ApplicationItem>>(
   (map, application) => {
