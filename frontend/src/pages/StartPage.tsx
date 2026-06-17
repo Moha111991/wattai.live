@@ -14,7 +14,7 @@ import {
   type CSSProperties, type MouseEvent as RMouseEvent,
 } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { APPLICATIONS } from '../data/applications';
+import { getLocalizedApplications } from '../data/applications';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,33 +60,6 @@ const LANDING_COPY = {
     techDetails: 'Technical details',
   },
 } as const;
-
-const APPLICATION_CARD_EN: Record<string, { title: string; desc: string }> = {
-  'pv-optimierung': {
-    title: 'PV Optimization',
-    desc: 'Intelligently control real-time yield forecasts, self-consumption maximization, and grid feed-in.',
-  },
-  batteriemanagement: {
-    title: 'Battery Management',
-    desc: 'Automatically optimize charging and discharging cycles by tariff, SOC limits, and household load.',
-  },
-  'ev-v2h-v2g': {
-    title: 'Electric Vehicle & Vehicle to Home/Grid',
-    desc: 'Intelligent charging, bidirectional power usage, and multi-EV profiles (from Pro).',
-  },
-  'smart-home': {
-    title: 'Smart Home',
-    desc: 'Automatically shift heat pump, washing machine, and more into low-cost time windows (from Pro).',
-  },
-  'ki-empfehlung': {
-    title: 'AI Recommendation',
-    desc: 'Deep-Q-Network analyzes live data and provides concrete action recommendations (from Pro).',
-  },
-  flottenmanagement: {
-    title: 'Fleet Management',
-    desc: 'AI dispatching, peak-load management, and SLA alerting for commercial sites (Business).',
-  },
-};
 
 // ── Tokens ───────────────────────────────────────────────────────────────────
 
@@ -1632,11 +1605,7 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
   const [hovered, setHovered] = useState<string | null>(null);
   const [techModal, setTechModal] = useState<{ slug: string; title: string } | null>(null);
   const copy = LANDING_COPY[language];
-  const localizedApplications = APPLICATIONS.map((app) => {
-    if (language !== 'en') return app;
-    const translated = APPLICATION_CARD_EN[app.slug];
-    return translated ? { ...app, ...translated } : app;
-  });
+  const localizedApplications = getLocalizedApplications(language);
 
   const onMove = useCallback((e: RMouseEvent<HTMLDivElement>) => {
     const r = heroRef.current?.getBoundingClientRect();
