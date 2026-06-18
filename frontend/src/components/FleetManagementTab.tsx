@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { API_URL } from "../lib/api";
+import { useLanguage } from "../context/LanguageContext";
 
 const API_KEY = "mein_geheimer_schulkey123";
 
@@ -15,6 +16,8 @@ interface FleetRecommendation {
 import EVProfileManager from "./EVProfileManager";
 
 const FleetManagementTab: React.FC = () => {
+  const { language } = useLanguage();
+  const en = language === 'en';
   const [fleet, setFleet] = useState<FleetRecommendation[]>([]);
   const [gesamtleistung, setGesamtleistung] = useState<number>(0);
   const [pvSurplus, setPvSurplus] = useState<number>(0);
@@ -39,10 +42,10 @@ const FleetManagementTab: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2>Flottenmanagement</h2>
+      <h2>{en ? 'Fleet Management' : 'Flottenmanagement'}</h2>
       <div style={{ marginBottom: 16 }}>
-        <strong>Verfügbare Gesamtleistung:</strong> {gesamtleistung} kW &nbsp;|
-        <strong> PV-Überschuss:</strong> {pvSurplus} kW
+        <strong>{en ? 'Total available power:' : 'Verfügbare Gesamtleistung:'}</strong> {gesamtleistung} kW &nbsp;|
+        <strong> {en ? 'PV surplus:' : 'PV-Überschuss:'}</strong> {pvSurplus} kW
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
@@ -50,8 +53,8 @@ const FleetManagementTab: React.FC = () => {
             <th>Wallbox</th>
             <th>EV</th>
             <th>SoC</th>
-            <th>Empf. Leistung (kW)</th>
-            <th>KI-Grund</th>
+            <th>{en ? 'Rec. Power (kW)' : 'Empf. Leistung (kW)'}</th>
+            <th>{en ? 'AI Reason' : 'KI-Grund'}</th>
           </tr>
         </thead>
         <tbody>
@@ -66,11 +69,11 @@ const FleetManagementTab: React.FC = () => {
           ))}
         </tbody>
       </table>
-      {loading && <div>Lade KI-Empfehlung...</div>}
+      {loading && <div>{en ? 'Loading AI recommendation...' : 'Lade KI-Empfehlung...'}</div>}
 
-      {/* E-Auto Hersteller/EV Profile section now in Flottenmanagement */}
+      {/* EV Profile section */}
       <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <h2 className="text-xl font-bold mb-2">E-Auto Hersteller</h2>
+        <h2 className="text-xl font-bold mb-2">{en ? 'EV Manufacturer' : 'E-Auto Hersteller'}</h2>
         <EVProfileManager />
       </div>
     </div>

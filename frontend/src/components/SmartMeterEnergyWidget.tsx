@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_URL } from "../lib/api";
+import { useLanguage } from "../context/LanguageContext";
 
 const Metric = ({ label, value, unit, icon }: { label: string; value: string | number | null; unit: string; icon: string }) => (
   <div style={{
@@ -23,6 +24,7 @@ const Metric = ({ label, value, unit, icon }: { label: string; value: string | n
 );
 
 export default function SmartMeterEnergyWidget() {
+  const { language } = useLanguage();
   const [importKwh, setImportKwh] = useState<number | null>(null);
   const [exportKwh, setExportKwh] = useState<number | null>(null);
   const [powerW, setPowerW] = useState<number | null>(null);
@@ -59,7 +61,9 @@ export default function SmartMeterEnergyWidget() {
       border: "1px solid rgba(56,189,248,0.2)", textAlign: "center",
     }}>
       <div style={{ fontSize: 28, marginBottom: 10, animation: "spin 1.2s linear infinite", display: "inline-block" }}>⚡</div>
-      <div style={{ color: "#94a3b8", fontSize: 14, fontWeight: 500 }}>Verbinde mit Smart Meter…</div>
+      <div style={{ color: "#94a3b8", fontSize: 14, fontWeight: 500 }}>
+        {language === 'en' ? 'Connecting to Smart Meter…' : 'Verbinde mit Smart Meter…'}
+      </div>
     </div>
   );
 
@@ -83,10 +87,12 @@ export default function SmartMeterEnergyWidget() {
       </div>
 
       <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
-        Kein Smart Meter verbunden
+        {language === 'en' ? 'No Smart Meter connected' : 'Kein Smart Meter verbunden'}
       </div>
       <div style={{ color: "#64748b", fontSize: 13, maxWidth: 280, margin: "0 auto 20px", lineHeight: 1.6 }}>
-        Sobald Ihr Wechselrichter oder Smart Meter verbunden ist, erscheinen hier alle Echtzeit-Energiedaten automatisch.
+        {language === 'en'
+          ? 'Once your inverter or smart meter is connected, all real-time energy data will appear here automatically.'
+          : 'Sobald Ihr Wechselrichter oder Smart Meter verbunden ist, erscheinen hier alle Echtzeit-Energiedaten automatisch.'}
       </div>
 
       {/* Steps */}
@@ -95,13 +101,20 @@ export default function SmartMeterEnergyWidget() {
         border: "1px solid rgba(71,85,105,0.25)", textAlign: "left", marginBottom: 16,
       }}>
         <div style={{ fontSize: 12, color: "#38bdf8", fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          🚀 Erste Schritte
+          🚀 {language === 'en' ? 'Getting started' : 'Erste Schritte'}
         </div>
-        {[
-          { step: "1", text: "Wechselrichter oder Smart Meter einschalten" },
-          { step: "2", text: "Gerät im selben Netzwerk wie dieses System betreiben" },
-          { step: "3", text: "Verbindung über Geräte-Tab herstellen" },
-        ].map(({ step, text }) => (
+        {(language === 'en'
+          ? [
+              { step: "1", text: "Turn on inverter or smart meter" },
+              { step: "2", text: "Connect device to the same network as this system" },
+              { step: "3", text: "Establish connection via Devices tab" },
+            ]
+          : [
+              { step: "1", text: "Wechselrichter oder Smart Meter einschalten" },
+              { step: "2", text: "Gerät im selben Netzwerk wie dieses System betreiben" },
+              { step: "3", text: "Verbindung über Geräte-Tab herstellen" },
+            ]
+        ).map(({ step, text }) => (
           <div key={step} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 8 }}>
             <span style={{
               minWidth: 20, height: 20, borderRadius: "50%", background: "rgba(56,189,248,0.15)",
@@ -114,7 +127,9 @@ export default function SmartMeterEnergyWidget() {
       </div>
 
       <div style={{ fontSize: 11, color: "#475569" }}>
-        Diese Karte aktualisiert sich automatisch nach der Verbindung
+        {language === 'en'
+          ? 'This card updates automatically after connection'
+          : 'Diese Karte aktualisiert sich automatisch nach der Verbindung'}
       </div>
     </div>
   );

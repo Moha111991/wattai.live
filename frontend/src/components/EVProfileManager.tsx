@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import carDataRaw from "../data/cars.json";
 import { API_URL } from "../lib/api";
+import { useLanguage } from "../context/LanguageContext";
 
 // Add type for carData to allow dynamic string indexing
 type CarDataType = {
@@ -37,6 +38,8 @@ export default function EVProfileManager({
   evSoc?: number;
   evPowerKw?: number;
 }) {
+  const { language } = useLanguage();
+  const en = language === 'en';
   const [profiles, setProfiles] = useState<Record<string, EVProfile>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -102,7 +105,7 @@ export default function EVProfileManager({
   // Profil speichern
   const addProfile = async () => {
     if (!selectedManufacturer || !selectedModel) {
-      alert("Bitte Hersteller und Modell auswählen!");
+      alert(en ? 'Please select manufacturer and model!' : 'Bitte Hersteller und Modell auswählen!');
       return;
     }
     setSaving(true);
@@ -131,7 +134,7 @@ export default function EVProfileManager({
         });
         await load();
       } else {
-        alert("Fehler beim Speichern");
+        alert(en ? 'Error saving profile' : 'Fehler beim Speichern');
       }
     } catch (err) {
       console.error("Add profile error:", err);
@@ -163,7 +166,7 @@ export default function EVProfileManager({
 
   // Profil löschen
   const remove = async (id: string) => {
-    if (!confirm("Profil löschen?")) return;
+    if (!confirm(en ? 'Delete profile?' : 'Profil löschen?')) return;
     try {
       await fetch(`${API_URL}/ev/profiles`, {
         method: "DELETE",
@@ -197,12 +200,12 @@ export default function EVProfileManager({
         border: "1px solid #eee",
       }}
     >
-      <h3>🚗 E-Auto Profil</h3>
+      <h3>🚗 {en ? 'EV Profile' : 'E-Auto Profil'}</h3>
 
       {/* Aktives Fahrzeug */}
   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 16 }}>
         <div>
-          <strong>Aktives Fahrzeug</strong>
+          <strong>{en ? 'Active Vehicle' : 'Aktives Fahrzeug'}</strong>
           {active ? (
             <div
               style={{
@@ -220,7 +223,7 @@ export default function EVProfileManager({
                 {active.connector?.toUpperCase()}
               </div>
               <div style={{ marginTop: 8, fontSize: 13, color: "#666" }}>
-                Datenquelle: {active.data_source}
+                {en ? 'Data source:' : 'Datenquelle:'} {active.data_source}
               </div>
               <button
                 onClick={() => setActive(null)}
@@ -230,17 +233,17 @@ export default function EVProfileManager({
                   cursor: "pointer",
                 }}
               >
-                Zuweisung aufheben
+                {en ? 'Remove assignment' : 'Zuweisung aufheben'}
               </button>
             </div>
           ) : (
-            <div style={{ color: "#999" }}>Kein Fahrzeug zugewiesen</div>
+            <div style={{ color: "#999" }}>{en ? 'No vehicle assigned' : 'Kein Fahrzeug zugewiesen'}</div>
           )}
         </div>
 
         {/* Batterieanalyse */}
         <div>
-          <strong>Batterie-Analyse</strong>
+          <strong>{en ? 'Battery Analysis' : 'Batterie-Analyse'}</strong>
           <div
             style={{
               padding: 12,
@@ -250,10 +253,10 @@ export default function EVProfileManager({
             }}
           >
             <div>SOC: {soc.toFixed(1)}%</div>
-            <div>Ladeleistung: {power.toFixed(2)} kW</div>
-            <div>Kapazität: {capacity.toFixed(1)} kWh</div>
+            <div>{en ? 'Charging power:' : 'Ladeleistung:'} {power.toFixed(2)} kW</div>
+            <div>{en ? 'Capacity:' : 'Kapazität:'} {capacity.toFixed(1)} kWh</div>
             <div>
-              Rest bis 100%: {energyMissingKwh.toFixed(2)} kWh · ETA:{" "}
+              {en ? 'Remaining to 100%:' : 'Rest bis 100%:'} {energyMissingKwh.toFixed(2)} kWh · ETA:{" "}
               {etaHours !== undefined ? `${etaHours.toFixed(2)} h` : "—"}
             </div>
           </div>
@@ -262,7 +265,7 @@ export default function EVProfileManager({
 
       {/* Neue Auswahl */}
       <div style={{ marginTop: 20 }}>
-        <strong>Neues EV-Profil</strong>
+        <strong>{en ? 'New EV Profile' : 'Neues EV-Profil'}</strong>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -297,7 +300,7 @@ export default function EVProfileManager({
             disabled={!selectedManufacturer}
             style={{ padding: 8 }}
           >
-            <option value="">Modell wählen</option>
+          <option value="">{en ? 'Select model' : 'Modell wählen'}</option>
             {modelList.map((m) => (
               <option key={m} value={m}>
                 {m}
@@ -307,14 +310,14 @@ export default function EVProfileManager({
 
           <input
             type="number"
-            placeholder="Kapazität (kWh)"
+            placeholder={en ? 'Capacity (kWh)' : 'Kapazität (kWh)'}
             value={form.capacity_kwh}
             disabled
             style={{ padding: 8 }}
           />
           <input
             type="number"
-            placeholder="max. Ladeleistung (kW)"
+            placeholder={en ? 'Max. charging power (kW)' : 'max. Ladeleistung (kW)'}
             value={form.max_charge_kw}
             disabled
             style={{ padding: 8 }}
@@ -341,12 +344,12 @@ export default function EVProfileManager({
             style={{ padding: 8 }}
           >
             <option value="wallbox">Wallbox</option>
-            <option value="cloud">Hersteller-Cloud</option>
-            <option value="phone">Phone-Relay</option>
+            <option value="cloud">{en ? 'Manufacturer Cloud' : 'Hersteller-Cloud'}</option>
+            <option value="phone">{en ? 'Phone Relay' : 'Phone-Relay'}</option>
           </select>
 
           <textarea
-            placeholder="Notizen (optional)"
+            placeholder={en ? 'Notes (optional)' : 'Notizen (optional)'}
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             style={{ gridColumn: "1 / span 2", padding: 8 }}
@@ -357,16 +360,16 @@ export default function EVProfileManager({
             disabled={saving || !selectedManufacturer || !selectedModel}
             style={{ gridColumn: "1 / span 2", padding: "8px 16px" }}
           >
-            {saving ? "Speichere..." : "Speichern"}
+            {saving ? (en ? 'Saving...' : 'Speichere...') : (en ? 'Save profile' : 'Speichern')}
           </button>
         </form>
       </div>
 
       {/* Profileliste */}
       <div style={{ marginTop: 20 }}>
-        <strong>Profile</strong>
+        <strong>{en ? 'Profiles' : 'Profile'}</strong>
         {Object.keys(profiles).length === 0 && (
-          <div style={{ color: "#999" }}>Keine EV-Profile</div>
+          <div style={{ color: "#999" }}>{en ? 'No EV profiles' : 'Keine EV-Profile'}</div>
         )}
         {Object.entries(profiles).map(([id, p]) => (
           <div
@@ -395,7 +398,7 @@ export default function EVProfileManager({
                   {p.connector?.toUpperCase()}
                 </div>
                 <div style={{ fontSize: 12, color: "#666" }}>
-                  Quelle: {p.data_source}
+                  {en ? 'Source:' : 'Quelle:'} {p.data_source}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -403,7 +406,7 @@ export default function EVProfileManager({
                   onClick={() => setActive(id)}
                   style={{ padding: "6px 12px", cursor: "pointer" }}
                 >
-                  {activeId === id ? "Aktiv" : "Aktivieren"}
+                  {activeId === id ? (en ? 'Active' : 'Aktiv') : (en ? 'Activate' : 'Aktivieren')}
                 </button>
                 <button
                   onClick={() => remove(id)}
@@ -413,7 +416,7 @@ export default function EVProfileManager({
                     color: "#b00020",
                   }}
                 >
-                  Löschen
+                  {en ? 'Delete' : 'Löschen'}
                 </button>
               </div>
             </div>
