@@ -10,37 +10,74 @@ const sectionStyle: CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const TEAM = [
-  {
-    name: 'Mohammad Hameed',
-    role: 'Gründer & CEO',
-    bio: 'Energietechnik-Ingenieur mit Fokus auf KI-gesteuerte EMS-Systeme und ISO 15118-Implementierungen.',
-    emoji: '👨‍💻',
-  },
-  {
-    name: 'Technik-Team',
-    role: 'Backend & KI',
-    bio: 'Spezialisiert auf FastAPI, MQTT, Deep-Q-Network RL-Agenten und Echtzeit-Datenverarbeitung.',
-    emoji: '🤖',
-  },
-  {
-    name: 'Produkt-Team',
-    role: 'UX & Frontend',
-    bio: 'React/Vite mit Fokus auf mobile-first Interfaces, Accessibility und DSGVO-konforme Datenvisualisierung.',
-    emoji: '🎨',
-  },
-];
+type Lang = 'de' | 'en';
 
-const VALUES = [
-  { icon: '🌱', title: 'Nachhaltigkeit', desc: 'Jede kWh Eigenverbrauch schont das Klima. WattAI.live macht erneuerbare Energie effizienter nutzbar.' },
-  { icon: '🔒', title: 'Datenschutz', desc: 'DSGVO Art. 6/13/15–22 — Deine Daten bleiben in der EU, werden nicht weiterverkauft.' },
-  { icon: '⚡', title: 'Echtzeit', desc: 'Entscheidungen in Millisekunden, nicht Minuten. KI-Modelle laufen direkt am Edge.' },
-  { icon: '🤝', title: 'Transparenz', desc: 'Open API, nachvollziehbare KI-Empfehlungen und Audit-Logs für jeden Schritt.' },
-];
+const ABOUT_CONTENT: Record<Lang, {
+  team: Array<{ name: string; role: string; bio: string; emoji: string }>;
+  values: Array<{ icon: string; title: string; desc: string }>;
+}> = {
+  de: {
+    team: [
+      {
+        name: 'Mohammad Hameed',
+        role: 'Gründer & CEO',
+        bio: 'Energietechnik-Ingenieur mit Fokus auf KI-gesteuerte EMS-Systeme und ISO 15118-Implementierungen.',
+        emoji: '👨‍💻',
+      },
+      {
+        name: 'Technik-Team',
+        role: 'Backend & KI',
+        bio: 'Spezialisiert auf FastAPI, MQTT, Deep-Q-Network RL-Agenten und Echtzeit-Datenverarbeitung.',
+        emoji: '🤖',
+      },
+      {
+        name: 'Produkt-Team',
+        role: 'UX & Frontend',
+        bio: 'React/Vite mit Fokus auf mobile-first Interfaces, Accessibility und DSGVO-konforme Datenvisualisierung.',
+        emoji: '🎨',
+      },
+    ],
+    values: [
+      { icon: '🌱', title: 'Nachhaltigkeit', desc: 'Jede kWh Eigenverbrauch schont das Klima. WattAI.live macht erneuerbare Energie effizienter nutzbar.' },
+      { icon: '🔒', title: 'Datenschutz', desc: 'DSGVO Art. 6/13/15–22 — Deine Daten bleiben in der EU, werden nicht weiterverkauft.' },
+      { icon: '⚡', title: 'Echtzeit', desc: 'Entscheidungen in Millisekunden, nicht Minuten. KI-Modelle laufen direkt am Edge.' },
+      { icon: '🤝', title: 'Transparenz', desc: 'Open API, nachvollziehbare KI-Empfehlungen und Audit-Logs für jeden Schritt.' },
+    ],
+  },
+  en: {
+    team: [
+      {
+        name: 'Mohammad Hameed',
+        role: 'Founder & CEO',
+        bio: 'Energy systems engineer focused on AI-driven EMS platforms and ISO 15118 implementations.',
+        emoji: '👨‍💻',
+      },
+      {
+        name: 'Engineering Team',
+        role: 'Backend & AI',
+        bio: 'Specialized in FastAPI, MQTT, Deep-Q-Network RL agents, and real-time data processing.',
+        emoji: '🤖',
+      },
+      {
+        name: 'Product Team',
+        role: 'UX & Frontend',
+        bio: 'React/Vite focused on mobile-first interfaces, accessibility, and GDPR-compliant data visualization.',
+        emoji: '🎨',
+      },
+    ],
+    values: [
+      { icon: '🌱', title: 'Sustainability', desc: 'Every kWh of self-consumption protects the climate. WattAI.live makes renewable energy more efficient.' },
+      { icon: '🔒', title: 'Data Privacy', desc: 'GDPR Art. 6/13/15–22 — your data stays in the EU and is never sold.' },
+      { icon: '⚡', title: 'Real-time', desc: 'Decisions in milliseconds, not minutes. AI models run directly at the edge.' },
+      { icon: '🤝', title: 'Transparency', desc: 'Open API, explainable AI recommendations, and audit logs for every step.' },
+    ],
+  },
+};
 
 export default function AboutPage() {
   const { isLight } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const content = ABOUT_CONTENT[language];
   
   const textPrimary = isLight ? '#0f172a' : '#f1f5f9';
   const textMuted = isLight ? '#475569' : '#94a3b8';
@@ -98,7 +135,7 @@ export default function AboutPage() {
           {t('about.values')}
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 18 }}>
-          {VALUES.map(v => (
+          {content.values.map(v => (
             <div key={v.title} style={{ background: sectionBg, border: `1px solid ${borderLightColor}`, borderRadius: 14, padding: '22px 18px' }}>
               <div style={{ fontSize: 30, marginBottom: 10 }}>{v.icon}</div>
               <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: textPrimary }}>{v.title}</h3>
@@ -114,7 +151,7 @@ export default function AboutPage() {
           {t('about.team')}
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 18 }}>
-          {TEAM.map(m => (
+          {content.team.map(m => (
             <div key={m.name} style={{ background: sectionBg, border: `1px solid ${borderLightColor}`, borderRadius: 16, padding: '28px 20px', textAlign: 'center' }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>{m.emoji}</div>
               <div style={{ fontWeight: 700, fontSize: 16, color: textPrimary, marginBottom: 4 }}>{m.name}</div>

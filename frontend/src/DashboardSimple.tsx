@@ -391,7 +391,7 @@ export default function DashboardSimple() {
     } catch (err) {
       showNotification("error", `❌ Fehler: ${err}`);
     }
-  }, [data?.ev_v2h]);
+  }, [data?.ev_v2h, en]);
 
   const activateEV = async (id: number) => {
     try {

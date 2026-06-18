@@ -109,7 +109,7 @@ export default function TopNav({
   };
 
   return (
-    <nav style={navBarStyle} aria-label="Hauptnavigation">
+    <nav style={navBarStyle} aria-label={t('nav.startpage') === 'Home' ? 'Main navigation' : 'Hauptnavigation'}>
       <div style={navInnerStyle}>
         {/* Logo */}
         <div
@@ -124,7 +124,7 @@ export default function TopNav({
           onClick={() => onNavigate('startseite')}
           role="button"
           tabIndex={0}
-          aria-label="Zur Startseite"
+          aria-label={t('nav.startpage') === 'Home' ? 'Go to home page' : 'Zur Startseite'}
           onKeyDown={e => e.key === 'Enter' && onNavigate('startseite')}
         >
           <WattAILogo size={logoSize} animated={!isMobile} variant="full" />
@@ -195,9 +195,9 @@ export default function TopNav({
                   <button
                     onClick={onLogout}
                     style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 11, padding: '0 2px', marginLeft: 4 }}
-                    aria-label="Abmelden"
+                    aria-label={t('nav.startpage') === 'Home' ? 'Log out' : 'Abmelden'}
                   >
-                    Abmelden
+                    {t('nav.startpage') === 'Home' ? 'Log out' : 'Abmelden'}
                   </button>
                 </span>
               ) : (
@@ -215,7 +215,7 @@ export default function TopNav({
               style={hamburgerStyle}
               onClick={() => setMenuOpen(v => !v)}
               aria-expanded={menuOpen}
-              aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
+              aria-label={menuOpen ? (t('nav.startpage') === 'Home' ? 'Close menu' : 'Menü schließen') : (t('nav.startpage') === 'Home' ? 'Open menu' : 'Menü öffnen')}
             >
               {menuOpen ? (
                 <span style={{ fontSize: 20, lineHeight: 1, color: '#67e8f9' }}>✕</span>
@@ -267,14 +267,14 @@ export default function TopNav({
             }}
             onClick={() => { if (!isLoggedIn) { onAuthClick(); setMenuOpen(false); } }}
           >
-            {isLoggedIn ? `👤 ${userName ?? 'Mein Konto'}` : '🔐 Einloggen / Registrieren'}
+            {isLoggedIn ? `👤 ${userName ?? t('nav.myAccount')}` : `🔐 ${t('nav.login')}${t('nav.login') === 'Log In' ? ' / Sign up' : ' / Registrieren'}`}
           </button>
           {isLoggedIn && (
             <button
               onClick={() => { onLogout(); setMenuOpen(false); }}
               style={{ background: 'none', border: '1px solid rgba(148,163,184,0.25)', color: '#94a3b8', borderRadius: 8, padding: '0.5rem', cursor: 'pointer', fontSize: 13, marginTop: 4 }}
             >
-              Abmelden
+              {t('nav.startpage') === 'Home' ? 'Log out' : 'Abmelden'}
             </button>
           )}
         </div>
