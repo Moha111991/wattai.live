@@ -26,6 +26,19 @@ type StartPageProps = {
   onUpgradeClick: () => void;
 };
 
+type UILanguage = 'de' | 'en';
+
+type TechDataEntry = {
+  specs: { label: string; value: string }[];
+  protocols: string[];
+  plan: string;
+  workflow: { step: string; desc: string }[];
+  workflowTitle: string;
+  workflowSubtitle: string;
+  legal: string;
+  legalTitle: string;
+};
+
 const LANDING_COPY = {
   de: {
     badge: 'Die smarte Energieplattform für Heim & Flotte',
@@ -366,7 +379,7 @@ function Tilt({ children, style = {} }: { children: React.ReactNode; style?: CSS
 
 // ── Technical Details Data ──────────────────────────────────────────────────────
 
-const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; protocols: string[]; plan: string; workflow: { step: string; desc: string }[]; workflowTitle: string; workflowSubtitle: string; legal: string; legalTitle: string }> = {
+const TECH_DATA: Record<string, TechDataEntry> = {
   'pv-optimierung': {
     specs: [
       { label: 'Algorithmus', value: 'MPPT + ML-Ertragsprognose' },
@@ -507,10 +520,150 @@ const TECH_DATA: Record<string, { specs: { label: string; value: string }[]; pro
   },
 };
 
+const TECH_DATA_EN: Record<string, Partial<TechDataEntry>> = {
+  'pv-optimierung': {
+    specs: [
+      { label: 'Algorithm', value: 'MPPT + ML yield forecast' },
+      { label: 'Forecast horizon', value: '72 h (OpenMeteo weather data)' },
+      { label: 'Self-consumption rate', value: 'Avg. +28% vs. uncontrolled' },
+      { label: 'Feed-in', value: 'EEG §9 compliant, dynamic curtailment' },
+      { label: 'Resolution', value: '1-minute interval, real-time API' },
+      { label: 'Inverters', value: 'SMA, Fronius, Huawei, Enphase, Kostal' },
+    ],
+    workflowTitle: 'PV Optimization Pro',
+    workflowSubtitle: 'Maximize your solar yield with AI-driven forecasting and automated self-consumption optimization.',
+    workflow: [
+      { step: 'Select inverter', desc: 'Choose manufacturer and model (SMA, Fronius, Huawei, Enphase, Kostal).' },
+      { step: 'Choose protocol', desc: 'Set connection type: Modbus TCP, SunSpec REST, MQTT, or cloud API.' },
+      { step: 'Configure IP & port', desc: 'Enter local network settings or cloud credentials.' },
+      { step: 'Start real-time monitoring', desc: 'Track yield, irradiance, and efficiency live.' },
+      { step: 'Enable automation', desc: 'Activate 72h weather-based storage and feed-in strategy.' },
+    ],
+    legalTitle: 'Legal notice (Germany)',
+  },
+  batteriemanagement: {
+    specs: [
+      { label: 'SOC limits', value: '15–95% (configurable), SOH protection active' },
+      { label: 'Tariff integration', value: 'Tibber, aWATTar, EPEX Spot' },
+      { label: 'Load forecast', value: '15-minute interval, LSTM model' },
+      { label: 'Cycle optimization', value: 'Calendar + lifetime predictor' },
+      { label: 'Reaction time', value: '< 500 ms control command' },
+      { label: 'Compatibility', value: 'LG RESU, BYD Box, Sonnen, Sungrow' },
+    ],
+    workflowTitle: 'Battery Management Pro',
+    workflowSubtitle: 'Extend battery lifetime and reduce costs with intelligent charging strategies.',
+    workflow: [
+      { step: 'Select battery system', desc: 'Choose model and capacity (LG, BYD, Sonnen, Sungrow, SMA).' },
+      { step: 'Set protocol', desc: 'Use CAN Bus, Modbus RTU/TCP, or vendor cloud API.' },
+      { step: 'Configure SOC protection', desc: 'Define min/max SOC, SOH guardrails, and temperature limits.' },
+      { step: 'Enable tariff integration', desc: 'Connect Tibber, aWATTar, or EPEX Spot for price-aware charging.' },
+      { step: 'Start automation', desc: 'Optimize charge/discharge cycles and monitor battery health.' },
+    ],
+    legalTitle: 'Legal notice (Germany)',
+  },
+  'ev-v2h-v2g': {
+    specs: [
+      { label: 'Charging standard', value: 'ISO 15118 Plug & Charge, OCPP 2.0.1' },
+      { label: 'V2H power', value: 'Up to 11 kW bidirectional' },
+      { label: 'V2G support', value: 'Grid services, balancing energy (from Pro)' },
+      { label: 'Multi-EV', value: 'Up to 5 vehicle profiles (from Pro)' },
+      { label: 'Wallboxes', value: 'Wallbe, ABB Terra, KEBA, Easee' },
+      { label: 'Tariff charging', value: 'Spot-price charging, PV surplus mode' },
+    ],
+    workflowTitle: 'EV · V2H · V2G Pro',
+    workflowSubtitle: 'Charge your EV intelligently and use it as a bidirectional energy storage for home and grid.',
+    workflow: [
+      { step: 'Select wallbox & vehicle', desc: 'Pick model and create EV profile.' },
+      { step: 'Configure protocol', desc: 'Enable OCPP 2.0.1 or ISO 15118 Plug & Charge.' },
+      { step: 'Set charging profile', desc: 'Define departure time, minimum SOC, and budget.' },
+      { step: 'Enable V2H/V2G', desc: 'Activate bidirectional charging and feed-in thresholds.' },
+      { step: 'Run tariff optimization', desc: 'Use cheapest charging windows automatically.' },
+    ],
+    legalTitle: 'Legal notice (Germany)',
+  },
+  'smart-home': {
+    specs: [
+      { label: 'Time windows', value: 'Dynamic, tariff-based + PV forecast' },
+      { label: 'Heat pump', value: 'SG-Ready interface, COP optimization' },
+      { label: 'Standard', value: 'HEMS according to EN 50631-1' },
+      { label: 'Interfaces', value: 'KNX, Home Assistant, openHAB, Loxone' },
+      { label: 'Peak limits', value: 'Peak shaving, configurable kW caps' },
+      { label: 'Devices', value: 'Washer, dryer, dishwasher, heat pump' },
+    ],
+    workflowTitle: 'Home Automation Pro',
+    workflowSubtitle: 'Automate heat pump and appliances into low-cost time windows.',
+    workflow: [
+      { step: 'Select device', desc: 'Add heat pump, washer, dryer, dishwasher, or IoT device.' },
+      { step: 'Choose protocol', desc: 'Use KNX, Zigbee, Z-Wave, Home Assistant, openHAB, or Loxone.' },
+      { step: 'Pair and authorize', desc: 'Connect to network and grant control permissions.' },
+      { step: 'Enable automation', desc: 'Configure triggers for time windows, PV surplus, or dynamic tariffs.' },
+      { step: 'Monitor in real time', desc: 'Review live status, consumption, and savings potential.' },
+    ],
+    legalTitle: 'Legal notice (Germany)',
+  },
+  'ki-empfehlung': {
+    specs: [
+      { label: 'Model', value: 'Deep-Q-Network (DQN), 128-node hidden layer' },
+      { label: 'Training data', value: '3 years of historical energy data' },
+      { label: 'Inference', value: '< 50 ms latency, edge-AI ready' },
+      { label: 'Runtime', value: 'TensorFlow Lite / ONNX Runtime' },
+      { label: 'Confidence', value: 'Scored recommendations with rationale' },
+      { label: 'Update cycle', value: 'Weekly retraining, auto-deploy' },
+    ],
+    workflowTitle: 'AI Recommendation Pro',
+    workflowSubtitle: 'Receive optimal charging, storage, and feed-in strategies with real-time DQN decisions.',
+    workflow: [
+      { step: 'Start AI analysis', desc: 'DQN agent reads real-time price, SOC, PV forecast, and weather.' },
+      { step: 'Review confidence', desc: 'Inspect recommendation, confidence score, and explanation.' },
+      { step: 'Execute action', desc: 'Confirm manually or enable full HEMS automation.' },
+      { step: 'Feedback loop', desc: 'Use outcomes to continuously improve model performance.' },
+      { step: 'History & reporting', desc: 'Track recommendations, savings, and CO₂ reduction over time.' },
+    ],
+    legalTitle: 'Legal notice (Germany & EU)',
+  },
+  flottenmanagement: {
+    specs: [
+      { label: 'Sites', value: 'Up to 50 sites simultaneously (Business)' },
+      { label: 'Dispatch', value: 'AI optimization, peak-load capping' },
+      { label: 'Alerting', value: 'SLA monitoring, email + push alerts' },
+      { label: 'Reporting', value: 'CO₂ balance, cost report, CSV export' },
+      { label: 'API', value: 'REST + MQTT, Webhook, OpenAPI 3.1' },
+      { label: 'Compliance', value: 'ISO 27001-compliant logging, GDPR' },
+    ],
+    workflowTitle: 'Fleet Management Business',
+    workflowSubtitle: 'Manage multiple EV locations centrally and generate audit-ready reports.',
+    workflow: [
+      { step: 'Create site setup', desc: 'Register locations, wallbox count, and connection capacity.' },
+      { step: 'Register vehicles & drivers', desc: 'Store EV profiles, RFID cards, and permissions.' },
+      { step: 'Configure dispatch rules', desc: 'Enable peak capping, priorities, and AI optimization.' },
+      { step: 'Enable SLA monitoring', desc: 'Track availability and trigger automatic alerts on incidents.' },
+      { step: 'Export compliance reports', desc: 'Generate CO₂/cost reports and audit logs as CSV/PDF.' },
+    ],
+    legalTitle: 'Legal notice (Germany & EU)',
+  },
+};
+
+const getTechData = (slug: string, language: UILanguage): TechDataEntry | undefined => {
+  const base = TECH_DATA[slug];
+  if (!base) return undefined;
+  if (language !== 'en') return base;
+
+  const translated = TECH_DATA_EN[slug];
+  if (!translated) return base;
+
+  return {
+    ...base,
+    ...translated,
+    specs: translated.specs ?? base.specs,
+    workflow: translated.workflow ?? base.workflow,
+  };
+};
+
 // ── Tech Details Modal ────────────────────────────────────────────────────────
 
-function TechModal({ slug, title, onClose }: { slug: string; title: string; onClose: () => void }) {
-  const data = TECH_DATA[slug];
+function TechModal({ slug, title, language, onClose }: { slug: string; title: string; language: UILanguage; onClose: () => void }) {
+  const en = language === 'en';
+  const data = getTechData(slug, language);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', fn);
@@ -557,13 +710,13 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
               fontSize: 10, color: planColor, letterSpacing: '0.12em', fontWeight: 700,
               textTransform: 'uppercase',
             }}>
-              Verfügbar ab Plan: {data.plan}
+              {en ? 'Available from plan:' : 'Verfügbar ab Plan:'} {data.plan}
             </div>
             <h2 style={{ margin: 0, fontSize: 'clamp(18px,2.5vw,26px)', fontWeight: 900, color: '#f8fafc', lineHeight: 1.2 }}>
               {title}
             </h2>
             <p style={{ margin: '6px 0 0', fontSize: 12, color: 'rgba(248,250,252,0.4)', letterSpacing: '0.06em' }}>
-              Technische Spezifikation
+              {en ? 'Technical specification' : 'Technische Spezifikation'}
             </p>
           </div>
           <button
@@ -575,7 +728,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}
-            aria-label="Schließen"
+            aria-label={en ? 'Close' : 'Schließen'}
           >✕</button>
         </div>
 
@@ -598,7 +751,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
         {/* Protocols */}
         <div style={{ padding: '0 28px 24px' }}>
           <div style={{ fontSize: 10, color: 'rgba(59,130,246,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10, fontWeight: 700 }}>
-            Protokolle &amp; Schnittstellen
+            {en ? 'Protocols & interfaces' : 'Protokolle & Schnittstellen'}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {data.protocols.map((p, i) => (
@@ -622,7 +775,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
               {data.workflowSubtitle}
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,149,0,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12, fontWeight: 700 }}>
-              IoT-Workflow:
+              {en ? 'IoT workflow:' : 'IoT-Workflow:'}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {data.workflow.map((w, i) => (
@@ -663,7 +816,7 @@ function TechModal({ slug, title, onClose }: { slug: string; title: string; onCl
 
 // ── SVG Visuals per Application (high-end animated 3D scenes) ─────────────────
 
-function PvVisual() {
+function PvVisual(_language: UILanguage) {
   return (
     <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
       style={{ width: '100%', height: 210, display: 'block' }}>
@@ -850,7 +1003,8 @@ function PvVisual() {
     </svg>
   );
 }
-function BatteryVisual() {
+function BatteryVisual(language: UILanguage) {
+  const en = language === 'en';
   return (
     <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
       style={{ width: '100%', height: 210, display: 'block' }}>
@@ -953,10 +1107,10 @@ function BatteryVisual() {
       <text x="45" y="105" textAnchor="middle" fill="#22c55e" fontSize="12" fontFamily="monospace" fontWeight="900">78%</text>
       <text x="45" y="117" textAnchor="middle" fill="rgba(34,197,94,0.45)" fontSize="5.5" fontFamily="monospace">SOC</text>
       <text x="45" y="152" textAnchor="middle" fill="rgba(255,149,0,0.6)" fontSize="7" fontFamily="monospace">+3.2 kW</text>
-      <text x="45" y="163" textAnchor="middle" fill="rgba(255,149,0,0.35)" fontSize="6" fontFamily="monospace">LADUNG</text>
+  <text x="45" y="163" textAnchor="middle" fill="rgba(255,149,0,0.35)" fontSize="6" fontFamily="monospace">{en ? 'CHARGE' : 'LADUNG'}</text>
 
       {/* ── Cell voltage mini bars (right panel) ── */}
-      <text x="216" y="50" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.08em">ZELLSPANNUNGEN</text>
+  <text x="216" y="50" fill="rgba(34,197,94,0.5)" fontSize="6.5" fontFamily="monospace" letterSpacing="0.08em">{en ? 'CELL VOLTAGES' : 'ZELLSPANNUNGEN'}</text>
       {[3.82,3.81,3.85,3.79,3.83,3.80].map((v,i)=>{
         const bar=(v-3.7)*200;
         const c=v>3.83?'#22c55e':v>3.80?'#ff9500':'#ff6b35';
@@ -972,7 +1126,7 @@ function BatteryVisual() {
       {/* Temp / charge status footer */}
       <rect x="216" y="172" width="116" height="30" rx="4" fill="rgba(34,197,94,0.04)" stroke="rgba(34,197,94,0.15)" strokeWidth="0.6"/>
       <text x="226" y="185" fill="rgba(255,149,0,0.7)" fontSize="7" fontFamily="monospace">28.4°C · Zyklen: 312</text>
-      <text x="226" y="197" fill="rgba(34,197,94,0.55)" fontSize="7" fontFamily="monospace">Tibber · Tarifoptimiert</text>
+  <text x="226" y="197" fill="rgba(34,197,94,0.55)" fontSize="7" fontFamily="monospace">{en ? 'Tibber · tariff optimized' : 'Tibber · Tarifoptimiert'}</text>
 
       {/* Charging particles in */}
       {[0,1,2].map(i=>{
@@ -991,7 +1145,8 @@ function BatteryVisual() {
   );
 }
 
-function EvVisual() {
+function EvVisual(language: UILanguage) {
+  const en = language === 'en';
   return (
     <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
       style={{ width: '100%', height: 210, display: 'block' }}>
@@ -1157,13 +1312,14 @@ function EvVisual() {
       <rect x="20" y="175" width="204" height="9" rx="4.5" fill="url(#ev-chargebar)">
         <animate attributeName="width" values="204;224;204" dur="12s" repeatCount="indefinite"/>
       </rect>
-      <text x="170" y="196" textAnchor="middle" fill="rgba(255,149,0,0.6)" fontSize="7" fontFamily="monospace">SOC 68% · Lädt mit 11 kW · Fertig 06:30</text>
-      <text x="170" y="207" textAnchor="middle" fill="rgba(34,197,94,0.45)" fontSize="6.5" fontFamily="monospace">V2H aktiv · 2.4 kW ins Haus gespeist</text>
+  <text x="170" y="196" textAnchor="middle" fill="rgba(255,149,0,0.6)" fontSize="7" fontFamily="monospace">{en ? 'SOC 68% · charging at 11 kW · ready 06:30' : 'SOC 68% · Lädt mit 11 kW · Fertig 06:30'}</text>
+  <text x="170" y="207" textAnchor="middle" fill="rgba(34,197,94,0.45)" fontSize="6.5" fontFamily="monospace">{en ? 'V2H active · 2.4 kW supplied to home' : 'V2H aktiv · 2.4 kW ins Haus gespeist'}</text>
     </svg>
   );
 }
 
-function SmartHomeVisual() {
+function SmartHomeVisual(language: UILanguage) {
+  const en = language === 'en';
   return (
     <div>
       <svg viewBox="0 0 340 210" fill="none" xmlns="http://www.w3.org/2000/svg"
@@ -1199,7 +1355,7 @@ function SmartHomeVisual() {
       {/* Header */}
       <rect x="4" y="4" width="332" height="28" rx="4" fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.15)" strokeWidth="0.7"/>
       <text x="14" y="22" fill="rgba(255,107,53,0.85)" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.12em">SMART HOME · ENERGY HUB</text>
-      <text x="180" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">6 Geräte optimiert</text>
+  <text x="180" y="22" fill="rgba(255,149,0,0.5)" fontSize="7" fontFamily="monospace">{en ? '6 devices optimized' : '6 Geräte optimiert'}</text>
       <circle cx="308" cy="18" r="4" fill="#ff9500">
         <animate attributeName="opacity" values="1;0.25;1" dur="3s" repeatCount="indefinite"/>
       </circle>
@@ -1248,7 +1404,7 @@ function SmartHomeVisual() {
 
       {/* ── Device nodes (outside house) ── */}
       {[
-        {x:30,y:55,label:'HP',sub:'Wärme',c:'#ff6b35',d:'0s'},
+  {x:30,y:55,label:'HP',sub:en ? 'Heat' : 'Wärme',c:'#ff6b35',d:'0s'},
         {x:310,y:55,label:'PV',sub:'7.4kW',c:'#facc15',d:'1.2s'},
         {x:26,y:130,label:'WM',sub:'Pause',c:'#3b82f6',d:'2.4s'},
         {x:316,y:130,label:'AC',sub:'20°C',c:'#22d3ee',d:'3.5s'},
@@ -1282,14 +1438,14 @@ function SmartHomeVisual() {
       {/* ── Savings ticker ── */}
       <rect x="4" y="186" width="332" height="20" rx="4" fill="rgba(255,107,53,0.04)" stroke="rgba(255,107,53,0.12)" strokeWidth="0.6"/>
       <text x="170" y="200" textAnchor="middle" fill="rgba(255,107,53,0.55)" fontSize="7" fontFamily="monospace">
-        Einsparung heute: −2.1 kWh · CO₂ vermieden: 0.92 kg · Optimierung aktiv
+        {en ? 'Savings today: −2.1 kWh · CO₂ saved: 0.92 kg · optimization active' : 'Einsparung heute: −2.1 kWh · CO₂ vermieden: 0.92 kg · Optimierung aktiv'}
       </text>
       </svg>
     </div>
   );
 }
 
-function KiVisual() {
+function KiVisual(_language: UILanguage) {
   const inputs = [{y:42,l:'PV',v:'7.4kW'},{y:78,l:'BAT',v:'78%'},{y:114,l:'GRID',v:'0.3€'},{y:150,l:'WTR',v:'22°C'},{y:186,l:'LOAD',v:'2.1kW'}];
   const h1 = [30,58,86,114,142,170,198];
   const h2 = [50,82,114,146,178];
@@ -1436,7 +1592,7 @@ function KiVisual() {
   );
 }
 
-function FleetVisual() {
+function FleetVisual(_language: UILanguage) {
   const vehicles = [
     {x:8,  y:36, soc:72, chg:true,  label:'EV-01', model:'Tesla M3', kw:'+11.0'},
     {x:120,y:36, soc:41, chg:false, label:'EV-02', model:'VW ID.4',  kw:'idle'},
@@ -1546,7 +1702,7 @@ function FleetVisual() {
 }
 
 
-const VISUAL_MAP: Record<string, () => React.ReactElement> = {
+const VISUAL_MAP: Record<string, (language: UILanguage) => React.ReactElement> = {
   'pv-optimierung': PvVisual,
   'batteriemanagement': BatteryVisual,
   'ev-v2h-v2g': EvVisual,
@@ -1911,7 +2067,7 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
 
                     {/* SVG visual */}
                     <div style={{ padding:'8px 8px 0', opacity: 1 }}>
-                      {Visual ? <Visual /> : null}
+                      {Visual ? Visual(language) : null}
                     </div>
 
                     {/* Divider */}
@@ -1967,6 +2123,7 @@ export default function StartPage({ onNavigate, onAuthClick: _onAuthClick, onUpg
         <TechModal
           slug={techModal.slug}
           title={techModal.title}
+          language={language}
           onClose={() => setTechModal(null)}
         />
       )}

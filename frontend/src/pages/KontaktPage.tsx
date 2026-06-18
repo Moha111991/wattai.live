@@ -11,8 +11,17 @@ const sectionStyle: CSSProperties = {
 };
 
 export default function KontaktPage() {
-  const { t } = useLanguage();
-  const [form, setForm] = useState({ name: '', email: '', subject: 'Allgemeine Anfrage', message: '' });
+  const { t, language } = useLanguage();
+  const en = language === 'en';
+  const subjectOptions = [
+    t('contact.responseGeneral'),
+    t('contact.responseSupport'),
+    t('contact.responseSales'),
+    en ? 'Partnership' : 'Partnerschaft',
+    en ? 'Data privacy' : 'Datenschutz',
+    en ? 'Other' : 'Sonstiges',
+  ];
+  const [form, setForm] = useState({ name: '', email: '', subject: t('contact.responseGeneral'), message: '' });
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
@@ -132,12 +141,9 @@ export default function KontaktPage() {
                     onChange={e => setForm({ ...form, subject: e.target.value })}
                     style={{ ...inputStyle, cursor: 'pointer' }}
                   >
-                    <option>{t('contact.responseGeneral')}</option>
-                    <option>{t('contact.responseSupport')}</option>
-                    <option>{t('contact.responseSales')}</option>
-                    <option>Partnerschaft</option>
-                    <option>Datenschutz</option>
-                    <option>Sonstiges</option>
+                    {subjectOptions.map((option) => (
+                      <option key={option}>{option}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -196,9 +202,9 @@ export default function KontaktPage() {
               <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{t('contact.responseTitle')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { label: t('contact.responseGeneral'), time: '1–2 Werktage' },
-                  { label: t('contact.responseSupport'), time: '< 24 Stunden' },
-                  { label: t('contact.responseSales'), time: '< 4 Stunden' },
+                  { label: t('contact.responseGeneral'), time: en ? '1–2 business days' : '1–2 Werktage' },
+                  { label: t('contact.responseSupport'), time: en ? '< 24 hours' : '< 24 Stunden' },
+                  { label: t('contact.responseSales'), time: en ? '< 4 hours' : '< 4 Stunden' },
                 ].map(r => (
                   <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#94a3b8' }}>
                     <span>{r.label}</span>
