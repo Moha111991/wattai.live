@@ -6,8 +6,13 @@ const TRANSATABLE_ATTRIBUTES = ['title', 'aria-label', 'placeholder'];
 let translationMap: TranslationMap = {};
 let observer: MutationObserver | null = null;
 
+// Tracks the CURRENT German original for each text node so DE-restore is always correct.
 const originalTextNodes = new Map<Text, string>();
 const originalAttributes = new Map<Element, Map<string, string>>();
+
+// Fast O(1) lookup: set of all normalized English translation values.
+// Used to distinguish "React just wrote new German content" from "we just wrote English content".
+let englishValueSet: Set<string> = new Set();
 
 const normalize = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
@@ -130,7 +135,17 @@ const handleMutations = (mutations: MutationRecord[]) => {
   for (const mutation of mutations) {
     if (mutation.type === 'characterData') {
       if (mutation.target.nodeType === Node.TEXT_NODE) {
-        translateTextNode(mutation.target as Text);
+        const textNode = mutation.target as Text;
+        const currentValue = textNode.textContent ?? '';
+        const normalizedCurrent = normalize(currentValue);
+
+        // If the new content is NOT an English translation value, it is new German content
+        // written by React. Update the stored original so DE-restore is always fresh and correct.
+        if (normalizedCurrent && !englishValueSet.has(normalizedCurrent)) {
+          originalTextNodes.set(textNode, currentValue);
+        }
+
+        translateTextNode(textNode);
       }
       continue;
     }
@@ -152,6 +167,9 @@ export const startDomAutoTranslation = (map: TranslationMap) => {
   }
 
   translationMap = map;
+  // Build a Set of all normalized English values for O(1) "is this already English?" checks.
+  englishValueSet = new Set(Object.values(map).map(normalize));
+
   translateNodeTree(document.body);
 
   observer?.disconnect();

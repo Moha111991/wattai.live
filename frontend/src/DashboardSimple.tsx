@@ -1,5 +1,6 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useLanguage } from "./context/LanguageContext";
 import SmartMeterConnectDialog from "./components/SmartMeterConnectDialog";
 import ConsumerProfileSelector from "./components/ConsumerProfileSelector";
 import ConsumerProfileDetails from "./components/ConsumerProfileDetails";
@@ -89,6 +90,8 @@ interface HistoryApiPoint {
 }
 
 export default function DashboardSimple() {
+  const { language } = useLanguage();
+  const en = language === 'en';
   // KI-Optimierung
   const handleOptimize = async () => {
     setOptimizing(true);
@@ -365,9 +368,15 @@ export default function DashboardSimple() {
 
   const toggleV2H = useCallback(async () => {
     const endpoint = data?.ev_v2h ? "/control/ev/v2h_stop" : "/control/ev/v2h_start";
-    const action = data?.ev_v2h ? "deaktivieren" : "aktivieren";
-    
-    if (!window.confirm(`🔄 V2H wirklich ${action}?\n\n${data?.ev_v2h ? "E-Auto wird nicht mehr das Haus versorgen." : "E-Auto wird das Haus mit Strom versorgen."}`)) return;
+    const action = data?.ev_v2h
+      ? (en ? 'deactivate' : 'deaktivieren')
+      : (en ? 'activate' : 'aktivieren');
+
+    const confirmMsg = en
+      ? `🔄 Really ${action} V2H?\n\n${data?.ev_v2h ? "The EV will no longer power the house." : "The EV will supply the house with power."}`
+      : `🔄 V2H wirklich ${action}?\n\n${data?.ev_v2h ? "E-Auto wird nicht mehr das Haus versorgen." : "E-Auto wird das Haus mit Strom versorgen."}`;
+
+    if (!window.confirm(confirmMsg)) return;
     
     try {
       const res = await fetch(`${API_URL}${endpoint}`, {
@@ -622,12 +631,12 @@ export default function DashboardSimple() {
       {/* Realtime Metrics */}
       <section className="metrics">
         <MetricCard 
-          title="🚗 E-Auto SOC" 
+          title={en ? '🚗 EV State of Charge' : '🚗 E-Auto SOC'} 
           value={`${safe(data.ev_soc, 1)}%`}
           subtitle={
-            data.ev_charging ? "🔌 Lädt..." : 
-            data.ev_v2h ? "🏠 Versorgt Haus" : 
-            "⏸️ Inaktiv"
+            data.ev_charging ? (en ? '🔌 Charging...' : '🔌 Lädt...') : 
+            data.ev_v2h ? (en ? '🏠 Powering home' : '🏠 Versorgt Haus') : 
+            (en ? '⏸️ Inactive' : '⏸️ Inaktiv')
           }
           color={
             data.ev_charging ? "#4CAF50" : 
@@ -636,36 +645,36 @@ export default function DashboardSimple() {
           }
         />
         <MetricCard 
-          title="⚡ E-Auto Leistung" 
+          title={en ? '⚡ EV Power' : '⚡ E-Auto Leistung'} 
           value={`${safe(data.ev_power_kw, 2)} kW`}
           subtitle={
-            data.ev_charging ? "Laden" : 
-            data.ev_v2h ? "Entladen (V2H)" : 
-            "Keine Aktivität"
+            data.ev_charging ? (en ? 'Charging' : 'Laden') : 
+            data.ev_v2h ? (en ? 'Discharging (V2H)' : 'Entladen (V2H)') : 
+            (en ? 'No activity' : 'Keine Aktivität')
           }
           color={data.ev_charging ? "#4CAF50" : (data.ev_v2h ? "#FF9800" : "#999")}
         />
-        <MetricCard title="🔋 Hausspeicher" value={`${safe(data.home_battery_soc, 1)}%`} color="#2196F3" />
+        <MetricCard title={en ? '🔋 Home Battery' : '🔋 Hausspeicher'} value={`${safe(data.home_battery_soc, 1)}%`} color="#2196F3" />
         <MetricCard 
-          title="☀️ PV-Leistung" 
+          title={en ? '☀️ PV Power' : '☀️ PV-Leistung'} 
           value={`${safe(data.pv_power_kw, 2)} kW`} 
-          subtitle={`Heute: ${safe(data.pv_today_kwh, 1)} kWh`} 
+          subtitle={`${en ? 'Today:' : 'Heute:'} ${safe(data.pv_today_kwh, 1)} kWh`} 
           color="#FF9800" 
         />
-        <MetricCard title="📥 Netz Import" value={`${safe(data.grid_import_w / 1000, 2)} kW`} color="#F44336" />
-        <MetricCard title="📤 Netz Export" value={`${safe(data.grid_export_w / 1000, 2)} kW`} color="#8BC34A" />
+        <MetricCard title={en ? '📥 Grid Import' : '📥 Netz Import'} value={`${safe(data.grid_import_w / 1000, 2)} kW`} color="#F44336" />
+        <MetricCard title={en ? '📤 Grid Export' : '📤 Netz Export'} value={`${safe(data.grid_export_w / 1000, 2)} kW`} color="#8BC34A" />
       </section>
 
       {/* AI Recommendation */}
   {aiRec && aiRec.estimated_savings_eur !== undefined && (
         <section className="ai-panel">
-          <h2>🤖 KI-Empfehlung</h2>
+          <h2>🤖 {en ? 'AI Recommendation' : 'KI-Empfehlung'}</h2>
           <div className={`recommendation priority-${aiRec.priority || 'medium'}`}>
-            <div className="action">{getActionEmoji(aiRec.action)} {getActionText(aiRec.action)}</div>
+            <div className="action">{getActionEmoji(aiRec.action)} {getActionText(aiRec.action, language)}</div>
             <div className="reason">{aiRec.reason}</div>
             <div className="benefits">
-              💰 {(aiRec.estimated_savings_eur ?? 0).toFixed(2)} € Ersparnis · 
-              🌱 {(aiRec.co2_saved_kg ?? 0).toFixed(1)} kg CO₂ vermieden
+              💰 {(aiRec.estimated_savings_eur ?? 0).toFixed(2)} € {en ? 'savings' : 'Ersparnis'} · 
+              🌱 {(aiRec.co2_saved_kg ?? 0).toFixed(1)} kg CO₂ {en ? 'saved' : 'vermieden'}
             </div>
           </div>
         </section>
@@ -677,11 +686,11 @@ export default function DashboardSimple() {
       
       {/* Control Panel */}
       <section className="control-panel">
-        <h2>⚙️ E-Auto Steuerung</h2>
+        <h2>⚙️ {en ? 'EV Control' : 'E-Auto Steuerung'}</h2>
         <div className="status-bar">
-          {data.ev_charging && <span className="status-badge charging">🔌 Lädt mit {Math.abs(data.ev_power_kw).toFixed(1)} kW</span>}
-          {data.ev_v2h && <span className="status-badge v2h">🏠 V2H aktiv - {Math.abs(data.ev_power_kw).toFixed(1)} kW an Haus</span>}
-          {!data.ev_charging && !data.ev_v2h && <span className="status-badge idle">⏸️ Inaktiv</span>}
+          {data.ev_charging && <span className="status-badge charging">🔌 {en ? `Charging at ${Math.abs(data.ev_power_kw).toFixed(1)} kW` : `Lädt mit ${Math.abs(data.ev_power_kw).toFixed(1)} kW`}</span>}
+          {data.ev_v2h && <span className="status-badge v2h">🏠 {en ? `V2H active – ${Math.abs(data.ev_power_kw).toFixed(1)} kW to home` : `V2H aktiv - ${Math.abs(data.ev_power_kw).toFixed(1)} kW an Haus`}</span>}
+          {!data.ev_charging && !data.ev_v2h && <span className="status-badge idle">⏸️ {en ? 'Inactive' : 'Inaktiv'}</span>}
         </div>
         <div className="buttons">
           <button 
@@ -689,43 +698,42 @@ export default function DashboardSimple() {
             onClick={startCharging}
             disabled={data.ev_charging || data.ev_v2h}
           >
-            {data.ev_charging ? "✅ Lädt..." : "▶️ Laden starten"}
+            {data.ev_charging ? (en ? '✅ Charging...' : '✅ Lädt...') : (en ? '▶️ Start charging' : '▶️ Laden starten')}
           </button>
           <button 
             className="btn btn-danger"
             onClick={stopCharging}
             disabled={!data.ev_charging}
           >
-            ⏹️ Laden stoppen
+            ⏹️ {en ? 'Stop charging' : 'Laden stoppen'}
           </button>
           <button 
             className={`btn btn-warning ${data.ev_v2h ? 'active' : ''}`}
             onClick={toggleV2H}
             disabled={data.ev_charging}
           >
-            {data.ev_v2h ? "⏹️ V2H stoppen" : "🏠 V2H aktivieren"}
+            {data.ev_v2h ? (en ? '⏹️ Stop V2H' : '⏹️ V2H stoppen') : (en ? '🏠 Activate V2H' : '🏠 V2H aktivieren')}
           </button>
         </div>
         <div className="control-info">
-          <p>💡 <strong>V2H (Vehicle-to-Home):</strong> E-Auto versorgt Haus bei Spitzenlast (z.B. Winter: niedriger PV-Ertrag + hoher Wärmepumpenbedarf)</p>
-          <p>⚠️ <strong>Mindest-SOC für V2H:</strong> 20% (Schutz vor Tiefentladung)</p>
+          <p>💡 <strong>V2H (Vehicle-to-Home):</strong> {en
+            ? 'EV powers home during peak load (e.g. winter: low PV yield + high heat pump demand)'
+            : 'E-Auto versorgt Haus bei Spitzenlast (z.B. Winter: niedriger PV-Ertrag + hoher Wärmepumpenbedarf)'}</p>
+          <p>⚠️ <strong>{en ? 'Min. SOC for V2H:' : 'Mindest-SOC für V2H:'}</strong> 20% ({en ? 'Protection against deep discharge' : 'Schutz vor Tiefentladung'})</p>
         </div>
       </section>
 
       {/* EV Profile Manager */}
       <section>
-        <h2>🔌 E‑Auto Steuerung</h2>
+        <h2>🔌 {en ? 'EV Control' : 'E‑Auto Steuerung'}</h2>
         <EVProfileManager evSoc={evSoc} evPowerKw={evPowerKw} />
       </section>
 
       <section className="dashboard-section">
-        <h3>🚗 Fahrzeug-Zuweisung</h3>
-        {/* Aktuelles Fahrzeug anzeigen */}
-        {/* Status, z.B. "Kein Fahrzeug zugewiesen" */}
+        <h3>🚗 {en ? 'Vehicle Assignment' : 'Fahrzeug-Zuweisung'}</h3>
       </section>
       <section className="dashboard-section">
-        <h3>🔄 EV-Profile</h3>
-        {/* Liste der EV-Profile, Auswahl, Aktivierung */}
+        <h3>🔄 {en ? 'EV Profiles' : 'EV-Profile'}</h3>
         {evProfiles.map(ev => (
           <div key={ev.id} className="ev-profile-list-item">
             <span>{ev.manufacturer} {ev.model}</span>
@@ -791,14 +799,14 @@ function getActionEmoji(action: string) {
   return emojis[action] || "❓";
 }
 
-function getActionText(action: string) {
-  const texts: Record<string, string> = {
-    charge_ev: "E-Auto laden",
-    charge_battery: "Speicher laden",
-    v2h: "Haus versorgen (V2H)",
-    idle: "Keine Aktion",
+function getActionText(action: string, lang: 'de' | 'en' = 'de') {
+  const texts: Record<string, { de: string; en: string }> = {
+    charge_ev:      { de: 'E-Auto laden',        en: 'Charge EV' },
+    charge_battery: { de: 'Speicher laden',       en: 'Charge battery' },
+    v2h:            { de: 'Haus versorgen (V2H)', en: 'Power home (V2H)' },
+    idle:           { de: 'Keine Aktion',         en: 'No action' },
   };
-  return texts[action] || action;
+  return texts[action]?.[lang] ?? action;
 }
 
 function LoadingView() {
