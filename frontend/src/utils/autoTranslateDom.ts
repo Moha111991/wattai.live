@@ -10,9 +10,8 @@ let observer: MutationObserver | null = null;
 const originalTextNodes = new Map<Text, string>();
 const originalAttributes = new Map<Element, Map<string, string>>();
 
-// Fast O(1) lookup: set of all normalized English translation values.
-// Used to distinguish "React just wrote new German content" from "we just wrote English content".
-let englishValueSet: Set<string> = new Set();
+// Fast O(1) lookup of German source strings.
+let germanSourceSet: Set<string> = new Set();
 
 const normalize = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
@@ -43,6 +42,19 @@ const replaceKnownGermanText = (value: string): string => {
   return updated;
 };
 
+const hasTranslatableGermanSource = (value: string): boolean => {
+  const normalized = normalize(value);
+  if (!normalized) {
+    return false;
+  }
+
+  if (germanSourceSet.has(normalized)) {
+    return true;
+  }
+
+  return replaceKnownGermanText(value) !== value;
+};
+
 const shouldSkipElement = (element: Element | null): boolean =>
   !element || SKIP_TAGS.has(element.tagName) || element.closest('[data-no-auto-translate="true"]') !== null;
 
@@ -52,11 +64,11 @@ const translateTextNode = (textNode: Text) => {
     return;
   }
 
-  if (!originalTextNodes.has(textNode)) {
-    originalTextNodes.set(textNode, textNode.textContent ?? '');
+  const currentValue = textNode.textContent ?? '';
+  if (!originalTextNodes.has(textNode) && hasTranslatableGermanSource(currentValue)) {
+    originalTextNodes.set(textNode, currentValue);
   }
 
-  const currentValue = textNode.textContent ?? '';
   const translatedValue = replaceKnownGermanText(currentValue);
   if (translatedValue !== currentValue) {
     textNode.textContent = translatedValue;
@@ -79,7 +91,7 @@ const translateElementAttributes = (element: Element) => {
       savedAttributes = new Map<string, string>();
       originalAttributes.set(element, savedAttributes);
     }
-    if (!savedAttributes.has(attribute)) {
+    if (!savedAttributes.has(attribute) && hasTranslatableGermanSource(value)) {
       savedAttributes.set(attribute, value);
     }
 
@@ -137,11 +149,9 @@ const handleMutations = (mutations: MutationRecord[]) => {
       if (mutation.target.nodeType === Node.TEXT_NODE) {
         const textNode = mutation.target as Text;
         const currentValue = textNode.textContent ?? '';
-        const normalizedCurrent = normalize(currentValue);
-
-        // If the new content is NOT an English translation value, it is new German content
-        // written by React. Update the stored original so DE-restore is always fresh and correct.
-        if (normalizedCurrent && !englishValueSet.has(normalizedCurrent)) {
+        // Track new German source text written by React while EN mode is active,
+        // but do NOT overwrite originals with already-English UI strings.
+        if (hasTranslatableGermanSource(currentValue)) {
           originalTextNodes.set(textNode, currentValue);
         }
 
@@ -167,8 +177,7 @@ export const startDomAutoTranslation = (map: TranslationMap) => {
   }
 
   translationMap = map;
-  // Build a Set of all normalized English values for O(1) "is this already English?" checks.
-  englishValueSet = new Set(Object.values(map).map(normalize));
+  germanSourceSet = new Set(Object.keys(map).map(normalize));
 
   translateNodeTree(document.body);
 
