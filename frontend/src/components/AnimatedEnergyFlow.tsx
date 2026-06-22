@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface EnergyFlowProps {
   pvPower: number;      // kW
@@ -16,6 +17,8 @@ const AnimatedEnergyFlow = ({
   evPower = 0
 }: EnergyFlowProps) => {
   const [mounted, setMounted] = useState(false);
+  const { language } = useLanguage();
+  const en = language === 'en';
 
   useEffect(() => {
     setMounted(true);
@@ -32,7 +35,7 @@ const AnimatedEnergyFlow = ({
   return (
     <div className="tab-modern-card glass-effect animate-page-enter" style={{ padding: 'clamp(12px,3vw,24px)', overflowX: 'hidden' }}>
       <h2 className="tab-section-title neon-glow" style={{ marginBottom: '16px', textAlign: 'center' }}>
-        Energiefluss Live
+        {en ? 'Live Energy Flow' : 'Energiefluss Live'}
       </h2>
 
       <div className="energy-flow-grid" style={{ 
@@ -67,7 +70,7 @@ const AnimatedEnergyFlow = ({
             }}
           >
             <div style={{ fontSize: 'clamp(20px,5vw,36px)', marginBottom: 'clamp(4px,1vw,8px)' }}>☀️</div>
-            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>Solar</div>
+            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>{en ? 'Solar' : 'Solar'}</div>
             <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {pvPower.toFixed(1)} kW
             </div>
@@ -129,7 +132,7 @@ const AnimatedEnergyFlow = ({
               {isGridImport ? '⚡' : isGridExport ? '💸' : '🔌'}
             </div>
             <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>
-              {isGridImport ? 'Bezug' : isGridExport ? 'Einspeisung' : 'Netz'}
+              {isGridImport ? (en ? 'Grid Import' : 'Netzbezug') : isGridExport ? (en ? 'Feed-in' : 'Einspeisung') : (en ? 'Grid' : 'Netz')}
             </div>
             <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {Math.abs(gridPower).toFixed(1)} kW
@@ -210,7 +213,7 @@ const AnimatedEnergyFlow = ({
             }}
           >
             <div style={{ fontSize: 'clamp(20px,5vw,36px)', marginBottom: 'clamp(4px,1vw,8px)' }}>🏠</div>
-            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>Haushalt</div>
+            <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>{en ? 'Household' : 'Haushalt'}</div>
             <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {housePower.toFixed(1)} kW
             </div>
@@ -243,7 +246,7 @@ const AnimatedEnergyFlow = ({
               {isBatteryCharging ? '🔋⚡' : isBatteryDischarging ? '🔋📉' : '🔋'}
             </div>
             <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>
-              {isBatteryCharging ? 'Laden' : isBatteryDischarging ? 'Entladen' : 'Batterie'}
+              {isBatteryCharging ? (en ? 'Charging' : 'Laden') : isBatteryDischarging ? (en ? 'Discharging' : 'Entladen') : (en ? 'Battery' : 'Batterie')}
             </div>
             <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {Math.abs(batteryPower).toFixed(1)} kW
@@ -329,7 +332,7 @@ const AnimatedEnergyFlow = ({
               {isEVCharging ? '🚗⚡' : '🚗'}
             </div>
             <div style={{ fontSize: 'clamp(9px,2vw,14px)', color: '#cbd5e1', marginBottom: '4px' }}>
-              {isEVCharging ? 'Laden' : 'E-Auto'}
+              {isEVCharging ? (en ? 'Charging' : 'Laden') : (en ? 'EV' : 'E-Auto')}
             </div>
             <div style={{ fontSize: 'clamp(11px,2.5vw,20px)', fontWeight: 'bold', color: '#fff' }}>
               {evPower.toFixed(1)} kW
@@ -380,19 +383,19 @@ const AnimatedEnergyFlow = ({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#fbbf24' }}></div>
-          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>PV-Erzeugung</span>
+          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>{en ? 'PV Generation' : 'PV-Erzeugung'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e' }}></div>
-          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>Laden/Einspeisung</span>
+          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>{en ? 'Charging/Feed-in' : 'Laden/Einspeisung'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }}></div>
-          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>Netzbezug</span>
+          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>{en ? 'Grid Import' : 'Netzbezug'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }}></div>
-          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>Entladen</span>
+          <span style={{ color: '#cbd5e1', fontSize: '12px' }}>{en ? 'Discharging' : 'Entladen'}</span>
         </div>
       </div>
     </div>

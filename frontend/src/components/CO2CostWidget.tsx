@@ -1,3 +1,5 @@
+import { useLanguage } from '../context/LanguageContext';
+
 interface CO2CostWidgetProps {
   co2SavedKg: number;
   costEur: number;
@@ -15,11 +17,23 @@ export default function CO2CostWidget({
   co2DeltaPercent = 12,
   costDeltaPercent = -8,
 }: CO2CostWidgetProps) {
+  const { language } = useLanguage();
+  const en = language === 'en';
+
   // Farben und Icons je nach Entwicklung
   const co2DeltaColor = co2DeltaPercent >= 0 ? "#4CAF50" : "#F44336";
   const costDeltaColor = costDeltaPercent <= 0 ? "#2196F3" : "#F44336";
   const co2DeltaSign = co2DeltaPercent > 0 ? "+" : "";
   const costDeltaSign = costDeltaPercent > 0 ? "+" : "";
+  const localizedPeriod = period
+    ? en
+      ? period === 'Monat'
+        ? 'Month'
+        : period
+      : period === 'Month'
+        ? 'Monat'
+        : period
+    : '';
 
   return (
     <div
@@ -39,34 +53,34 @@ export default function CO2CostWidget({
       }}
     >
       <h3 style={{ color: "#FF9800", marginBottom: 18, fontWeight: 700, fontSize: 22 }}>
-        CO₂ & Kosten Übersicht {period ? `(${period})` : ""}
+        {en ? 'CO₂ & Cost Overview' : 'CO₂ & Kosten Übersicht'} {localizedPeriod ? `(${localizedPeriod})` : ""}
       </h3>
       <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 16, flexWrap: "wrap" }}>
-        <div title="CO₂-Einsparung" style={{ fontSize: 32, display: "flex", alignItems: "center", gap: 8 }}>
+        <div title={en ? 'CO₂ savings' : 'CO₂-Einsparung'} style={{ fontSize: 32, display: "flex", alignItems: "center", gap: 8 }}>
           <span role="img" aria-label="CO2">🌱</span>
           <b>{co2SavedKg.toFixed(1)}</b>
           <span style={{ fontSize: 16, marginLeft: 2 }}>kg CO₂</span>
         </div>
-        <div title="Stromkosten" style={{ fontSize: 32, display: "flex", alignItems: "center", gap: 8 }}>
+        <div title={en ? 'Electricity costs' : 'Stromkosten'} style={{ fontSize: 32, display: "flex", alignItems: "center", gap: 8 }}>
           <span role="img" aria-label="Euro">💰</span>
           <b>{costEur.toFixed(2)}</b>
           <span style={{ fontSize: 16, marginLeft: 2 }}>€</span>
         </div>
-        <div title="Autarkiegrad" style={{ fontSize: 28, display: "flex", alignItems: "center", gap: 8 }}>
+        <div title={en ? 'Self-sufficiency' : 'Autarkiegrad'} style={{ fontSize: 28, display: "flex", alignItems: "center", gap: 8 }}>
           <span role="img" aria-label="Autarkie">🔋</span>
           <b>{autarky.toFixed(1)}%</b>
         </div>
       </div>
       <div style={{ fontSize: 15, opacity: 0.8, marginTop: 8, marginBottom: 2 }}>
-        Im Vergleich zum Vorjahr:
+        {en ? 'Compared to previous year:' : 'Im Vergleich zum Vorjahr:'}
         <span style={{ color: co2DeltaColor, fontWeight: 600, marginLeft: 8 }}>
           {co2DeltaSign}
-          {co2DeltaPercent.toFixed(1)}% CO₂-Ersparnis
+          {co2DeltaPercent.toFixed(1)}% {en ? 'CO₂ savings' : 'CO₂-Ersparnis'}
         </span>
         ,
         <span style={{ color: costDeltaColor, fontWeight: 600, marginLeft: 8 }}>
           {costDeltaSign}
-          {costDeltaPercent.toFixed(1)}% Kosten
+          {costDeltaPercent.toFixed(1)}% {en ? 'costs' : 'Kosten'}
         </span>
       </div>
     </div>

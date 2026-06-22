@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { API_URL } from '../lib/api';
 import { useTheme } from '../hooks/useTheme';
+import { useLanguage } from '../context/LanguageContext';
 
 interface BatteryData {
   soc: number;
@@ -11,6 +12,8 @@ interface BatteryData {
 export default function BatteryWidget({ data }: { data?: BatteryData }) {
   const [live, setLive] = useState<BatteryData | null>(data ?? null);
   const { isLight } = useTheme();
+  const { language, t } = useLanguage();
+  const en = language === 'en';
 
   // If no data prop, fetch from API
   useEffect(() => {
@@ -87,7 +90,7 @@ export default function BatteryWidget({ data }: { data?: BatteryData }) {
               <text x={cx} y={cy + 28} textAnchor="middle" fontSize="11" fill={textMuted} fontFamily="monospace">% SOC</text>
               {/* Status */}
               <text x={cx} y={cy + 50} textAnchor="middle" fontSize="9" fill={powerColor} fontFamily="monospace">
-                {isCharging ? '▲ LÄDT' : isDischarging ? '▼ ENTLÄDT' : '● BEREIT'}
+                {isCharging ? (en ? '▲ CHARGING' : '▲ LÄDT') : isDischarging ? (en ? '▼ DISCHARGING' : '▼ ENTLÄDT') : (en ? '● READY' : '● BEREIT')}
               </text>
             </svg>
           </div>
@@ -95,9 +98,9 @@ export default function BatteryWidget({ data }: { data?: BatteryData }) {
           {/* Data grid */}
           <div style={{ flex:1, minWidth:140, display:'flex', flexDirection:'column', gap:12, paddingTop:8 }}>
             {[
-              { label:'Leistung',        value: `${isCharging ? '+' : ''}${power.toFixed(1)} kW`, color: powerColor },
-              { label:'Kapazität',       value: `${cap.toFixed(1)} kWh`,                          color: valueColor3 },
-              { label:'Energie geladen', value: `${(cap * soc / 100).toFixed(1)} kWh`,             color: valueColor4 },
+              { label: t('common.power'),        value: `${isCharging ? '+' : ''}${power.toFixed(1)} kW`, color: powerColor },
+              { label: t('common.capacity'),     value: `${cap.toFixed(1)} kWh`,                          color: valueColor3 },
+              { label: t('common.energyLoaded'), value: `${(cap * soc / 100).toFixed(1)} kWh`,             color: valueColor4 },
             ].map(({label,value,color})=>(
               <div key={label} style={{ background: surfaceBg, border:`1px solid ${surfaceBorder}`, borderRadius:10, padding:'10px 14px', transition:'background 0.35s ease' }}>
                 <div style={{ fontSize:10, color: textFaint, letterSpacing:'0.15em', textTransform:'uppercase', marginBottom:4 }}>{label}</div>
@@ -110,7 +113,7 @@ export default function BatteryWidget({ data }: { data?: BatteryData }) {
         {/* Progress bar */}
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color: textLadez, marginBottom:6, letterSpacing:'0.1em' }}>
-            <span>LADEZUSTAND</span><span style={{ color:socColor, fontWeight:700 }}>{soc}%</span>
+            <span>{t('common.loadstate').toUpperCase()}</span><span style={{ color:socColor, fontWeight:700 }}>{soc}%</span>
           </div>
           <div style={{ height:8, background: barTrack, borderRadius:999, overflow:'hidden' }}>
             <div style={{ height:'100%', width:`${soc}%`, background:`linear-gradient(90deg,${socColor},#3b82f6)`, borderRadius:999, transition:'width 1s ease', boxShadow:`0 0 12px ${socColor}60` }}/>
