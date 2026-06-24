@@ -9,6 +9,7 @@ import BatteryWidget from './BatteryWidget';
 import AnimatedEnergyFlow from './AnimatedEnergyFlow';
 import { API_URL, WS_URL } from '../lib/api';
 import { useTheme } from '../hooks/useTheme';
+import { useLanguage } from '../context/LanguageContext';
 
 interface RealtimeData {
   pv_power_kw: number;
@@ -50,6 +51,8 @@ export default function Dashboard() {
   const [devices, setDevices] = useState<DeviceSummary[]>([]);
   const [ready, setReady] = useState(false);
   const { isLight } = useTheme();
+  const { language } = useLanguage();
+  const en = language === 'en';
 
   // Theme-Farben für SVG-Elemente
   const textPrimary = isLight ? '#0f172a' : '#f8fafc';
@@ -240,7 +243,7 @@ export default function Dashboard() {
               <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="PV-Ertrag (24h)" endpoint="/history/pv" dataKey="PV (kW)" color="#10b981"/></div>
               <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="Verbrauch (24h)" endpoint="/history/consumption" dataKey="Verbrauch (kW)" color="#3b82f6"/></div>
             </div>
-            <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title="Batterie-SOC (24h)" endpoint="/history/battery" dataKey="SOC (%)" color="#f59e0b"/></div>
+            <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(255,107,53,0.1)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px' }}><HistoryChart title={en ? 'Battery SOC (24h)' : 'Batterie-SOC (24h)'} endpoint="/history/battery" dataKey="SOC (%)" color="#f59e0b"/></div>
           </>
         ) : (
           <div className="wai-card" style={{ background:'rgba(22,30,65,0.65)', border:'1px solid rgba(251,191,36,0.22)', borderRadius:20, backdropFilter:'blur(12px)', padding:'20px 24px', textAlign:'center', color:'rgba(254,243,199,0.8)', fontSize:14 }}>
