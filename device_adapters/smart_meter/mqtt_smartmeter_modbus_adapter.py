@@ -1,7 +1,7 @@
 import time
 import json
 import paho.mqtt.client as mqtt
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 
 """Einfacher Modbus→MQTT Adapter für ein Smart Meter.
 

@@ -1,9 +1,18 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig, type UserConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+type VitestSection = {
+  test: {
+    environment: string;
+    setupFiles: string;
+    css: boolean;
+    include: string[];
+  };
+};
+
+const config = {
   server: {
     host: '127.0.0.1',
     port: 5175,
@@ -72,4 +81,6 @@ export default defineConfig({
     css: true,
     include: ['src/**/*.test.{ts,tsx}']
   }
-})
+} satisfies UserConfig & VitestSection;
+
+export default defineConfig(config)
