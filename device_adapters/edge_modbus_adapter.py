@@ -25,14 +25,14 @@ import json
 import logging
 import threading
 from datetime import datetime
-from typing import Optional
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 try:
-    from pymodbus.client.sync import ModbusTcpClient
+    from pymodbus.client import ModbusTcpClient
 except Exception:
     ModbusTcpClient = None
 
@@ -124,7 +124,7 @@ def _post(session: requests.Session, payload: dict):
     return resp
 
 
-def read_modbus_registers(client: ModbusTcpClient) -> dict:
+def read_modbus_registers(client: Any) -> dict:
     """Example read function. Adapt register addresses per your device."""
     result = {}
     try:

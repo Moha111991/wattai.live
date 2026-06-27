@@ -26,6 +26,13 @@ exports[`HausautomationPanel – DOM snapshots > matches snapshot in DARK mode 1
   .wai-card:hover{border-color:rgba(255,107,53,.3)!important;box-shadow:0 16px 48px rgba(255,107,53,.07)!important}
   .hap-device-row{transition:all 0.3s ease!important}
   .hap-device-row:hover{background:rgba(255,149,0,0.06)!important;border-color:rgba(255,149,0,0.25)!important}
+  @media (max-width: 768px){
+    .hap-main-row{flex-wrap:wrap!important;align-items:flex-start!important}
+    .hap-main-meta{flex:1 1 calc(100% - 44px)!important;min-width:0!important}
+    .hap-live-toggle{order:3!important;width:100%!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;padding-top:8px!important;margin-top:4px!important;border-top:1px solid rgba(255,255,255,0.08)!important}
+    .hap-actions{order:4!important;width:100%!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+    .hap-actions button{width:100%!important;text-align:center!important}
+  }
 
     </style>
     <div
@@ -404,6 +411,13 @@ exports[`HausautomationPanel – DOM snapshots > matches snapshot in LIGHT mode 
   .wai-card:hover{border-color:rgba(255,107,53,.3)!important;box-shadow:0 16px 48px rgba(255,107,53,.07)!important}
   .hap-device-row{transition:all 0.3s ease!important}
   .hap-device-row:hover{background:rgba(255,149,0,0.06)!important;border-color:rgba(255,149,0,0.25)!important}
+  @media (max-width: 768px){
+    .hap-main-row{flex-wrap:wrap!important;align-items:flex-start!important}
+    .hap-main-meta{flex:1 1 calc(100% - 44px)!important;min-width:0!important}
+    .hap-live-toggle{order:3!important;width:100%!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;padding-top:8px!important;margin-top:4px!important;border-top:1px solid rgba(255,255,255,0.08)!important}
+    .hap-actions{order:4!important;width:100%!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+    .hap-actions button{width:100%!important;text-align:center!important}
+  }
 
     </style>
     <div
