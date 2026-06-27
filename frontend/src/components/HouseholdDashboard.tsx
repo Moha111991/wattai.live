@@ -27,6 +27,13 @@ const WAI = `
   .wai-card:hover{border-color:rgba(255,107,53,.3)!important;box-shadow:0 16px 48px rgba(255,107,53,.07)!important}
   .hap-device-row{transition:all 0.3s ease!important}
   .hap-device-row:hover{background:rgba(255,149,0,0.06)!important;border-color:rgba(255,149,0,0.25)!important}
+  @media (max-width: 768px){
+    .hap-main-row{flex-wrap:wrap!important;align-items:flex-start!important}
+    .hap-main-meta{flex:1 1 calc(100% - 44px)!important;min-width:0!important}
+    .hap-live-toggle{order:3!important;width:100%!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;padding-top:8px!important;margin-top:4px!important;border-top:1px solid rgba(255,255,255,0.08)!important}
+    .hap-actions{order:4!important;width:100%!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+    .hap-actions button{width:100%!important;text-align:center!important}
+  }
 `;
 
 interface SysState { grid_power?: number; pv_power?: number; battery_soc?: number; home_power?: number; battery_power_kw?: number; battery_capacity_kwh?: number; }
@@ -607,9 +614,9 @@ function HausautomationPanel() {
                     return (
                       <div key={cd.uid} className="hap-device-row" style={{ borderRadius:14, background:`${d.color}07`, border:`1px solid ${cd.connStatus === 'connected' ? d.color+'30' : 'rgba(239,68,68,0.2)'}`, overflow:'hidden', marginBottom:8, transition:'all 0.3s' }}>
                         {/* Main row */}
-                        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px' }}>
+                        <div className="hap-main-row" style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px' }}>
                           <span style={{ fontSize:24 }}>{d.icon}</span>
-                          <div style={{ flex:1, minWidth:0 }}>
+                          <div className="hap-main-meta" style={{ flex:1, minWidth:0 }}>
                             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3, flexWrap:'wrap' }}>
                               <span style={{ fontWeight:800, fontSize:14, color:'#f8fafc' }}>{d.label}</span>
                               <span style={{ fontSize:10, color:d.color, background:`${d.color}15`, borderRadius:6, padding:'1px 8px', fontWeight:700 }}>{cd.proto}</span>
@@ -635,7 +642,7 @@ function HausautomationPanel() {
                             </div>
                           </div>
                           {/* Toggle + Live values */}
-                          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flexShrink:0 }}>
+                          <div className="hap-live-toggle" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flexShrink:0 }}>
                             <ToggleSwitch
                               on={cd.isOn}
                               accent={d.color}
@@ -651,7 +658,7 @@ function HausautomationPanel() {
                             )}
                           </div>
                           {/* Action buttons */}
-                          <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                          <div className="hap-actions" style={{ display:'flex', gap:6, flexShrink:0 }}>
                             <button type="button" onClick={() => setManagingUid(isManaging ? null : cd.uid)}
                               style={{ padding:'6px 13px', borderRadius:8, background:'rgba(255,255,255,0.05)', border:`1px solid ${isManaging ? 'rgba(255,149,0,0.4)' : 'rgba(255,255,255,0.1)'}`,
                                 color: isManaging ? '#ff9500' : 'rgba(248,250,252,0.5)', fontSize:11, cursor:'pointer', fontWeight:600, transition:'all 0.25s' }}>
